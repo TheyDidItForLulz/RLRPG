@@ -544,12 +544,22 @@ public:
 				dist = 0;
 		}
 	}
+	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir)
+	{
+		health = en.health;
+		inventoryVol = en.inventoryVol;
+		symbol = en.symbol;
+		for(int i = 0; i < inventoryVol; i++)
+		{
+			unitInventory[i] = en.unitInventory[i];
+		}
+	}
 	int vision;
 	int dir;
 	int dist;
 
-	Enemy(){};
-	~Enemy(){};
+	Enemy(){}
+	~Enemy(){}
 };
 
 int Luck;
@@ -1752,7 +1762,7 @@ void Hero::mHLogic(int& a1, int& a2)
 	}
 	findVisibleArray();
 }
-	
+
 bool CheckHeroVisibility(PossibleUnit& unit)
 {
 	for(int i = 1; i < unit.unit.uEnemy.vision; i++)
@@ -1857,7 +1867,7 @@ void UpdatePosition(PossibleUnit& unit)
 			case 0:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer = unit;
+				PossibleUnit buffer(unit);
 				unit.type = UnitEmpty;
 				buffer.GetUnit().posL--;
 				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
@@ -1865,7 +1875,7 @@ void UpdatePosition(PossibleUnit& unit)
 			case 1:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer = unit;
+				PossibleUnit buffer(unit);
 				unit.type = UnitEmpty;
 				buffer.GetUnit().posH++;
 				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
@@ -1873,7 +1883,7 @@ void UpdatePosition(PossibleUnit& unit)
 			case 2:
 			{
 				unit.unit.uEnemy.dist--;	
-				PossibleUnit buffer = unit;
+				PossibleUnit buffer(unit);
 				unit.type = UnitEmpty;
 				buffer.GetUnit().posH--;
 				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
@@ -1881,7 +1891,7 @@ void UpdatePosition(PossibleUnit& unit)
 			case 3:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer = unit;
+				PossibleUnit buffer(unit);
 				unit.type = UnitEmpty;
 				buffer.GetUnit().posL++;
 				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
