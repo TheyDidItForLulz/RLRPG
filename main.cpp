@@ -75,7 +75,7 @@
 #define ARMORCOUNT 4													//
 #define WEAPONCOUNT 15													//
 #define AMMOCOUNT 15
-#define ENEMIESCOUNT 1
+#define ENEMIESCOUNT 7
 #define Depth 20													//
 #define VISION 7													//
 int MaxInvItemsWeight = 25;												//
@@ -520,7 +520,7 @@ public:
 			case 200:
 				return "Hero";
 			case 201:
-				return "Dummy";
+				return "Barbarian";
 		}
 	}
 	~Unit(){};
@@ -543,27 +543,29 @@ public:
 			case 0:
 				health = 12;
 				unitInventory[0] = differentFood[0];
+				unitInventory[1] = differentWeapon[0];
+				unitWeapon = &unitInventory[1];
 				inventoryVol = 1;
 				symbol = 201;
 				vision = 5;
 				dist = 0;
 		}
 	}
-	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir), movedOnTurn( en.movedOnTurn )
-	{
-	
-		unitWeapon = en.unitWeapon;
-		unitArmor = en.unitArmor;
-		posH = en.posH;
-		posL = en.posL;
-		health = en.health;
-		inventoryVol = en.inventoryVol;
-		symbol = en.symbol;
-		for(int i = 0; i < inventoryVol; i++)
-		{
-			unitInventory[i] = en.unitInventory[i];
-		}
-	}
+//	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir), movedOnTurn( en.movedOnTurn )
+//	{
+//	
+//		unitWeapon = en.unitWeapon;
+//		unitArmor = en.unitArmor;
+//		posH = en.posH;
+//		posL = en.posL;
+//		health = en.health;
+//		inventoryVol = en.inventoryVol;
+//		symbol = en.symbol;
+//		for(int i = 0; i < inventoryVol; i++)
+//		{
+//			unitInventory[i] = en.unitInventory[i];
+//		}
+//	}
 	int vision;
 	int dir;
 	int dist;
@@ -1870,6 +1872,21 @@ void GetRandDir(PossibleUnit& unit)
 	}
 	while( !unit.unit.uEnemy.dist );
 }
+void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
+{
+	if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitHero)
+	{
+		hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+	}
+	else
+	{
+		unit.unit.uEnemy.dist--;
+		unit.GetUnit().posH += a1;
+		unit.GetUnit().posL += a2;
+		UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
+		UnitsMap[unit.GetUnit().posH - a1][unit.GetUnit().posL - a2].type = UnitEmpty;
+	}
+}
 void UpdatePosition(PossibleUnit& unit)
 {
 	if(CheckHeroVisibility(unit) == false && unit.unit.uEnemy.dist <= 0)
@@ -1882,34 +1899,22 @@ void UpdatePosition(PossibleUnit& unit)
 		{
 			case DIR_LEFT:
 			{
-				unit.unit.uEnemy.dist--;
-				unit.GetUnit().posL--;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL + 1].type = UnitEmpty;
+				CheckDestinationCell(unit, 0, -1);
 				break;
 			}
 			case DIR_DOWN:
 			{
-				unit.unit.uEnemy.dist--;
-				unit.GetUnit().posH++;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
-				UnitsMap[unit.GetUnit().posH - 1][unit.GetUnit().posL].type = UnitEmpty;
+				CheckDestinationCell(unit, 1, 0);
 				break;
 			}
 			case DIR_UP:
 			{
-				unit.unit.uEnemy.dist--;
-				unit.GetUnit().posH--;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
-				UnitsMap[unit.GetUnit().posH + 1][unit.GetUnit().posL].type = UnitEmpty;
+				CheckDestinationCell(unit, -1, 0);
 				break;
 			}
 			case DIR_RIGHT:
 			{
-				unit.unit.uEnemy.dist--;
-				unit.GetUnit().posL++;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
-				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL - 1].type = UnitEmpty;
+				CheckDestinationCell(unit, 0, 1);
 				break;
 			}
 		}
@@ -1922,11 +1927,11 @@ void UpdateAI()
 	{
 		for(int j = 0; j < Length; j++)
 		{
-			if(UnitsMap[i][j].type == UnitEnemy && UnitsMap[ i ][ j ].unit.uEnemy.movedOnTurn != turns )
+			if(UnitsMap[i][j].type == UnitEnemy && UnitsMap[i][j].unit.uEnemy.movedOnTurn != turns)
 			{
-				sprintf(tmp, "{%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.dist);
+				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.dist, UnitsMap[i][j].GetUnit().health);
 				message += tmp;
-				UnitsMap[ i ][ j ].unit.uEnemy.movedOnTurn = turns;
+				UnitsMap[i][j].unit.uEnemy.movedOnTurn = turns;
 				UpdatePosition(UnitsMap[i][j]);
 			}
 		}
@@ -2057,13 +2062,13 @@ void Draw(){
 		for(int j = 0; j < Length; j++){
 			
 //			printw("% i ", map[i][j]);										// !DEBUG!
-/*			if(mapSaved[i][j] != 0)
-			{*/
+			if(mapSaved[i][j] != 0)
+			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
 				
 				if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
 				{
-					switch(map/*Saved*/[i][j])
+					switch(mapSaved[i][j])
 					{
 						case 1:
 							if(near)
@@ -2132,14 +2137,14 @@ void Draw(){
 					switch(UnitsMap[i][j].GetUnit().symbol)
 					{
 						case 201:
-							addch('@' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							addch('@' | COLOR_PAIR(YELLOW_BLACK));
 					}
 				}
-/*			}
+			}
 			else
 			{
 				addch(' ');	
-			}	*/
+			}	
 					
 		}
 		
@@ -2222,8 +2227,8 @@ int main()
 	Ammo SteelBullets(0);
 	differentAmmo[0] = SteelBullets;
 	
-	Enemy Dummy(0);
-	differentEnemies[0] = Dummy;
+	Enemy Barbarian(0);
+	differentEnemies[0] = Barbarian;
 
 	hero.heroWeapon = &inventory[EMPTY_SLOT];
 
@@ -2280,6 +2285,7 @@ int main()
 
 			if(hero.health < 1)
 			{
+				move(Height + 1, 0);
 				message += "You died. Press any key to exit.";
 				printw("% -190s", message.c_str());
 				getch();
