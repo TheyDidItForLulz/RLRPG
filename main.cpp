@@ -541,7 +541,7 @@ public:
 				inventoryVol = 1;
 				symbol = 201;
 				vision = 5;
-				dist = 10;
+				dist = 0;
 		}
 	}
 	int vision;
@@ -1809,7 +1809,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.unit.uEnemy.posH][unit.unit.uEnemy.posL - i] == 2) break;
+				if(map[unit.GetUnit().posH][unit.GetUnit().posL - i] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1817,7 +1817,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.unit.uEnemy.posH - i][unit.unit.uEnemy.posL] == 2) break;
+				if(map[unit.GetUnit().posH - i][unit.GetUnit().posL] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1825,7 +1825,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.unit.uEnemy.posH + i][unit.unit.uEnemy.posL] == 2) break;
+				if(map[unit.GetUnit().posH + i][unit.GetUnit().posL] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1833,7 +1833,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.unit.uEnemy.posH][unit.unit.uEnemy.posL + i] == 2) break;
+				if(map[unit.GetUnit().posH][unit.GetUnit().posL + i] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1859,28 +1859,32 @@ void UpdatePosition(PossibleUnit& unit)
 				unit.unit.uEnemy.dist--;
 				PossibleUnit buffer = unit;
 				unit.type = UnitEmpty;
-				UnitsMap[buffer.unit.uEnemy.posH][buffer.unit.uEnemy.posL - 1] = buffer;
+				buffer.GetUnit().posL--;
+				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
 			}
 			case 1:
 			{
 				unit.unit.uEnemy.dist--;
 				PossibleUnit buffer = unit;
 				unit.type = UnitEmpty;
-				UnitsMap[buffer.unit.uEnemy.posH + 1][buffer.unit.uEnemy.posL] = buffer;
+				buffer.GetUnit().posH++;
+				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
 			}
 			case 2:
 			{
 				unit.unit.uEnemy.dist--;	
 				PossibleUnit buffer = unit;
 				unit.type = UnitEmpty;
-				UnitsMap[buffer.unit.uEnemy.posH - 1][buffer.unit.uEnemy.posL] = buffer;
+				buffer.GetUnit().posH--;
+				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
 			}
 			case 3:
 			{
 				unit.unit.uEnemy.dist--;
 				PossibleUnit buffer = unit;
 				unit.type = UnitEmpty;
-				UnitsMap[buffer.unit.uEnemy.posH][buffer.unit.uEnemy.posL + 1] = buffer;
+				buffer.GetUnit().posL++;
+				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
 			}
 		}
 /*		message += " flag5 ";
@@ -1896,6 +1900,8 @@ void UpdateAI()
 		{
 			if(UnitsMap[i][j].type == UnitEnemy)
 			{
+				sprintf(tmp, "B:|%i|%i|", i, j);
+				message += tmp;
 				UpdatePosition(UnitsMap[i][j]);
 			}
 		}
@@ -2324,4 +2330,3 @@ int main()
 	return 0;
 	
 }
-/* test */
