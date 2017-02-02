@@ -42,6 +42,10 @@
 #include<ncurses.h>													//
 #include<string.h>													//
 
+#define DIR_LEFT 0
+#define DIR_DOWN 1
+#define DIR_UP 2
+#define DIR_RIGHT 3
 #define CONTROL_UP 'k'
 #define CONTROL_DOWN 'j'
 #define CONTROL_LEFT 'h'
@@ -93,6 +97,7 @@ int map[ FIELD_ROWS ][ FIELD_COLS ];											//
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
 int used[ ROWS ][ COLS ];												//
 int active = 0;														//
+int turns = -1;
 															//
 struct Pair														//
 {															//
@@ -531,7 +536,7 @@ public:
 class Enemy: public Unit
 {
 public:
-	Enemy(int eType)
+	Enemy(int eType): movedOnTurn( -1 )
 	{
 		switch(eType)
 		{
@@ -544,7 +549,7 @@ public:
 				dist = 0;
 		}
 	}
-	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir)
+	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir), movedOnTurn( en.movedOnTurn )
 	{
 	
 		unitWeapon = en.unitWeapon;
@@ -562,6 +567,7 @@ public:
 	int vision;
 	int dir;
 	int dist;
+	int movedOnTurn;
 
 	Enemy(){}
 	~Enemy(){}
@@ -1775,7 +1781,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 		if(map[unit.GetUnit().posH + i][unit.GetUnit().posL] == 2) break;
 		if(UnitsMap[unit.GetUnit().posH + i][unit.GetUnit().posL].type == UnitHero)
 		{
-			unit.unit.uEnemy.dir = 1;
+			unit.unit.uEnemy.dir = DIR_DOWN;
 			unit.unit.uEnemy.dist = i;
 			return true;
 		}
@@ -1785,7 +1791,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 		if(map[unit.GetUnit().posH][unit.GetUnit().posL + i] == 2) break;
 		if(UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL + i].type == UnitHero)
 		{
-			unit.unit.uEnemy.dir = 3;
+			unit.unit.uEnemy.dir = DIR_RIGHT;
 			unit.unit.uEnemy.dist = i;
 			return true;
 		}
@@ -1795,7 +1801,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 		if(map[unit.GetUnit().posH - i][unit.GetUnit().posL] == 2) break;
 		if(UnitsMap[unit.GetUnit().posH - i][unit.GetUnit().posL].type == UnitHero)
 		{
-			unit.unit.uEnemy.dir = 2;
+			unit.unit.uEnemy.dir = DIR_UP;
 			unit.unit.uEnemy.dist = i;
 			return true;
 		}
@@ -1805,7 +1811,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 		if(map[unit.GetUnit().posH][unit.GetUnit().posL - i] == 2) break;
 		if(UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL - i].type == UnitHero)
 		{
-			unit.unit.uEnemy.dir = 0;
+			unit.unit.uEnemy.dir = DIR_LEFT;
 			unit.unit.uEnemy.dist = i;
 			return true;
 		}
@@ -1814,51 +1820,55 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 }
 void GetRandDir(PossibleUnit& unit)
 {
-	unit.unit.uEnemy.dir = rand() % 4;
-	unit.unit.uEnemy.dist = 0;
-//	unit.unit.uEnemy.dist = rand() % unit.unit.uEnemy.vision;
-// !COMMENT!			// Go to end of dist, until end ot wall meeting and change or not dist
 	int posH = unit.GetUnit().posH, posL = unit.GetUnit().posL;
-	switch(unit.unit.uEnemy.dir)
+	unit.unit.uEnemy.dist = 0;
+	do
 	{
-		case 0:
+		unit.unit.uEnemy.dir = rand() % 4;
+	//	unit.unit.uEnemy.dist = rand() % unit.unit.uEnemy.vision;
+	// !COMMENT!			// Go to end of dist, until end ot wall meeting and change or not dist
+		switch(unit.unit.uEnemy.dir)
 		{
-			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+			case DIR_LEFT:
 			{
-				if(map[posH][posL - i] == 2) break;
-				unit.unit.uEnemy.dist++;
+				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+				{
+					if(map[posH][posL - i] == 2) break;
+					unit.unit.uEnemy.dist++;
+				}
+				break;
 			}
-			break;
-		}
-		case 1:
-		{
-			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+			case DIR_UP:
 			{
-				if(map[posH - i][posL] == 2) break;
-				unit.unit.uEnemy.dist++;
+				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+				{
+					if(map[posH - i][posL] == 2) break;
+					unit.unit.uEnemy.dist++;
+				}
+				break;
 			}
-			break;
-		}
-		case 2:
-		{
-			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+			case DIR_DOWN:
 			{
-				if(map[posH + i][posL] == 2) break;
-				unit.unit.uEnemy.dist++;
+				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+				{
+					if(map[posH + i][posL] == 2) break;
+					unit.unit.uEnemy.dist++;
+				}
+				break;
 			}
-			break;
-		}
-		case 3:
-		{
-			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+			case DIR_RIGHT:
 			{
-				if(map[posH][posL + i] == 2) break;
-				unit.unit.uEnemy.dist++;
+				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
+				{
+					if(map[posH][posL + i] == 2) break;
+					unit.unit.uEnemy.dist++;
+				}
+				break;
 			}
-			break;
-		}
 
+		}
 	}
+	while( !unit.unit.uEnemy.dist );
 }
 void UpdatePosition(PossibleUnit& unit)
 {
@@ -1870,7 +1880,7 @@ void UpdatePosition(PossibleUnit& unit)
 	{
 		switch(unit.unit.uEnemy.dir)
 		{
-			case 0:
+			case DIR_LEFT:
 			{
 				unit.unit.uEnemy.dist--;
 				unit.GetUnit().posL--;
@@ -1878,7 +1888,7 @@ void UpdatePosition(PossibleUnit& unit)
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL + 1].type = UnitEmpty;
 				break;
 			}
-			case 1:
+			case DIR_DOWN:
 			{
 				unit.unit.uEnemy.dist--;
 				unit.GetUnit().posH++;
@@ -1886,7 +1896,7 @@ void UpdatePosition(PossibleUnit& unit)
 				UnitsMap[unit.GetUnit().posH - 1][unit.GetUnit().posL].type = UnitEmpty;
 				break;
 			}
-			case 2:
+			case DIR_UP:
 			{
 				unit.unit.uEnemy.dist--;
 				unit.GetUnit().posH--;
@@ -1894,7 +1904,7 @@ void UpdatePosition(PossibleUnit& unit)
 				UnitsMap[unit.GetUnit().posH + 1][unit.GetUnit().posL].type = UnitEmpty;
 				break;
 			}
-			case 3:
+			case DIR_RIGHT:
 			{
 				unit.unit.uEnemy.dist--;
 				unit.GetUnit().posL++;
@@ -1912,10 +1922,11 @@ void UpdateAI()
 	{
 		for(int j = 0; j < Length; j++)
 		{
-			if(UnitsMap[i][j].type == UnitEnemy)
+			if(UnitsMap[i][j].type == UnitEnemy && UnitsMap[ i ][ j ].unit.uEnemy.movedOnTurn != turns )
 			{
 				sprintf(tmp, "{%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.dist);
 				message += tmp;
+				UnitsMap[ i ][ j ].unit.uEnemy.movedOnTurn = turns;
 				UpdatePosition(UnitsMap[i][j]);
 			}
 		}
@@ -2295,6 +2306,8 @@ int main()
 			hero.moveHero(inp);
 
 			UpdateAI();
+			
+			++turns;
 	
 			Draw();
 			
