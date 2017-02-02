@@ -1875,6 +1875,7 @@ void UpdatePosition(PossibleUnit& unit)
 				unit.GetUnit().posL--;
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL + 1].type = UnitEmpty;
+				break;
 			}
 			case 1:
 			{
@@ -1882,6 +1883,7 @@ void UpdatePosition(PossibleUnit& unit)
 				unit.GetUnit().posH++;
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
 				UnitsMap[unit.GetUnit().posH - 1][unit.GetUnit().posL].type = UnitEmpty;
+				break;
 			}
 			case 2:
 			{
@@ -1889,6 +1891,7 @@ void UpdatePosition(PossibleUnit& unit)
 				unit.GetUnit().posH--;
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
 				UnitsMap[unit.GetUnit().posH + 1][unit.GetUnit().posL].type = UnitEmpty;
+				break;
 			}
 			case 3:
 			{
