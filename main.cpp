@@ -1825,7 +1825,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[posH][posL - i] == 2) break;
+				if(map[posH][posL - i] == 2) return;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1833,7 +1833,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[posH - i][posL] == 2) break;
+				if(map[posH - i][posL] == 2) return;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1841,7 +1841,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[posH + i][posL] == 2) break;
+				if(map[posH + i][posL] == 2) return;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1849,7 +1849,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[posH][posL + i] == 2) break;
+				if(map[posH][posL + i] == 2) return;
 				unit.unit.uEnemy.dist++;
 			}
 		}
