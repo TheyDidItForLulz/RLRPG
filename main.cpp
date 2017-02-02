@@ -1872,34 +1872,30 @@ void UpdatePosition(PossibleUnit& unit)
 			case 0:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer(unit);
-				unit.type = UnitEmpty;
-				buffer.GetUnit().posL--;
-				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
+				unit.GetUnit().posL--;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL + 1].type = UnitEmpty;
 			}
 			case 1:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer(unit);
-				unit.type = UnitEmpty;
-				buffer.GetUnit().posH++;
-				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
+				unit.GetUnit().posH++;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
+				UnitsMap[unit.GetUnit().posH - 1][unit.GetUnit().posL].type = UnitEmpty;
 			}
 			case 2:
 			{
-				unit.unit.uEnemy.dist--;	
-				PossibleUnit buffer(unit);
-				unit.type = UnitEmpty;
-				buffer.GetUnit().posH--;
-				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
+				unit.unit.uEnemy.dist--;
+				unit.GetUnit().posH--;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
+				UnitsMap[unit.GetUnit().posH + 1][unit.GetUnit().posL].type = UnitEmpty;
 			}
 			case 3:
 			{
 				unit.unit.uEnemy.dist--;
-				PossibleUnit buffer(unit);
-				unit.type = UnitEmpty;
-				buffer.GetUnit().posL++;
-				UnitsMap[buffer.GetUnit().posH][buffer.GetUnit().posL] = buffer;
+				unit.GetUnit().posL++;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
+				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL - 1].type = UnitEmpty;
 			}
 		}
 /*		message += " flag5 ";
