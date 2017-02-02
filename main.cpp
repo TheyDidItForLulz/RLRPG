@@ -546,6 +546,11 @@ public:
 	}
 	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir)
 	{
+	
+		unitWeapon = en.unitWeapon;
+		unitArmor = en.unitArmor;
+		posH = en.posH;
+		posL = en.posL;
 		health = en.health;
 		inventoryVol = en.inventoryVol;
 		symbol = en.symbol;
