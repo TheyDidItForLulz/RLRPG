@@ -71,7 +71,7 @@
 #define ARMORCOUNT 4													//
 #define WEAPONCOUNT 15													//
 #define AMMOCOUNT 15
-#define ENEMIESCOUNT 7
+#define ENEMIESCOUNT 1
 #define Depth 20													//
 #define VISION 7													//
 int MaxInvItemsWeight = 25;												//
@@ -1818,13 +1818,14 @@ void GetRandDir(PossibleUnit& unit)
 	unit.unit.uEnemy.dist = 0;
 //	unit.unit.uEnemy.dist = rand() % unit.unit.uEnemy.vision;
 // !COMMENT!			// Go to end of dist, until end ot wall meeting and change or not dist
+	int posH = unit.GetUnit().posH, posL = unit.GetUnit().posL;
 	switch(unit.unit.uEnemy.dir)
 	{
 		case 0:
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.GetUnit().posH][unit.GetUnit().posL - i] == 2) break;
+				if(map[posH][posL - i] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1832,7 +1833,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.GetUnit().posH - i][unit.GetUnit().posL] == 2) break;
+				if(map[posH - i][posL] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1840,7 +1841,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.GetUnit().posH + i][unit.GetUnit().posL] == 2) break;
+				if(map[posH + i][posL] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1848,7 +1849,7 @@ void GetRandDir(PossibleUnit& unit)
 		{
 			for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 			{
-				if(map[unit.GetUnit().posH][unit.GetUnit().posL + i] == 2) break;
+				if(map[posH][posL + i] == 2) break;
 				unit.unit.uEnemy.dist++;
 			}
 		}
@@ -1857,16 +1858,16 @@ void GetRandDir(PossibleUnit& unit)
 }
 void UpdatePosition(PossibleUnit& unit)
 {
-/*	message += " flag1 ";
+	//message += " flag1 ";
 	if(CheckHeroVisibility(unit) == false && unit.unit.uEnemy.dist <= 0)
 	{
-		message += " flag2 ";*/
+		//message += " flag2 ";
 		GetRandDir(unit);
-/*		message += " flag3 ";
+		//message += " flag3 ";
 	}
 	else
 	{
-		message += " flag4 ";*/
+		//message += " flag4 ";
 		switch(unit.unit.uEnemy.dir)
 		{
 			case 0:
@@ -1901,9 +1902,9 @@ void UpdatePosition(PossibleUnit& unit)
 				UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL - 1].type = UnitEmpty;
 			}
 		}
-/*		message += " flag5 ";
+		//message += " flag5 ";
 	}
-	message += " flag6 ";*/
+	//message += " flag6 ";
 }
 
 void UpdateAI()
@@ -1914,7 +1915,7 @@ void UpdateAI()
 		{
 			if(UnitsMap[i][j].type == UnitEnemy)
 			{
-				sprintf(tmp, "B:|%i|%i|", i, j);
+				sprintf(tmp, "{%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.dist);
 				message += tmp;
 				UpdatePosition(UnitsMap[i][j]);
 			}
