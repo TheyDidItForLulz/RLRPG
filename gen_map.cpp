@@ -95,7 +95,7 @@ void generate_rooms( void )
 			c1 = ( rand() % COLS ) * 2 + 1;
 			c2 = ( rand() % COLS ) * 2 + 1;
 		}
-		while( ABS( r1 - r2 ) < 3 || ABS( r1 - r2 ) > 4 || ABS( c1 - c2 ) < 7 || ABS( c1 - c2 ) > 8 );
+		while( ABS( r1 - r2 ) < 3 || ABS( r1 - r2 ) > 4 || ABS( c1 - c2 ) < 11 || ABS( c1 - c2 ) > 12 );
 		clear_room( r1, c1, r2, c2 );
 	}
 }
