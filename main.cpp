@@ -276,7 +276,7 @@ public:
 class Food: public Item
 {
 public:	
-	Food(int FoodType): isStackable( true )
+	Food(int FoodType)
 	{
 		switch(FoodType)
 		{
@@ -292,6 +292,7 @@ public:
 				break;
 		}
 		symUnder = 1;
+		isStackable = true;
 	};
 	
 	int FoodHeal;
@@ -305,7 +306,7 @@ public:
 class Armor: public Item
 {
 public:
-	Armor(int ArmorType): isStackable( false )
+	Armor(int ArmorType)
 	{
 		switch(ArmorType)
 		{
@@ -323,6 +324,7 @@ public:
 				break;
 		}
 		symUnder = 1;
+		isStackable = false;
 	}
 
 	int defence;
@@ -336,7 +338,7 @@ public:
 class Weapon: public Item
 {
 public:
-	Weapon(int WeaponType): isStackable( false )
+	Weapon(int WeaponType)
 	{
 		switch(WeaponType)
 		{
@@ -370,6 +372,7 @@ public:
 				range = 1;
 				Ranged = false;
 		}
+		isStackable = false;
 	};
 	
 	int damage;
@@ -385,7 +388,7 @@ public:
 class Ammo: public Item
 {
 public:
-	Ammo(int AmmoType): isStackable( true )
+	Ammo(int AmmoType)
 	{
 		switch(AmmoType)
 		{
@@ -397,6 +400,7 @@ public:
 				count = 1;
 				break;
 		}
+		isStackable = true;
 	};
 
 	int range;
@@ -960,15 +964,15 @@ public:
 
 			bool couldStack = false;
 
-			if( ItemsMap[posH][posL][num].GetItem().isStackable )
+			if( ItemsMap[posH][posL][helpfulArray[intch]].GetItem().isStackable )
 			{
 				for( int i = 0; i < MaxInvVol; ++i )
 				{
-					if( inventory[i].type != ItemEmpty && inventory[i].GetItem().symbol == ItemsMap[posH][posL][num].GetItem().symbol )
+					if( inventory[i].type != ItemEmpty && inventory[i].GetItem().symbol == ItemsMap[posH][posL][helpfulArray[intch]].GetItem().symbol )
 					{
 						couldStack = true;
-						inventory[i].GetItem().count += ItemsMap[posH][posL][num].GetItem().count;
-						ItemsMap[posH][posL][num].type = ItemEmpty;
+						inventory[i].GetItem().count += ItemsMap[posH][posL][helpfulArray[intch]].GetItem().count;
+						ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
 					}
 				}
 			}
