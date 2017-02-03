@@ -34,7 +34,7 @@
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
+//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff. And attribute if it is "Nothing".
 
 #include<stdio.h>													//
 #include<iostream>													//
@@ -990,8 +990,6 @@ public:
 	{
 		int ThrowLength = 0;
 
-		char sym = '-';
-
 		switch(direction)
 		{
 			case CONTROL_RIGHT:
@@ -1000,7 +998,7 @@ public:
 				{
 					if(map[posH][posL + i + 1] == 2) break;
 					move(posH, posL + i + 1);
-					addch(sym);
+					addch('-');
 					refresh();
 					ThrowLength++;
 					Delay(DELAY);
@@ -1025,7 +1023,7 @@ public:
 				{
 					if(map[posH][posL - i - 1] == 2) break;
 					move(posH, posL - i - 1);
-					addch(sym);
+					addch('-');
 					refresh();
 					ThrowLength++;
 					Delay(DELAY);
@@ -1050,7 +1048,7 @@ public:
 				{
 					if(map[posH - i - 1][posL] == 2) break;
 					move(posH - i - 1, posL);
-					addch(sym);
+					addch('|');
 					refresh();
 					ThrowLength++;
 					Delay(DELAY);
@@ -1075,7 +1073,7 @@ public:
 				{
 					if(map[posH + i + 1][posL] == 2) break;
 					move(posH + i + 1, posL);
-					addch(sym);
+					addch('|');
 					refresh();
 					ThrowLength++;
 					Delay(DELAY);
@@ -1502,7 +1500,7 @@ public:
 			case '\\':
 			{
 				char hv = getch();
-
+				
 				if(hv == 'h')
 				{
 					if(getch() == 'e')
@@ -1543,6 +1541,11 @@ public:
 							CanHeroMoveThroughWalls = false;
 						}
 					}
+					else
+					{
+						ItemsMap[1][1][0] = differentFood[0];
+					}
+
 				}
 				else if(hv == 'k')
 				{
@@ -1713,7 +1716,7 @@ void Hero::Shoot()
 					message += tmp;
 				}
 				move(posH + i, posL);
-				addch('-');
+				addch('|');
 				refresh();
 				Delay(DELAY / 3);
 			}
@@ -1735,7 +1738,7 @@ void Hero::Shoot()
 					message += tmp;
 				}
 				move(posH - i, posL);
-				addch('-');
+				addch('|');
 				refresh();
 				Delay(DELAY / 3);
 			}
@@ -2168,10 +2171,7 @@ void Draw(){
 	{
 		for(int j = 0; j < FIELD_COLS; j++)
 		{
-/*			if(seenUpdated[i][j])
-			{*/
-				mapSaved[i][j] = map[i][j];
-/*			}*/
+			mapSaved[i][j] = map[i][j];
 		}
 	}
 	
