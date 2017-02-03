@@ -1,7 +1,12 @@
 CC=g++
+DEFINES=-DDEBUG
 LIBS=-lncurses
-BINARY=a.out
-BINARY_DEBUG=debug.out
+OBJ_DIR=obj/
+OBJS=$(OBJ_DIR)main.o $(OBJ_DIR)gen_map.o
+OBJS_DEBUG=$(OBJ_DIR)_main.o $(OBJ_DIR)_gen_map.o
+BIN_DIR=bin/
+BINARY=$(BIN_DIR)a.out
+BINARY_DEBUG=$(BIN_DIR)debug.out
 
 all: $(BINARY)
 
@@ -11,10 +16,21 @@ clean:
 	if [[ -e $(BINARY) ]]; then rm $(BINARY); fi
 	if [[ -e $(BINARY_DEBUG) ]]; then rm $(BINARY_DEBUG); fi
 
-$(BINARY): main.cpp
-	$(CC) main.cpp -o $(BINARY) $(LIBS)
+$(BINARY): $(OBJS)
+	$(CC) $(OBJS) -o $(BINARY) $(LIBS)
 
-$(BINARY_DEBUG): main.cpp
-	$(CC) -g main.cpp -DDEBUG -o $(BINARY_DEBUG) $(LIBS)
+$(OBJ_DIR)main.o: main.cpp
+	$(CC) -c $< -o $@
 
+$(OBJ_DIR)gen_map.o: gen_map.cpp
+	$(CC) -c $< -o $@
+
+$(BINARY_DEBUG): $(OBJS_DEBUG)
+	$(CC) -g $(OBJS_DEBUG) -o $(BINARY_DEBUG) $(LIBS)
+
+$(OBJ_DIR)_main.o: main.cpp
+	$(CC) $(DEFINES) -c -g $< -o $@
+
+$(OBJ_DIR)_gen_map.o: gen_map.cpp
+	$(CC) $(DEFINES) -c -g $< -o $@
 
