@@ -5,7 +5,7 @@ OBJ_DIR=obj/
 OBJS=$(OBJ_DIR)main.o $(OBJ_DIR)gen_map.o
 OBJS_DEBUG=$(OBJ_DIR)_main.o $(OBJ_DIR)_gen_map.o
 BIN_DIR=bin/
-BINARY=$(BIN_DIR)a.out
+BINARY=$(BIN_DIR)game.out
 BINARY_DEBUG=$(BIN_DIR)debug.out
 
 HV=$(shell ls -l obj/*)
