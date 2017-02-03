@@ -96,7 +96,7 @@ using namespace std;													//
 int map[ FIELD_ROWS ][ FIELD_COLS ];											//
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
 int active = 0;														//
-int turns = -1;
+int turns = 1; /*-1*/
 															//
 															//
 void init_field( void )													//
@@ -548,8 +548,15 @@ public:
 	bool isBurdened;
 	bool CanHeroMoveThroughWalls;
 	
-	void findVisibleArray()
+	void FindVisibleArray()
 	{
+		for(int i = 0; i < FIELD_ROWS; i++)
+		{
+			for(int j = 0; j < FIELD_COLS; j++)
+			{
+				seenUpdated[i][j] = 0;
+			}
+		}
 
 		int dirH = posH, dirL = posL;
 
@@ -1873,7 +1880,7 @@ void Hero::mHLogic(int& a1, int& a2)
 	{
 		message += "The wall is the way. ";
 	}
-	findVisibleArray();
+	FindVisibleArray();
 }
 
 bool CheckHeroVisibility(PossibleUnit& unit)
@@ -2149,6 +2156,8 @@ void SpawnUnits()
 	}
 }
 
+#ifdef DEBUG
+
 void Draw(){
 	
 	move(0, 0);
@@ -2159,7 +2168,10 @@ void Draw(){
 	{
 		for(int j = 0; j < FIELD_COLS; j++)
 		{
-			if(seenUpdated[i][j])mapSaved[i][j] = map[i][j];
+/*			if(seenUpdated[i][j])
+			{*/
+				mapSaved[i][j] = map[i][j];
+/*			}*/
 		}
 	}
 	
@@ -2172,7 +2184,7 @@ void Draw(){
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
 				
-				if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					switch(mapSaved[i][j])
 					{
@@ -2198,7 +2210,7 @@ void Draw(){
 							break;
 					}
 				}
-				else if(hero.FindElementsNumberUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					int MeetedElement = hero.FindNotEmptyElementUnderThisCell(i, j);
 					switch(ItemsMap[i][j][MeetedElement].GetItem().symbol){
@@ -2232,18 +2244,17 @@ void Draw(){
 							break;
 					}
 				}
-				else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
 				}
-	
-				if(UnitsMap[i][j].type == UnitHero)
+/* Here */			if(UnitsMap[i][j].type == UnitHero)
 				{
 					addch('@' | COLOR_PAIR(GREEN_BLACK));
 				}
-				else if(UnitsMap[i][j].type == UnitEnemy)
+/* Here */			else if(UnitsMap[i][j].type == UnitEnemy)
 				{
-					switch(UnitsMap[i][j].GetUnit().symbol)
+/* Here */				switch(UnitsMap[i][j].GetUnit().symbol)
 					{
 						case 201:
 							addch('@' | COLOR_PAIR(YELLOW_BLACK));
@@ -2266,6 +2277,130 @@ void Draw(){
 	}
 
 }
+
+#else
+
+void Draw(){
+	
+	move(0, 0);
+
+	static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
+
+	for(int i = 0; i < FIELD_ROWS; i++)
+	{
+		for(int j = 0; j < FIELD_COLS; j++)
+		{
+			if(seenUpdated[i][j])
+			{
+				mapSaved[i][j] = map[i][j];
+			}
+		}
+	}
+	
+	for(int i = 0; i < Height; i++){
+		
+		for(int j = 0; j < Length; j++){
+			
+//			printw("% i ", map[i][j]);										// !DEBUG!
+			if(mapSaved[i][j] != 0)
+			{
+				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
+				
+/* Here */			if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
+				{
+					switch(mapSaved[i][j])
+					{
+						case 1:
+							if(near)
+							{
+								addch('_');
+							}
+							else
+							{
+								addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							}
+							break;
+						case 2:
+							if(near)
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
+							}
+							else
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK));
+							}
+							break;
+					}
+				}
+/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) == 1 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
+				{
+					int MeetedElement = hero.FindNotEmptyElementUnderThisCell(i, j);
+					switch(ItemsMap[i][j][MeetedElement].GetItem().symbol){
+
+						case 100:
+							addch('%');
+							break;
+						case 101:
+							addch('%' | COLOR_PAIR(RED_BLACK));
+							break;
+						case 300:
+							addch('&' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 301:
+							addch('&' | COLOR_PAIR(YELLOW_BLACK));
+							break;
+						case 400:
+							addch('/' | COLOR_PAIR(RED_BLACK) | LIGHT);
+							break;
+						case 401:
+							addch('/' | COLOR_PAIR(YELLOW_BLACK));
+							break;
+						case 402:
+							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 403:
+							addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;
+						case 450:
+							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
+							break;
+					}
+				}
+/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
+				{
+					addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
+				}
+/* Here */			if(UnitsMap[i][j].type == UnitHero && seenUpdated[i][j])
+				{
+					addch('@' | COLOR_PAIR(GREEN_BLACK));
+				}
+/* Here */			else if(UnitsMap[i][j].type == UnitEnemy && seenUpdated[i][j])
+				{
+/* Here */				switch(UnitsMap[i][j].GetUnit().symbol)
+					{
+						case 201:
+							addch('@' | COLOR_PAIR(YELLOW_BLACK));
+							break;
+						case 202:
+							addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
+							break;
+					}
+				}
+			}
+			else
+			{
+				addch(' ');	
+			}	
+					
+		}
+		
+		printw("\n");
+		
+	}
+
+}
+
+#endif
 
 void MainMenu()
 {
@@ -2353,7 +2488,7 @@ int main()
 
 	SpawnUnits();
 		
-	hero.findVisibleArray();
+	hero.FindVisibleArray();
 
 	MainMenu();
 	
