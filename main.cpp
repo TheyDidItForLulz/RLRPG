@@ -10,6 +10,7 @@
 											'/'(Copper shortsword) == 400
 											'/'(Bronze spear) == 401
 											'/'(Musket) == 402
+											'/'(Stick) == 403
 											','(Steel bullets) == 450
 											'^'(Pile) == 3
 */
@@ -33,7 +34,7 @@
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too.
+//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
 
 #include<stdio.h>													//
 #include<iostream>													//
@@ -50,12 +51,16 @@
 #define CONTROL_DOWN 'j'
 #define CONTROL_LEFT 'h'
 #define CONTROL_RIGHT 'l'
+#define CONTROL_UPLEFT 'y'
+#define CONTROL_UPRIGHT 'u'
+#define CONTROL_DOWNLEFT 'b'
+#define CONTROL_DOWNRIGHT 'n'
 #define DEFAULT_HERO_HEALTH 10												//
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
-#define TypesOfWeapon 3													//
+#define TypesOfWeapon 4													//
 #define TypesOfAmmo 1
-#define TypesOfEnemies 1
+#define TypesOfEnemies 2
 #define BLACK_BLACK 1
 #define	RED_BLACK 2
 #define GREEN_BLACK 3
@@ -195,7 +200,7 @@ class Item
 
 public:
 		
-	Item(): mdf(100), showMdf(false), attribute(100){};
+	Item(): mdf(100), showMdf(false), attribute(100), count(1){};
 
 	int posH;
 	int posL;
@@ -205,7 +210,9 @@ public:
 	int weight;
 	int mdf;
 	int attribute;
+	int count;
 	bool showMdf;
+	bool isStackable;
 
 	const char* GetMdf()
 	{
@@ -249,6 +256,8 @@ public:
 				return "Bronze spear";
 			case 402:
 				return "Musket";
+			case 403:
+				return "Stick";
 			case 450:
 				return "Steel bullets";
 		}
@@ -267,7 +276,7 @@ public:
 class Food: public Item
 {
 public:	
-	Food(int FoodType)
+	Food(int FoodType): isStackable( true )
 	{
 		switch(FoodType)
 		{
@@ -296,7 +305,7 @@ public:
 class Armor: public Item
 {
 public:
-	Armor(int ArmorType)
+	Armor(int ArmorType): isStackable( false )
 	{
 		switch(ArmorType)
 		{
@@ -327,7 +336,7 @@ public:
 class Weapon: public Item
 {
 public:
-	Weapon(int WeaponType)
+	Weapon(int WeaponType): isStackable( false )
 	{
 		switch(WeaponType)
 		{
@@ -353,8 +362,14 @@ public:
 				range = 2;
 				Ranged = true;
 				break;
+			case 3:
+				symbol = 403;
+				damage = 1;
+				weight = 1;
+				cooldown = 1;
+				range = 1;
+				Ranged = false;
 		}
-		symUnder = 1;
 	};
 	
 	int damage;
@@ -370,7 +385,7 @@ public:
 class Ammo: public Item
 {
 public:
-	Ammo(int AmmoType)
+	Ammo(int AmmoType): isStackable( true )
 	{
 		switch(AmmoType)
 		{
@@ -521,6 +536,8 @@ public:
 				return "Hero";
 			case 201:
 				return "Barbarian";
+			case 202:
+				return "Zombie";
 		}
 	}
 	~Unit(){};
@@ -541,15 +558,25 @@ public:
 		switch(eType)
 		{
 			case 0:
-				health = 12;
+				health = 10;
 				unitInventory[0] = differentFood[0];
 				unitInventory[1] = differentWeapon[0];
 				unitWeapon = &unitInventory[1];
-				inventoryVol = 1;
+				inventoryVol = 2;
 				symbol = 201;
 				vision = 5;
-				dist = 0;
+				break;
+			case 1:
+				health = 15;
+				unitInventory[0] = differentWeapon[3];
+				unitWeapon = &unitInventory[0];
+				inventoryVol = 1;
+				symbol = 202;
+				vision = 3;
+				break;
+// !COMMENT!			// Fix Enemies collision AND do not print item attribute, if it is "Nothing". Also armor need to be used, not like now.
 		}
+		dist = 0;
 	}
 //	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir), movedOnTurn( en.movedOnTurn )
 //	{
@@ -828,17 +855,35 @@ public:
 			sprintf(tmp, "You picked up %s. ", ItemsMap[posH][posL][num].GetItem().GetName());
 			message += tmp;
 
-			int eic = FindEmptyInventoryCell();
-			if(eic != 101010)
+			bool couldStack = false;
+
+			if( ItemsMap[posH][posL][num].GetItem().isStackable )
 			{
-				inventory[eic] = ItemsMap[posH][posL][num];
-				inventory[eic].GetItem().inventorySymbol = eic + 'a';
-				ItemsMap[posH][posL][num].type = ItemEmpty;
-				inventoryVol++;
+				for( int i = 0; i < MaxInvVol; ++i )
+				{
+					if( inventory[i].type != ItemEmpty && inventory[i].GetItem().symbol == ItemsMap[posH][posL][num].GetItem().symbol )
+					{
+						couldStack = true;
+						inventory[i].GetItem().count += ItemsMap[posH][posL][num].GetItem().count;
+						ItemsMap[posH][posL][num].type = ItemEmpty;
+					}
+				}
 			}
-			else
+
+			if( !couldStack )
 			{
-				message += "Your inventory is full, motherfuck'a! ";
+				int eic = FindEmptyInventoryCell();
+				if(eic != 101010)
+				{
+					inventory[eic] = ItemsMap[posH][posL][num];
+					inventory[eic].GetItem().inventorySymbol = eic + 'a';
+					ItemsMap[posH][posL][num].type = ItemEmpty;
+					inventoryVol++;
+				}
+				else
+				{
+					message += "Your inventory is full, motherfuck'a! ";
+				}
 			}
 
 			if(GetInventoryItemsWeight() > MaxInvItemsWeight && !isBurdened)
@@ -907,23 +952,41 @@ public:
 				}
 				else
 				{
-					inventory[AMMO_SLOT] = ItemsMap[posH][posL][helpfulArray[intch]];
+				inventory[AMMO_SLOT] = ItemsMap[posH][posL][helpfulArray[intch]];
 					ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
 				}
 				return;
 			}
 
-			int eic = FindEmptyInventoryCell();
-			if(eic != 101010)
+			bool couldStack = false;
+
+			if( ItemsMap[posH][posL][num].GetItem().isStackable )
 			{
-				inventory[eic] = ItemsMap[posH][posL][helpfulArray[intch]];
-				inventory[eic].GetItem().inventorySymbol = eic + 'a';
-				ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
-				inventoryVol++;
+				for( int i = 0; i < MaxInvVol; ++i )
+				{
+					if( inventory[i].type != ItemEmpty && inventory[i].GetItem().symbol == ItemsMap[posH][posL][num].GetItem().symbol )
+					{
+						couldStack = true;
+						inventory[i].GetItem().count += ItemsMap[posH][posL][num].GetItem().count;
+						ItemsMap[posH][posL][num].type = ItemEmpty;
+					}
+				}
 			}
-			else
+
+			if( !couldStack )
 			{
-				message += "Your inventory is full, motherfuck'a! ";
+				int eic = FindEmptyInventoryCell();
+				if(eic != 101010)
+				{
+					inventory[eic] = ItemsMap[posH][posL][helpfulArray[intch]];
+					inventory[eic].GetItem().inventorySymbol = eic + 'a';
+					ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
+					inventoryVol++;
+				}
+				else
+				{
+					message += "Your inventory is full, motherfuck'a! ";
+				}
 			}
 		}
 	
@@ -1378,28 +1441,28 @@ public:
 				mHLogic(a1, a2);
 				break;
 			}
-			case 'y':
+			case CONTROL_UPLEFT:
 			{
 				a1 --;
 				a2 --;
 				mHLogic(a1, a2);
 				break;	
 			}
-			case 'u':
+			case CONTROL_UPRIGHT:
 			{
 				a2 ++;
 				a1 --;
 				mHLogic(a1, a2);
 				break;
 			}
-			case 'b':
+			case CONTROL_DOWNLEFT:
 			{
 				a1 ++;
 				a2 --;
 				mHLogic(a1, a2);
 				break;
 			}
-			case 'n':
+			case CONTROL_DOWNRIGHT:
 			{
 				a1 ++;
 				a2 ++;
@@ -1686,9 +1749,9 @@ void Hero::Shoot()
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
 					UnitsMap[posH + i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
-					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
+					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
-						UnitsMap[posH][posL - i].type = UnitEmpty;
+						UnitsMap[posH + i][posL].type = UnitEmpty;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
 					message += tmp;
@@ -1708,9 +1771,9 @@ void Hero::Shoot()
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
 					UnitsMap[posH - i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;		
-					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
+					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
-						UnitsMap[posH][posL - i].type = UnitEmpty;
+						UnitsMap[posH - i][posL].type = UnitEmpty;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL].GetUnit().health);
 					message += tmp;
@@ -1730,15 +1793,103 @@ void Hero::Shoot()
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
 					UnitsMap[posH][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
-					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
+					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
-						UnitsMap[posH][posL - i].type = UnitEmpty;
+						UnitsMap[posH][posL + i].type = UnitEmpty;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
+					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL + i].GetUnit().health);
 					message += tmp;
 				}
 				move(posH, posL + i);
 				addch('-');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case CONTROL_UPLEFT:
+		{
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			{
+				if(map[posH - i][posL - i] == 2) break;
+				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
+				{
+					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
+					{
+						UnitsMap[posH - i][posL - i].type = UnitEmpty;
+					}
+					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL - i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH - i, posL - i);
+				addch('\\');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case CONTROL_UPRIGHT:
+		{
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			{
+				if(map[posH - i][posL + i] == 2) break;
+				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
+				{
+					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
+					{
+						UnitsMap[posH - i][posL + i].type = UnitEmpty;
+					}
+					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL + i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH - i, posL + i);
+				addch('/');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case CONTROL_DOWNLEFT:
+		{
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			{
+				if(map[posH + i][posL - i] == 2) break;
+				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
+				{
+					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
+					{
+						UnitsMap[posH + i][posL - i].type = UnitEmpty;
+					}
+					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL - i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH + i, posL - i);
+				addch('/');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case CONTROL_DOWNRIGHT:
+		{
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			{
+				if(map[posH + i][posL + i] == 2) break;
+				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
+				{
+					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
+					{
+						UnitsMap[posH + i][posL + i].type = UnitEmpty;
+					}
+					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL + i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH + i, posL + i);
+				addch('\\');
 				refresh();
 				Delay(DELAY / 3);
 			}
@@ -1876,9 +2027,9 @@ void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 {
 	if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitHero)
 	{
-		hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+		hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 	}
-	else
+	else if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitEmpty)
 	{
 		unit.unit.uEnemy.dist--;
 		unit.GetUnit().posH += a1;
@@ -1929,8 +2080,10 @@ void UpdateAI()
 		{
 			if(UnitsMap[i][j].type == UnitEnemy && UnitsMap[i][j].unit.uEnemy.movedOnTurn != turns)
 			{
-				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.dist, UnitsMap[i][j].GetUnit().health);
+#				ifdef DEBUG
+				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].GetUnit().health);
 				message += tmp;
+#				endif
 				UnitsMap[i][j].unit.uEnemy.movedOnTurn = turns;
 				UpdatePosition(UnitsMap[i][j]);
 			}
@@ -2118,6 +2271,9 @@ void Draw(){
 						case 402:
 							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
+						case 403:
+							addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 							break;
@@ -2138,6 +2294,10 @@ void Draw(){
 					{
 						case 201:
 							addch('@' | COLOR_PAIR(YELLOW_BLACK));
+							break;
+						case 202:
+							addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
+							break;
 					}
 				}
 			}
@@ -2220,15 +2380,19 @@ int main()
 	Weapon CopperShortsword(0);
 	Weapon BronzeSpear(1);
 	Weapon Musket(2);
+	Weapon Stick(3);
 	differentWeapon[0] = CopperShortsword;
 	differentWeapon[1] = BronzeSpear;
 	differentWeapon[2] = Musket;
+	differentWeapon[3] = Stick;
 	
 	Ammo SteelBullets(0);
 	differentAmmo[0] = SteelBullets;
 	
 	Enemy Barbarian(0);
+	Enemy Zombie(1);
 	differentEnemies[0] = Barbarian;
+	differentEnemies[1] = Zombie;
 
 	hero.heroWeapon = &inventory[EMPTY_SLOT];
 

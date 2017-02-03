@@ -15,6 +15,6 @@ $(BINARY): main.cpp
 	$(CC) main.cpp -o $(BINARY) $(LIBS)
 
 $(BINARY_DEBUG): main.cpp
-	$(CC) -g main.cpp -o $(BINARY_DEBUG) $(LIBS)
+	$(CC) -g main.cpp -DDEBUG -o $(BINARY_DEBUG) $(LIBS)
 
 
