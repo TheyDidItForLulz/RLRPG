@@ -55,7 +55,6 @@
 #define CONTROL_UPRIGHT 'u'
 #define CONTROL_DOWNLEFT 'b'
 #define CONTROL_DOWNRIGHT 'n'
-#define DEFAULT_HERO_HEALTH 10												//
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
 #define TypesOfWeapon 4													//
@@ -86,7 +85,8 @@
 int MaxInvItemsWeight = 25;												//
 // !COMMENT! // Level-up and items stacking
 int MODE;														//
-bool StopUpdating = false;												//
+bool StopUpdating = false;		
+int DEFAULT_HERO_HEALTH = 10;												//
 															//
 using namespace std;													//
 
@@ -756,9 +756,13 @@ public:
 				for(int i = 0; i < len; i++)
 				{
 					move(num, Length + 10);
-					if(items[i].GetItem().showMdf == true)
+					if(items[i].GetItem().showMdf == true && items[i].GetItem().count == 1)
 					{
 						printw("[%c] %s (%s) {%s}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().GetMdf());
+					}
+					else if(items[i].GetItem().count > 1)
+					{
+						printw("[%c] %s (%s) {%i}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().count);
 					}
 					else printw("[%c] %s (%s). ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute());
 					num ++;
@@ -1216,23 +1220,27 @@ public:
 				
 				int intch = choise - 'a';
 
-				if(inventory[intch].type == ItemFood){
-					
+				if(inventory[intch].type == ItemFood)
+				{
 					int prob = rand() % Luck;
-						
 					if(prob == 0)
 					{
 						hunger += inventory[intch].item.invFood.FoodHeal / 3;
 						health --;
-						inventory[intch].type = ItemEmpty;
 						message += "Fuck! This food was rotten! ";
 					}
 					else
 					{
 						hunger += inventory[intch].item.invFood.FoodHeal;
+					}
+					if(inventory[intch].GetItem().count == 1)
+					{
 						inventory[intch].type = ItemEmpty;
 					}
-				
+					else
+					{
+						inventory[intch].GetItem().count--;
+					}
 				}
 				
 				break;
@@ -1473,13 +1481,6 @@ public:
 				mHLogic(a1, a2);
 				break;
 			}
-			case 'c':
-			{
-				
-				hunger = 3000;
-				break;
-				
-			}
 			case ',':
 			{
 				
@@ -1565,6 +1566,21 @@ public:
 			case '\\':
 			{
 				char hv = getch();
+
+				if(hv == 'h')
+				{
+					if(getch() == 'e')
+					{
+						if(getch() == 'a')
+						{
+							if(getch() == 'l')
+							{
+								hunger = 3000;
+								health = DEFAULT_HERO_HEALTH;
+							}
+						}
+					}
+				}
 			
 				if(hv == 'w')
 				{
@@ -1990,7 +2006,7 @@ void GetRandDir(PossibleUnit& unit)
 			{
 				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 				{
-					if(map[posH][posL - i] == 2) break;
+					if(map[posH][posL - i] == 2 || UnitsMap[posH][posL - i].type != UnitEmpty) break;
 					unit.unit.uEnemy.dist++;
 				}
 				break;
@@ -1999,7 +2015,7 @@ void GetRandDir(PossibleUnit& unit)
 			{
 				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 				{
-					if(map[posH - i][posL] == 2) break;
+					if(map[posH - i][posL] == 2 || UnitsMap[posH - i][posL].type != UnitEmpty) break;
 					unit.unit.uEnemy.dist++;
 				}
 				break;
@@ -2008,7 +2024,7 @@ void GetRandDir(PossibleUnit& unit)
 			{
 				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 				{
-					if(map[posH + i][posL] == 2) break;
+					if(map[posH + i][posL] == 2 || UnitsMap[posH + i][posL].type != UnitEmpty) break;
 					unit.unit.uEnemy.dist++;
 				}
 				break;
@@ -2017,7 +2033,7 @@ void GetRandDir(PossibleUnit& unit)
 			{
 				for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 				{
-					if(map[posH][posL + i] == 2) break;
+					if(map[posH][posL + i] == 2 || UnitsMap[posH][posL + i].type != UnitEmpty) break;
 					unit.unit.uEnemy.dist++;
 				}
 				break;
@@ -2040,6 +2056,10 @@ void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 		unit.GetUnit().posL += a2;
 		UnitsMap[unit.GetUnit().posH][unit.GetUnit().posL] = unit;
 		UnitsMap[unit.GetUnit().posH - a1][unit.GetUnit().posL - a2].type = UnitEmpty;
+	}
+	else if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitEnemy)
+	{
+		GetRandDir(unit);
 	}
 }
 void UpdatePosition(PossibleUnit& unit)
