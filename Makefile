@@ -8,16 +8,16 @@ BIN_DIR=bin/
 BINARY=$(BIN_DIR)game.out
 BINARY_DEBUG=$(BIN_DIR)debug.out
 
-HV=$(shell ls -l obj/*)
+HV=$(shell ls obj/*)
 
 all: $(BINARY)
 
 debug: $(BINARY_DEBUG)
 
 clean: 
-	if [[ -e $(BINARY) ]]; then rm $(BINARY); fi
-	if [[ -e $(BINARY_DEBUG) ]]; then rm $(BINARY_DEBUG); fi
-	if [[ '$(HV)' != '' ]]; then rm obj/*; fi
+	if [ -e $(BINARY) ]; then rm $(BINARY); fi
+	if [ -e $(BINARY_DEBUG) ]; then rm $(BINARY_DEBUG); fi
+	if [ '$(HV)' != '' ]; then rm obj/*; fi
 
 $(BINARY): $(OBJS)
 	$(CC) $(OBJS) -o $(BINARY) $(LIBS)

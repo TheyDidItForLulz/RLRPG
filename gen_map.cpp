@@ -1,5 +1,8 @@
 #include<stdlib.h>
 #include"include/level.hpp"
+#include"include/utils.hpp"
+
+#define ROOMS_COUNT 3
 
 extern int map[ FIELD_ROWS ][ FIELD_COLS ];
 int used[ ROWS ][ COLS ];
@@ -64,20 +67,43 @@ void maze_next( Pair* start, Pair* prev, Pair* curr )
 	}														
 	while( 1 );													
 }															
-															
+
+void clear_room( int r1, int c1, int r2, int c2 )
+{
+	int minr = MIN( r1, r2 );
+	int maxr = MAX( r1, r2 );
+	int minc = MIN( c1, c2 );
+	int maxc = MAX( c1, c2 );
+	for( int i = minr; i <= maxr; ++i )
+	{
+		for( int j = minc; j <= maxc; ++j )
+		{
+			map[i][j] = 1;
+		}
+	}
+}
+
+void generate_rooms( void )
+{
+	for( int i = 0; i < ROOMS_COUNT; ++i )
+	{
+		int r1, r2, c1, c2;
+		do
+		{
+			r1 = ( rand() % ROWS ) * 2 + 1;
+			r2 = ( rand() % ROWS ) * 2 + 1;
+			c1 = ( rand() % COLS ) * 2 + 1;
+			c2 = ( rand() % COLS ) * 2 + 1;
+		}
+		while( ABS( r1 - r2 ) < 3 || ABS( r1 - r2 ) > 4 || ABS( c1 - c2 ) < 7 || ABS( c1 - c2 ) > 8 );
+		clear_room( r1, c1, r2, c2 );
+	}
+}
+
 void generate_maze( void )												
 {															
 	Pair point = { 0, 0 };												
 	maze_next( &point, &point, &point );										
-	for( int i = 1; i < FIELD_ROWS - 1; ++i )
-	{
-		for( int j = 1; j < FIELD_COLS - 1; ++j )
-		{
-			if( ( i + j ) % 2 && rand() % 100 < 5 )
-			{
-				map[i][j] = 1;
-			}
-		}
-	}
+	generate_rooms();
 }															
 
