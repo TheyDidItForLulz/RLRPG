@@ -694,13 +694,34 @@ public:
 					move(num, Length + 10);
 					if(items[i].GetItem().showMdf == true && items[i].GetItem().count == 1)
 					{
-						printw("[%c] %s (%s) {%s}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().GetMdf());
+						if( items[i].GetItem().attribute == 100 )
+						{
+							printw("[%c] %s {%s}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetMdf());
+						}
+						else
+						{
+							printw("[%c] %s (%s) {%s}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().GetMdf());
+						}
 					}
 					else if(items[i].GetItem().count > 1)
 					{
-						printw("[%c] %s (%s) {%i}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().count);
+						if( items[i].GetItem().attribute == 100 )
+						{
+							printw("[%c] %s {%i}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().count);
+						}
+						else
+						{
+							printw("[%c] %s (%s) {%i}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().count);
+						}
 					}
-					else printw("[%c] %s (%s). ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute());
+					else if( items[i].GetItem().attribute == 100 )
+					{
+						printw("[%c] %s. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName());
+					}
+					else
+					{
+						printw("[%c] %s (%s). ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute());
+					}
 					num ++;
 				}
 				break;
@@ -771,6 +792,9 @@ public:
 		{
 			int num = FindNotEmptyElementUnderThisCell(posH, posL);
 
+			sprintf(tmp, "You picked up %s. ", ItemsMap[posH][posL][num].GetItem().GetName());
+			message += tmp;
+
 			if(ItemsMap[posH][posL][num].type == ItemAmmo)
 			{
 				if(inventory[AMMO_SLOT].type != ItemEmpty)
@@ -795,9 +819,6 @@ public:
 				}
 				return;
 			}
-
-			sprintf(tmp, "You picked up %s. ", ItemsMap[posH][posL][num].GetItem().GetName());
-			message += tmp;
 
 			bool couldStack = false;
 
@@ -2286,13 +2307,36 @@ void Draw(){
 
 	static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
 
+	if(MODE == 2)
+	{
+		for(int i = 0; i < FIELD_ROWS; i++)
+		{
+			for(int j = 0; j < FIELD_COLS; j++)
+			{
+				mapSaved[i][j] = 0;
+			}
+		}
+	}
+
 	for(int i = 0; i < FIELD_ROWS; i++)
 	{
 		for(int j = 0; j < FIELD_COLS; j++)
 		{
 			if(seenUpdated[i][j])
 			{
-				mapSaved[i][j] = map[i][j];
+				int itemsOnCell = hero.FindElementsNumberUnderThisCell(i, j);
+				if( itemsOnCell == 0 )
+				{
+					mapSaved[i][j] = map[i][j];
+				}
+				else if( itemsOnCell == 1 )
+				{
+					mapSaved[i][j] = ItemsMap[i][j][hero.FindNotEmptyElementUnderThisCell( i, j )].GetItem().symbol;
+				}
+				else
+				{
+					mapSaved[i][j] = 100500; // Magic constant that means 'pile'
+				}
 			}
 		}
 	}
@@ -2305,10 +2349,86 @@ void Draw(){
 			if(mapSaved[i][j] != 0)
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
-				
-/* Here */			if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
+				if( seenUpdated[i][j] )
 				{
-					switch(mapSaved[i][j])
+					if( UnitsMap[i][j].type == UnitEmpty )
+					{
+						switch( mapSaved[i][j] )
+						{
+							case 1:
+								if(seenUpdated[i][j])
+								{
+									addch('_');
+								}
+								else
+								{
+									addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								}
+								break;
+							case 2:
+								if(seenUpdated[i][j])
+								{
+									addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
+								}
+								else
+								{
+									addch('#' | COLOR_PAIR(WHITE_BLACK));
+								}
+								break;
+							case 100:
+								addch('%');
+								break;
+							case 101:
+								addch('%' | COLOR_PAIR(RED_BLACK));
+								break;
+							case 300:
+								addch('&' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
+							case 301:
+								addch('&' | COLOR_PAIR(YELLOW_BLACK));
+								break;
+							case 400:
+								addch('/' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								break;
+							case 401:
+								addch('/' | COLOR_PAIR(YELLOW_BLACK));
+								break;
+							case 402:
+								addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
+							case 403:
+								addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+								break;
+							case 450:
+								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
+								break;
+							case 100500:
+								addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
+						}
+					}
+					else
+					{
+						if(UnitsMap[i][j].type == UnitHero)
+						{
+							addch('@' | COLOR_PAIR(GREEN_BLACK));
+						}
+						else if(UnitsMap[i][j].type == UnitEnemy && seenUpdated[i][j])
+						{
+							switch(UnitsMap[i][j].GetUnit().symbol)
+							{
+								case 201:
+									addch('@' | COLOR_PAIR(YELLOW_BLACK));
+									break;
+								case 202:
+									addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
+									break;
+							}
+						}
+					}
+				}
+				else
+				{
+					switch( mapSaved[i][j] )
 					{
 						case 1:
 							if(near)
@@ -2330,13 +2450,6 @@ void Draw(){
 								addch('#' | COLOR_PAIR(WHITE_BLACK));
 							}
 							break;
-					}
-				}
-/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) == 1 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
-				{
-					int MeetedElement = hero.FindNotEmptyElementUnderThisCell(i, j);
-					switch(ItemsMap[i][j][MeetedElement].GetItem().symbol){
-
 						case 100:
 							addch('%');
 							break;
@@ -2364,26 +2477,8 @@ void Draw(){
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 							break;
-					}
-				}
-/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && (!seenUpdated[i][j] || (seenUpdated[i][j] && UnitsMap[i][j].type == UnitEmpty)))
-				{
-					addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
-				}
-/* Here */			if(UnitsMap[i][j].type == UnitHero && seenUpdated[i][j])
-				{
-					addch('@' | COLOR_PAIR(GREEN_BLACK));
-				}
-/* Here */			else if(UnitsMap[i][j].type == UnitEnemy && seenUpdated[i][j])
-				{
-/* Here */				switch(UnitsMap[i][j].GetUnit().symbol)
-					{
-						case 201:
-							addch('@' | COLOR_PAIR(YELLOW_BLACK));
-							break;
-						case 202:
-							addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
-							break;
+						case 100500:
+							addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
 					}
 				}
 			}
