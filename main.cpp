@@ -2,6 +2,7 @@
 /*
 											'.'(Floor) == 1
 											'#'(Wall) == 2
+											'^'(Pile) == 3
 											'%'(Egg) == 100
 											'%'(Apple) == 101
 											'@'(Hero) == 200	
@@ -12,7 +13,8 @@
 											'/'(Musket) == 402
 											'/'(Stick) == 403
 											','(Steel bullets) == 450
-											'^'(Pile) == 3
+											'~'(Map) == 500
+											'!'(Blue potion) == 600
 */
 //////////////////////////////////////////////////////////////////////////////////////// Modificators /////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -32,9 +34,17 @@
 										   	201 - Worn
 											301 - Wielded
 */
+///////////////////////////////////////////////////////////////////////////////////////// Effects /////////////////////////////////////////////////////////////////////////////////////////
+/*
+ 											1 - Map recording in Hard-mode								
+*/
+/////////////////////////////////////////////////////////////////////////////////////// Potion Effects ////////////////////////////////////////////////////////////////////////////////////
+/*
+ 											1 - Healing 3 hp
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff. And attribute if it is "Nothing".
+//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
 
 #include<stdio.h>													//
 #include<iostream>													//
@@ -55,10 +65,23 @@
 #define CONTROL_UPRIGHT 'u'
 #define CONTROL_DOWNLEFT 'b'
 #define CONTROL_DOWNRIGHT 'n'
+#define CONTROL_PICKUP ','
+#define CONTROL_EAT 'e'
+#define CONTROL_SHOWINVENTORY 'i'
+#define CONTROL_WEAR 'W'
+#define CONTROL_WIELD 'w'
+#define CONTROL_TAKEOFF 'T'
+#define CONTROL_UNEQUIP '-'
+#define CONTROL_DROP 'd'
+#define CONTROL_THROW 't'
+#define CONTROL_SHOOT 's'
+#define CONTROL_DRINK 'q'
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
 #define TypesOfWeapon 4													//
 #define TypesOfAmmo 1
+#define TypesOfScroll 1
+#define TypesOfPotion 1
 #define TypesOfEnemies 2
 #define BLACK_BLACK 1
 #define	RED_BLACK 2
@@ -79,11 +102,14 @@
 #define ARMORCOUNT 4													//
 #define WEAPONCOUNT 15													//
 #define AMMOCOUNT 15
+#define SCROLLCOUNT 30 /* JUST FOR !DEBUG!!*/
+#define POTIONCOUNT 30 /* IT TOO */
 #define ENEMIESCOUNT 7
 #define Depth 20													//
 #define VISION 7													//
 int MaxInvItemsWeight = 25;												//
 // !COMMENT! // Level-up and items stacking
+// !COMMENT! // Enemies must move at first turn
 int MODE;														//
 bool StopUpdating = false;		
 int DEFAULT_HERO_HEALTH = 10;												//
@@ -189,6 +215,10 @@ public:
 				return "Stick";
 			case 450:
 				return "Steel bullets";
+			case 500:
+				return "Map";
+			case 600:
+				return "Blue potion";
 		}
 	}
 	~Item(){};
@@ -336,8 +366,48 @@ public:
 	int damage;
 	int count;
 
-	Ammo(){};
-	~Ammo(){};
+	Ammo(){}
+	~Ammo(){}
+};
+
+class Scroll: public Item
+{
+public:
+	Scroll(int s)
+	{
+		switch(s)
+		{
+			case 0:
+				symbol = 500;
+				weight = 1;
+				effect = 1;
+				break;
+		}
+	}
+	int effect;
+
+	Scroll(){}
+	~Scroll(){}
+};
+
+class Potion: public Item
+{
+public:
+	Potion(int p)
+	{
+		switch(p)
+		{
+			case 0:
+				symbol = 600;
+				weight = 1;
+				effect = 1;
+				break;
+		}
+	}
+	int effect;
+
+	Potion(){}
+	~Potion(){}
 };
 
 enum ItemType
@@ -346,7 +416,9 @@ enum ItemType
 	ItemArmor,
 	ItemEmpty,
 	ItemWeapon,
-	ItemAmmo
+	ItemAmmo,
+	ItemScroll,
+	ItemPotion
 };
 
 union InventoryItem
@@ -356,6 +428,8 @@ union InventoryItem
 	Armor invArmor;
 	Weapon invWeapon;
 	Ammo invAmmo;
+	Scroll invScroll;
+	Potion invPotion;
 	InventoryItem(EmptyItem e)
 	{
 		invEmpty = e;
@@ -375,6 +449,14 @@ union InventoryItem
 	InventoryItem(Ammo am)
 	{
 		invAmmo = am;
+	}
+	InventoryItem(Scroll s)
+	{
+		invScroll = s;
+	}
+	InventoryItem(Potion p)
+	{
+		invPotion = p;
 	}
 	InventoryItem(InventoryItem& i){}
 	InventoryItem()
@@ -416,9 +498,19 @@ struct PossibleItem
 		type = ItemAmmo;
 		item.invAmmo = am;
 	}
+	void operator=(const Scroll& s)
+	{
+		type = ItemScroll;
+		item.invScroll = s;
+	}
+	void operator=(const Potion& p)
+	{
+		type = ItemPotion;
+		item.invPotion = p;
+	}
 	Item& GetItem()
 	{
-		switch( type )
+		switch(type)
 		{
 			case ItemFood:
 				return item.invFood;
@@ -430,6 +522,10 @@ struct PossibleItem
 				return item.invWeapon;
 			case ItemAmmo:
 				return item.invAmmo;
+			case ItemScroll:
+				return item.invScroll;
+			case ItemPotion:
+				return item.invPotion;
 		}
 	}
 };
@@ -446,6 +542,10 @@ Armor differentArmor[TypesOfArmor];
 Weapon differentWeapon[TypesOfWeapon];
 
 Ammo differentAmmo[TypesOfAmmo];
+
+Scroll differentScroll[TypesOfScroll];
+
+Potion differentPotion[TypesOfPotion];
 
 class Unit
 {
@@ -743,6 +843,15 @@ public:
 			}
 		}
 	}
+
+	bool IsMapInInventory()
+	{
+		for(int i = 0; i < MaxInvVol; i++)
+		{
+			if(inventory[i].type != ItemEmpty && inventory[i].GetItem().symbol == 500) return true;
+		}
+		return false;
+	}
 	
 	int FindElementsNumberUnderThisCell(int h, int l)
 	{
@@ -988,6 +1097,15 @@ public:
 		}
 		return false;
 	}
+
+	bool isPotionInInventory()
+	{
+		for(int i = 0; i < MaxInvVol; i++)
+		{
+			if(inventory[i].type == ItemPotion) return true;
+		}
+		return false;
+	}
 	
 	void ClearRightPane()
 	{
@@ -1006,115 +1124,8 @@ public:
 		clock_t clocksNow = clock();
 		while(double(clock() - clocksNow) / CLOCKS_PER_SEC < s);
 	}
-
-	void ThrowAnimated(PossibleItem& item, char direction)
-	{
-		int ThrowLength = 0;
-
-		switch(direction)
-		{
-			case CONTROL_RIGHT:
-			{
-				for(int i = 0; i < VISION; i++)
-				{
-					if(map[posH][posL + i + 1] == 2) break;
-					move(posH, posL + i + 1);
-					addch('-');
-					refresh();
-					ThrowLength++;
-					Delay(DELAY);
-				}
-				int empty = FindEmptyElementUnderThisCell(posH, posL + ThrowLength);
-				if(empty == 101010)
-				{
-					int empty2 = FindEmptyElementUnderThisCell(posH, posL + ThrowLength - 1);
-					ItemsMap[posH][posL + ThrowLength - 1][empty2] = item;
-					item.type = ItemEmpty;
-				}
-				else
-				{
-					ItemsMap[posH][posL + ThrowLength][empty] = item;
-					item.type = ItemEmpty;
-				}
-				break;
-			}
-			case CONTROL_LEFT:
-			{
-				for(int i = 0; i < VISION; i++)
-				{
-					if(map[posH][posL - i - 1] == 2) break;
-					move(posH, posL - i - 1);
-					addch('-');
-					refresh();
-					ThrowLength++;
-					Delay(DELAY);
-				}
-				int empty = FindEmptyElementUnderThisCell(posH, posL - ThrowLength);
-				if(empty == 101010)
-				{
-					int empty2 = FindEmptyElementUnderThisCell(posH, posL - ThrowLength + 1);
-					ItemsMap[posH][posL - ThrowLength + 1][empty2] = item;
-					item.type = ItemEmpty;
-				}
-				else
-				{
-					ItemsMap[posH][posL - ThrowLength][empty] = item;
-					item.type = ItemEmpty;
-				}
-				break;
-			}
-			case CONTROL_UP:
-			{
-				for(int i = 0; i < VISION; i++)
-				{
-					if(map[posH - i - 1][posL] == 2) break;
-					move(posH - i - 1, posL);
-					addch('|');
-					refresh();
-					ThrowLength++;
-					Delay(DELAY);
-				}
-				int empty = FindEmptyElementUnderThisCell(posH - ThrowLength, posL);
-				if(empty == 101010)
-				{
-					int empty2 = FindEmptyElementUnderThisCell(posH - ThrowLength + 1, posL);
-					ItemsMap[posH - ThrowLength + 1][posL][empty2] = item;
-					item.type = ItemEmpty;
-				}
-				else
-				{
-					ItemsMap[posH - ThrowLength][posL][empty] = item;
-					item.type = ItemEmpty;
-				}
-				break;
-			}
-			case CONTROL_DOWN:
-			{
-				for(int i = 0; i < VISION; i++)
-				{
-					if(map[posH + i + 1][posL] == 2) break;
-					move(posH + i + 1, posL);
-					addch('|');
-					refresh();
-					ThrowLength++;
-					Delay(DELAY);
-				}
-				int empty = FindEmptyElementUnderThisCell(posH + ThrowLength, posL);
-				if(empty == 101010)
-				{
-					int empty2 = FindEmptyElementUnderThisCell(posH + ThrowLength - 1, posL);
-					ItemsMap[posH + ThrowLength - 1][posL][empty2] = item;
-					item.type = ItemEmpty;
-				}
-				else
-				{
-					ItemsMap[posH + ThrowLength][posL][empty] = item;
-					item.type = ItemEmpty;
-				}
-				break;
-			}
-		}
-	}
+	
+	void ThrowAnimated(PossibleItem& item, char direction);
 
 	void Shoot();
 	
@@ -1126,7 +1137,7 @@ public:
 
 		switch(inp){
 			
-			case 'i':
+			case CONTROL_SHOWINVENTORY:
 			{
 				for(int i = 0; i < MaxInvVol; i++)
 				{
@@ -1150,7 +1161,7 @@ public:
 				break;
 			}
 
-			case 'e':
+			case CONTROL_EAT:
 			{
 				
 				char hv[200] = "What do you want to eat?";
@@ -1200,8 +1211,7 @@ public:
 				
 				break;
 			}	
-				
-			case 'W':
+			case CONTROL_WEAR:
 			{
 				
 				char hv[200] = "What do you want to wear?";
@@ -1240,7 +1250,7 @@ public:
 
 			}
 
-			case 'd':
+			case CONTROL_DROP:
 			{
 				char hv[200] = "What do you want to drop?";
 
@@ -1269,8 +1279,8 @@ public:
 					return;
 				}
 				
-				if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory('T');
-				if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory('-');
+				if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
+				if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
 
 				ItemsMap[posH][posL][num] = inventory[intch];
 				inventory[intch].type = ItemEmpty;
@@ -1283,7 +1293,7 @@ public:
 
 				break;
 			}
-			case 'T':
+			case CONTROL_TAKEOFF:
 			{
 				
 				heroArmor->GetItem().attribute = 100;
@@ -1291,7 +1301,7 @@ public:
 				break;
 			
 			}
-			case 'w':
+			case CONTROL_WIELD:
 			{
 				char hv[200] = "What do you want to wield?";
 
@@ -1329,13 +1339,13 @@ public:
 				break;
 			
 			}
-			case '-':
+			case CONTROL_UNEQUIP:
 			{
 				heroWeapon->GetItem().attribute = 100;
 				heroWeapon = &inventory[EMPTY_SLOT];
 				break;
 			}
-			case 't':
+			case CONTROL_THROW:
 			{
 				char hv[200] = "What do you want to throw?";
 
@@ -1361,10 +1371,48 @@ public:
 					move(0, Length + 10);
 					printw("In what direction?");
 					char secondChoise = getch();
-					if(inventory[intch].GetItem().inventorySymbol == heroArmor->GetItem().inventorySymbol) ShowInventory('T');
-					if(inventory[intch].GetItem().inventorySymbol == heroWeapon->GetItem().inventorySymbol) ShowInventory('u');
+					if(inventory[intch].GetItem().inventorySymbol == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
+					if(inventory[intch].GetItem().inventorySymbol == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
 					ThrowAnimated(inventory[intch], secondChoise);
 				}
+				break;
+			}
+			case CONTROL_DRINK:
+			{
+				char hv[200] = "What do you want to drink?";
+
+				for(int i = 0; i < MaxInvVol; i++)
+				{
+					if(inventory[i].type == ItemPotion)
+					{
+						list[len] = inventory[i];
+						len++;
+					}
+				}
+
+				PrintList(list, len, hv, 1);
+				len = 0;
+
+				char choise = getch();
+				if(choise == '\033') return;
+				int intch = choise - 'a';
+
+				if(inventory[intch].type == ItemPotion)
+				{
+					switch(inventory[intch].item.invPotion.effect)
+					{
+						case 1:
+							health += 3;
+							if(health > DEFAULT_HERO_HEALTH)
+							{
+								health = DEFAULT_HERO_HEALTH;
+							}
+							message += "Now you feeling better. ";
+							break;
+					}
+					inventory[intch].type = ItemEmpty;
+				}
+				break;
 			}
 		}
 	}
@@ -1373,7 +1421,7 @@ public:
 	{
 		if(isFoodInInventory())
 		{
-			ShowInventory('e');
+			ShowInventory(CONTROL_EAT);
 		}
 		else message += "You don't have anything to eat. ";
 	}
@@ -1436,86 +1484,92 @@ public:
 				mHLogic(a1, a2);
 				break;
 			}
-			case ',':
+			case CONTROL_PICKUP:
 			{
 				
 				PickUp();
 				break;
 
 			}
-			case 'e':
+			case CONTROL_EAT:
 			{
 
 				Eat();
 				break;
 
 			}
-			case 'i':
+			case CONTROL_SHOWINVENTORY:
 			{
-				if(isInventoryEmpty() == false){
-					
-					ShowInventory('i');
-				
-				}else{
-					
+				if(isInventoryEmpty() == false)
+				{
+					ShowInventory(CONTROL_SHOWINVENTORY);
+				}
+				else
+				{
 					message += "Your inventory is empty. ";
-				
 				}
 				break;				
-
 			}
-			case 'W':
+			case CONTROL_WEAR:
 			{
 
 				if(isArmorInInventory() == true){
 				
-					ShowInventory('W');
+					ShowInventory(CONTROL_WEAR);
 
 				}
 				else message += "You don't have anything to wear. ";
 				break;
 
 			}
-			case 'w':
+			case CONTROL_WIELD:
 			{
 			
 				if(isWeaponInInventory() == true)
 				{
-					ShowInventory('w');
+					ShowInventory(CONTROL_WIELD);
 				}
 				else message += "You don't have anything to wield. ";
 				break;
 			
 			}
-			case 'T':
+			case CONTROL_TAKEOFF:
 			{
-				ShowInventory('T');
+				ShowInventory(CONTROL_TAKEOFF);
 				break;
 			}
-			case '-':
+			case CONTROL_UNEQUIP:
 			{
-				ShowInventory('-');
+				ShowInventory(CONTROL_UNEQUIP);
 				break;
 			}
-			case 'd':
+			case CONTROL_DROP:
 			{
 				if(isInventoryEmpty() == false)
 				{
-					ShowInventory('d');
+					ShowInventory(CONTROL_DROP);
 				}
 				break;		
 			}
-			case 't':
+			case CONTROL_THROW:
 			{
 				if(isInventoryEmpty() == false)
 				{
-					ShowInventory('t');
+					ShowInventory(CONTROL_THROW);
 				}
 				break;
 			}
-			case 's':
+			case CONTROL_SHOOT:
 			{
 				Shoot();
+				break;
+			}
+			case CONTROL_DRINK:
+			{
+				if(isPotionInInventory() == true)
+				{
+					ShowInventory(CONTROL_DRINK);
+				}
 				break;
 			}
 			case '\\':
@@ -1677,6 +1731,151 @@ void Hero::AttackEnemy(int& a1, int& a2)
 		posH += a1;
 		posL += a2;
 		UnitsMap[posH][posL] = buffer;
+	}
+}
+
+void Hero::ThrowAnimated(PossibleItem& item, char direction)
+{
+	int ThrowLength = 0;
+
+	switch(direction)
+	{
+		case CONTROL_RIGHT:
+		{
+			for(int i = 0; i < VISION; i++)
+			{
+				if(map[posH][posL + i + 1] == 2) break;
+				if(UnitsMap[posH][posL + i + 1].type != UnitEmpty)
+				{
+					UnitsMap[posH][posL + i + 1].GetUnit().health -= item.GetItem().weight / 2;
+					if(UnitsMap[posH][posL + i + 1].GetUnit().health <= 0)
+					{
+						UnitsMap[posH][posL + i + 1].type = UnitEmpty;
+					}
+					break;
+				}
+				move(posH, posL + i + 1);
+				addch('-');
+				refresh();
+				ThrowLength++;
+				Delay(DELAY);
+			}
+			int empty = FindEmptyElementUnderThisCell(posH, posL + ThrowLength);
+			if(empty == 101010)
+			{
+				int empty2 = FindEmptyElementUnderThisCell(posH, posL + ThrowLength - 1);
+				ItemsMap[posH][posL + ThrowLength - 1][empty2] = item;
+				item.type = ItemEmpty;
+			}
+			else
+			{
+				ItemsMap[posH][posL + ThrowLength][empty] = item;
+				item.type = ItemEmpty;
+			}
+			break;
+		}
+		case CONTROL_LEFT:
+		{
+			for(int i = 0; i < VISION; i++)
+			{
+				if(map[posH][posL - i - 1] == 2) break;
+				if(UnitsMap[posH][posL - i - 1].type != UnitEmpty)
+				{
+					UnitsMap[posH][posL - i - 1].GetUnit().health -= item.GetItem().weight / 2;
+					if(UnitsMap[posH][posL - i - 1].GetUnit().health <= 0)
+					{
+						UnitsMap[posH][posL - i - 1].type = UnitEmpty;
+					}
+					break;
+				}
+				move(posH, posL - i - 1);
+				addch('-');
+				refresh();
+				ThrowLength++;
+				Delay(DELAY);
+			}
+			int empty = FindEmptyElementUnderThisCell(posH, posL - ThrowLength);
+			if(empty == 101010)
+			{
+				int empty2 = FindEmptyElementUnderThisCell(posH, posL - ThrowLength + 1);
+				ItemsMap[posH][posL - ThrowLength + 1][empty2] = item;
+				item.type = ItemEmpty;
+			}
+			else
+			{
+				ItemsMap[posH][posL - ThrowLength][empty] = item;
+				item.type = ItemEmpty;
+			}
+			break;
+		}
+		case CONTROL_UP:
+		{
+			for(int i = 0; i < VISION; i++)
+			{
+				if(map[posH - i - 1][posL] == 2) break;
+				if(UnitsMap[posH - i - 1][posL].type != UnitEmpty)
+				{
+					UnitsMap[posH - i - 1][posL].GetUnit().health -= item.GetItem().weight / 2;
+					if(UnitsMap[posH - i - 1][posL].GetUnit().health <= 0)
+					{
+						UnitsMap[posH - i - 1][posL].type = UnitEmpty;
+					}
+					break;
+				}
+				move(posH - i - 1, posL);
+				addch('|');
+				refresh();
+				ThrowLength++;
+				Delay(DELAY);
+			}
+			int empty = FindEmptyElementUnderThisCell(posH - ThrowLength, posL);
+			if(empty == 101010)
+			{
+				int empty2 = FindEmptyElementUnderThisCell(posH - ThrowLength + 1, posL);
+				ItemsMap[posH - ThrowLength + 1][posL][empty2] = item;
+				item.type = ItemEmpty;
+			}
+			else
+			{
+				ItemsMap[posH - ThrowLength][posL][empty] = item;
+				item.type = ItemEmpty;
+			}
+			break;
+		}
+		case CONTROL_DOWN:
+		{
+			for(int i = 0; i < VISION; i++)
+			{
+				if(map[posH + i + 1][posL] == 2) break;
+				if(UnitsMap[posH + i + 1][posL].type != UnitEmpty)
+				{
+					UnitsMap[posH + i + 1][posL].GetUnit().health -= item.GetItem().weight / 2;
+					if(UnitsMap[posH + i + 1][posL].GetUnit().health <= 0)
+					{
+						UnitsMap[posH + i + 1][posL].type = UnitEmpty;
+					}
+					break;
+				}
+				move(posH + i + 1, posL);
+				addch('|');
+				refresh();
+				ThrowLength++;
+				Delay(DELAY);
+			}
+			int empty = FindEmptyElementUnderThisCell(posH + ThrowLength, posL);
+			if(empty == 101010)
+			{
+				int empty2 = FindEmptyElementUnderThisCell(posH + ThrowLength - 1, posL);
+				ItemsMap[posH + ThrowLength - 1][posL][empty2] = item;
+				item.type = ItemEmpty;
+			}
+			else
+			{
+				ItemsMap[posH + ThrowLength][posL][empty] = item;
+				item.type = ItemEmpty;
+			}
+			break;
+		}
 	}
 }
 
@@ -2147,6 +2346,34 @@ void SetItems()
 		else i--;
 	}
 
+	for(int i = 0; i < SCROLLCOUNT; i++)
+	{
+		int h = rand() % Height;
+		int l = rand() % Length;
+
+		Scroll buffer;
+
+		if(map[h][l] == 1)
+		{
+			int p = rand() % TypesOfScroll;
+			buffer = differentScroll[p];
+			ItemsMap[h][l][rand() % Depth] = buffer;
+		}
+	}
+	for(int i = 0; i < POTIONCOUNT; i++)
+	{
+		int h = rand() % Height;
+		int l = rand() % Length;
+
+		Potion buffer;
+
+		if(map[h][l] == 1)
+		{
+			int p = rand() % TypesOfScroll;
+			buffer = differentPotion[p];
+			ItemsMap[h][l][rand() % Depth] = buffer;
+		}
+	}
 }
 
 void SpawnUnits()
@@ -2263,6 +2490,12 @@ void Draw(){
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 							break;
+						case 500:
+							addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;
+						case 600:
+							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
 					}
 				}
 /* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
@@ -2307,7 +2540,7 @@ void Draw(){
 
 	static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
 
-	if(MODE == 2)
+	if(MODE == 2 && !hero.IsMapInInventory())
 	{
 		for(int i = 0; i < FIELD_ROWS; i++)
 		{
@@ -2404,6 +2637,13 @@ void Draw(){
 								break;
 							case 100500:
 								addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
+								break;
+							case 500:
+								addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+								break;
+							case 600:
+								addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+								break;
 						}
 					}
 					else
@@ -2479,6 +2719,13 @@ void Draw(){
 							break;
 						case 100500:
 							addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
+							break;
+						case 500:
+							addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;
+						case 600:
+							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
 					}
 				}
 			}
@@ -2572,6 +2819,12 @@ int main()
 	Ammo SteelBullets(0);
 	differentAmmo[0] = SteelBullets;
 	
+	Scroll MapScroll(0);
+	differentScroll[0] = MapScroll;
+
+	Potion BluePotion(0);
+	differentPotion[0] = BluePotion;
+
 	Enemy Barbarian(0);
 	Enemy Zombie(1);
 	differentEnemies[0] = Barbarian;
@@ -2639,7 +2892,7 @@ int main()
 				break;
 			}
 
-			if(TurnsCounter > 50 && MODE == 1)
+			if(TurnsCounter > 25 && MODE == 1)
 			{
 				if(hero.health < DEFAULT_HERO_HEALTH)
 				{
