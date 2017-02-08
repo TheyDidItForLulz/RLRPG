@@ -1449,7 +1449,14 @@ public:
 							message += "Now you feeling better. ";
 							break;
 					}
-					inventory[intch].type = ItemEmpty;
+					if( inventory[intch].GetItem().count == 1 )
+					{
+						inventory[intch].type = ItemEmpty;
+					}
+					else
+					{
+						--inventory[intch].GetItem().count;
+					}
 				}
 				break;
 			}
