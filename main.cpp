@@ -42,8 +42,11 @@
 /*
  											1 - Healing 3 hp
 */
+/////////////////////////////////////////////////////////////////////////////////////// Tool possibilities ////////////////////////////////////////////////////////////////////////////////
+/*
+   											1 - Digging through walls
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 //!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
 
 #include<stdio.h>													//
@@ -82,6 +85,7 @@
 #define TypesOfAmmo 1
 #define TypesOfScroll 1
 #define TypesOfPotion 1
+#define TypesOfTools 1
 #define TypesOfEnemies 2
 #define BLACK_BLACK 1
 #define	RED_BLACK 2
@@ -102,8 +106,9 @@
 #define ARMORCOUNT 4													//
 #define WEAPONCOUNT 15													//
 #define AMMOCOUNT 15
-#define SCROLLCOUNT 30 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 30 /* IT TOO */
+#define SCROLLCOUNT 0 /* JUST FOR !DEBUG!!*/
+#define POTIONCOUNT 5 /* IT TOO */
+#define TOOLSCOUNT 3 /* AND IT */
 #define ENEMIESCOUNT 7
 #define Depth 20													//
 #define VISION 7													//
@@ -219,6 +224,8 @@ public:
 				return "Map";
 			case 600:
 				return "Blue potion";
+			case 700:
+				return "Pickaxe";
 		}
 	}
 	~Item(){};
@@ -403,11 +410,43 @@ public:
 				effect = 1;
 				break;
 		}
+		isStackable = true;
 	}
 	int effect;
 
 	Potion(){}
 	~Potion(){}
+};
+
+class Tools: public Item
+{
+public:
+	Tools(int t)
+	{
+		switch(t)
+		{
+			case 0:
+				symbol = 700;
+				weight = 4;
+				damage = 2;
+				possibility = 1;
+				Ranged = false;
+				range = 1;
+				break;
+		}
+		isStackable = false;
+	}
+	int possibility;
+	int uses;
+	
+	int damage;									// It is nedlectful to use weapon's attributes on tools
+
+	int range; 									// Ranged bullets have add effect on this paramether
+	bool Ranged;
+	int cooldown;									// The end of using attributes
+
+	Tools(){}
+	~Tools(){}
 };
 
 enum ItemType
@@ -418,7 +457,8 @@ enum ItemType
 	ItemWeapon,
 	ItemAmmo,
 	ItemScroll,
-	ItemPotion
+	ItemPotion,
+	ItemTools
 };
 
 union InventoryItem
@@ -430,6 +470,7 @@ union InventoryItem
 	Ammo invAmmo;
 	Scroll invScroll;
 	Potion invPotion;
+	Tools invTools;
 	InventoryItem(EmptyItem e)
 	{
 		invEmpty = e;
@@ -457,6 +498,10 @@ union InventoryItem
 	InventoryItem(Potion p)
 	{
 		invPotion = p;
+	}
+	InventoryItem(Tools t)
+	{
+		invTools = t;
 	}
 	InventoryItem(InventoryItem& i){}
 	InventoryItem()
@@ -508,6 +553,11 @@ struct PossibleItem
 		type = ItemPotion;
 		item.invPotion = p;
 	}
+	void operator=(const Tools& t)
+	{
+		type = ItemTools;
+		item.invTools = t;
+	}
 	Item& GetItem()
 	{
 		switch(type)
@@ -526,6 +576,8 @@ struct PossibleItem
 				return item.invScroll;
 			case ItemPotion:
 				return item.invPotion;
+			case ItemTools:
+				return item.invTools;
 		}
 	}
 };
@@ -546,6 +598,8 @@ Ammo differentAmmo[TypesOfAmmo];
 Scroll differentScroll[TypesOfScroll];
 
 Potion differentPotion[TypesOfPotion];
+
+Tools differentTools[TypesOfTools];
 
 class Unit
 {
@@ -611,21 +665,6 @@ public:
 		}
 		dist = 0;
 	}
-//	Enemy(const Enemy& en): vision(en.vision), dist(en.dist), dir(en.dir), movedOnTurn( en.movedOnTurn )
-//	{
-//	
-//		unitWeapon = en.unitWeapon;
-//		unitArmor = en.unitArmor;
-//		posH = en.posH;
-//		posL = en.posL;
-//		health = en.health;
-//		inventoryVol = en.inventoryVol;
-//		symbol = en.symbol;
-//		for(int i = 0; i < inventoryVol; i++)
-//		{
-//			unitInventory[i] = en.unitInventory[i];
-//		}
-//	}
 	int vision;
 	int dir;
 	int dist;
@@ -1089,11 +1128,11 @@ public:
 		return false;
 	}
 
-	bool isWeaponInInventory()
+	bool isWeaponOrToolsInInventory()
 	{
 		for(int i = 0; i < MaxInvVol; i++)
 		{
-			if(inventory[i].type == ItemWeapon) return true;
+			if(inventory[i].type == ItemWeapon || inventory[i].type == ItemTools) return true;
 		}
 		return false;
 	}
@@ -1307,7 +1346,7 @@ public:
 
 				for(int i = 0; i < MaxInvVol; i++)
 				{
-					if(inventory[i].type == ItemWeapon)
+					if(inventory[i].type == ItemWeapon || inventory[i].type == ItemTools)
 					{
 						list[len] = inventory[i];
 						len++;
@@ -1323,7 +1362,7 @@ public:
 				
 				int intch = choise - 'a';
 		
-				if(inventory[intch].type == ItemWeapon)
+				if(inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools)
 				{
 					sprintf(tmp, "You wield %s.", inventory[intch].GetItem().GetName());
 					message += tmp;
@@ -1525,7 +1564,7 @@ public:
 			case CONTROL_WIELD:
 			{
 			
-				if(isWeaponInInventory() == true)
+				if(isWeaponOrToolsInInventory() == true)
 				{
 					ShowInventory(CONTROL_WIELD);
 				}
@@ -1722,7 +1761,14 @@ void Hero::AttackEnemy(int& a1, int& a2)
 {
 //	sprintf(tmp, "Attacked smth with %i hp. ", UnitsMap[posH + a1][posL + a2].GetUnit().health);
 //	message += tmp;
-	UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invWeapon.damage;
+	if(heroWeapon->type == ItemWeapon)
+	{
+		UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invWeapon.damage;
+	}
+	else if(heroWeapon->type == ItemTools)
+	{
+		UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invTools.damage;
+	}
 	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
 	{
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
@@ -2101,6 +2147,28 @@ void Hero::mHLogic(int& a1, int& a2)
 	}
 	else if(map[posH + a1][posL + a2] == 2)
 	{
+		if(heroWeapon->type == ItemTools)
+		{
+			if(heroWeapon->item.invTools.possibility == 1)
+			{
+				move(0, Length + 10);
+				printw("Do you want to dig this wall (y or n)? ");
+				char inpChar = getch();
+				if(inpChar == 'y' || inpChar == 'Y')
+				{
+					map[posH + a1][posL + a2] = 1;
+					heroWeapon->item.invTools.uses--;
+					if(heroWeapon->item.invTools.uses <= 0)
+					{
+						sprintf(tmp, "Your %s is broken. ", heroWeapon->GetItem().GetName());
+						message += tmp;
+						heroWeapon->type = ItemEmpty;
+						FindVisibleArray();
+					}
+					return;
+				}
+			}
+		}
 		message += "The wall is the way. ";
 	}
 	FindVisibleArray();
@@ -2206,7 +2274,14 @@ void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 {
 	if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitHero)
 	{
-		hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+		if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+		{
+			hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+		}
+		else if(unit.GetUnit().unitWeapon->type == ItemTools)
+		{
+			hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+		}
 	}
 	else if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitEmpty)
 	{
@@ -2374,6 +2449,21 @@ void SetItems()
 			ItemsMap[h][l][rand() % Depth] = buffer;
 		}
 	}
+	for(int i = 0; i < TOOLSCOUNT; i++)
+	{
+		int h = rand() % Height;
+		int l = rand() % Length;
+
+		Tools buffer;
+
+		if(map[h][l] == 1)
+		{
+			int p = rand() % TypesOfTools;
+			buffer = differentTools[p];
+			buffer.uses = rand() % Luck + 1;
+			ItemsMap[h][l][rand() % Depth] = buffer;
+		}
+	}
 }
 
 void SpawnUnits()
@@ -2495,6 +2585,9 @@ void Draw(){
 							break;
 						case 600:
 							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
+						case 700:
+							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
 							break;
 					}
 				}
@@ -2644,6 +2737,9 @@ void Draw(){
 							case 600:
 								addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
 								break;
+							case 700:
+								addch('\\' | COLOR_PAIR(YELLOW_BLACK));
+								break;
 						}
 					}
 					else
@@ -2725,6 +2821,9 @@ void Draw(){
 							break;
 						case 600:
 							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
+						case 700:
+							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
 							break;
 					}
 				}
@@ -2816,6 +2915,9 @@ int main()
 	differentWeapon[2] = Musket;
 	differentWeapon[3] = Stick;
 	
+	Tools Pickaxe(0);
+	differentTools[0] = Pickaxe;
+
 	Ammo SteelBullets(0);
 	differentAmmo[0] = SteelBullets;
 	
