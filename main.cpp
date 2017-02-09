@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////// Symbols //////////////////////////////////////////////////////////////////////////////////////////
 /*
-											'.'(Floor) == 1
+											'_'(Floor) == 1
 											'#'(Wall) == 2
 											'^'(Pile) == 3
 											'%'(Egg) == 100
@@ -646,7 +646,7 @@ public:
 class Enemy: public Unit
 {
 public:
-	Enemy(int eType): movedOnTurn( -1 )
+	Enemy(int eType): movedOnTurn( 0 ) /*-1*/
 	{
 		switch(eType)
 		{
@@ -667,7 +667,6 @@ public:
 				symbol = 202;
 				vision = 3;
 				break;
-// !COMMENT!			// Fix Enemies collision AND do not print item attribute, if it is "Nothing". Also armor need to be used, not like now.
 		}
 		dist = 0;
 	}
@@ -2877,7 +2876,7 @@ void MainMenu()
 		{
 			ClearScreen();
 			move(0, 0);
-			printw("Welcome to RLRPG /*Your mother*/");
+			printw("Welcome to RLRPG /*lol*/");
 			move(1, 0);
 			if(Switch == 1)
 			{
