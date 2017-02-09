@@ -80,6 +80,7 @@
 #define CONTROL_THROW 't'
 #define CONTROL_SHOOT 's'
 #define CONTROL_DRINK 'q'
+#define CONTROL_CONFIRM '\012'
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
 #define TypesOfWeapon 4													//
@@ -116,7 +117,9 @@
 int MaxInvItemsWeight = 25;												//
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
-int MODE;														//
+int MODE;	
+int MenuCondition = 0;
+bool EXIT = false;
 bool StopUpdating = false;		
 int DEFAULT_HERO_HEALTH = 10;												//
 															//
@@ -2851,22 +2854,115 @@ void Draw(){
 
 #endif
 
+void ClearScreen()
+{
+	for(int i = 0; i < 50; i++)
+	{
+		for(int j = 0; j < 180; j++)
+		{
+			move(i, j);
+			addch(' ');
+		}
+	}
+}
+
 void MainMenu()
 {
-	move(0, 0);
-	printw("Choose mode:\n1.Normal\n2.Hard\n");
-	char hv = getch();
-	switch(hv)
+	int Switch = 1;
+	while(1)
 	{
-		case '1':
-			MODE = 1;
-			break;
-		case '2':
-			MODE = 2;
-			break;
-		default:
-			MODE = 1;
-			break;
+		if(MenuCondition == 0)
+		{
+			ClearScreen();
+			move(0, 0);
+			printw("Welcome to RLRPG /*Your mother*/");
+			move(1, 0);
+			if(Switch == 1)
+			{
+				addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
+			}
+			else addch('1');
+			printw(" Start game");
+			move(2, 0);
+			if(Switch == 2)
+			{
+				addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
+			}
+			else addch('2');
+			printw(" Settings");
+			move(3, 0);
+			if(Switch == 3)
+			{
+				addch('3' | COLOR_PAIR(RED_BLACK) | LIGHT);
+			}
+			else addch('3');
+			printw(" About");
+			move(4, 0);
+			if(Switch == 4)
+			{
+				addch('4' | COLOR_PAIR(RED_BLACK) | LIGHT);
+			}
+			else addch('4');
+			printw(" Help");
+			move(5, 0);
+			if(Switch == 5)
+			{
+				addch('5' | COLOR_PAIR(RED_BLACK) | LIGHT);
+			}
+			else addch('5');
+			printw(" Exit");
+
+			switch(getch())
+			{
+				case CONTROL_DOWN:
+					Switch ++;
+					if(Switch > 5) Switch = 5;
+					break;
+				case CONTROL_UP:
+					Switch --;
+					if(Switch < 1) Switch = 1;
+					break;
+				case CONTROL_CONFIRM:
+					if(Switch == 1)
+					{
+						MenuCondition = 1;
+					}
+					if(Switch == 2)
+					{
+						MenuCondition = 2;
+					}
+					if(Switch == 5)
+					{
+						EXIT = true;
+						return;
+					}
+					break;
+			}
+		}
+		else if(MenuCondition == 2)
+		{
+			ClearScreen();
+			move(0, 0);
+			printw("Choose mode:\n1.Normal\n2.Hard\n");
+			char hv = getch();
+			switch(hv)
+			{
+				case '1':
+					MODE = 1;
+					break;
+				case '2':
+					MODE = 2;
+					break;
+				default:
+					MODE = 1;
+					break;
+			}
+			MenuCondition = 0;
+		}
+		else if(MenuCondition == 1)
+		{
+			return;
+		}
 	}
 }
 
@@ -2949,6 +3045,12 @@ int main()
 	hero.FindVisibleArray();
 
 	MainMenu();
+	if(EXIT)
+	{ 	
+		refresh();
+		endwin();
+		return 0;
+	}
 	
 	int TurnsCounter = 0;
 	
@@ -2972,8 +3074,15 @@ int main()
 	
 	hero.symUnder = 1;
 
-	while(1){
-		
+	while(1)
+	{
+		if(EXIT)
+		{ 	
+			refresh();
+			endwin();
+			return 0;
+		}
+
 		if(!StopUpdating)
 		{
 			message = "";
@@ -3055,12 +3164,16 @@ int main()
 			
 			printw("%- 190s", message.c_str());
 			
-			if(inp == '\033'){
-				
+			if(inp == '\033')
+			{	
 				move(Height, 0);
 				printw("Are you sure want to exit?\n");
-				if(getch() == 'y') break;
-	
+				char inp = getch();
+				if(inp == 'y' || inp == 'Y')
+				{
+					MenuCondition = 0;
+					MainMenu();
+				}
 			}	
 			move(hero.posH, hero.posL);
 		}
