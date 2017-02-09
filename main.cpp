@@ -80,7 +80,8 @@
 #define CONTROL_THROW 't'
 #define CONTROL_SHOOT 's'
 #define CONTROL_DRINK 'q'
-#define CONTROL_CONFIRM '\012'
+#define CONTROL_EXCHANGE 'x'
+#define CONTROL_CONFIRM ' '
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
 #define TypesOfWeapon 4													//
@@ -347,7 +348,7 @@ public:
 	
 	int damage;
 
-	int range; 									// Ranged bullets have add effect on this paramether
+	int range; 									// Ranged bullets have additional effect on this paramether
 	bool Ranged;
 	int cooldown;
 
@@ -394,6 +395,7 @@ public:
 				effect = 1;
 				break;
 		}
+		isStackable = true;
 	}
 	int effect;
 
@@ -1453,7 +1455,14 @@ public:
 							message += "Now you feeling better. ";
 							break;
 					}
-					inventory[intch].type = ItemEmpty;
+					if( inventory[intch].GetItem().count == 1 )
+					{
+						inventory[intch].type = ItemEmpty;
+					}
+					else
+					{
+						--inventory[intch].GetItem().count;
+					}
 				}
 				break;
 			}
