@@ -47,6 +47,38 @@
 /*
    											1 - Digging through walls
 */
+///////////////////////////////////////////////////////////////////////////////////// Types of weapon construction ////////////////////////////////////////////////////////////////////////
+/*
+ 											1 - One direction(Musket), scheme:
+
+											        @--->
+											
+											2 - Triple direction(Shotgun), scheme:
+									
+							      	 				  /
+								       	 			 /
+												@--->
+												 \
+												  \
+
+											  !COMMENT! This isn't realized	(lol)
+*/
+//////////////////////////////////////////////////////////////////////////////////////// Tree of skills ///////////////////////////////////////////////////////////////////////////////////
+/*
+                                                                                                                                                                                           
+                                                                                         Detect, is food rotten                                                                            
+                                                                                           /                \
+                                                                                Shoot through             Chance to confuse monster                                                        
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+                                                                                                                                                                                           
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
 
@@ -84,7 +116,7 @@
 #define CONTROL_CONFIRM ' '
 #define TypesOfFood 2													//
 #define TypesOfArmor 2													//
-#define TypesOfWeapon 4													//
+#define TypesOfWeapon 5													//
 #define TypesOfAmmo 1
 #define TypesOfScroll 1
 #define TypesOfPotion 1
@@ -108,21 +140,23 @@
 #define FOODCOUNT 10													//
 #define ARMORCOUNT 4													//
 #define WEAPONCOUNT 15													//
-#define AMMOCOUNT 15
+#define AMMOCOUNT 25
 #define SCROLLCOUNT 0 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 5 /* IT TOO */
-#define TOOLSCOUNT 3 /* AND IT */
-#define ENEMIESCOUNT 7
+#define POTIONCOUNT 0 /* IT TOO */
+#define TOOLSCOUNT 0 /* AND IT */
+#define ENEMIESCOUNT 17
 #define Depth 20													//
 #define VISION 7													//
 int MaxInvItemsWeight = 25;												//
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
-int MODE;	
+int MODE = 1;	
 int MenuCondition = 0;
 bool EXIT = false;
 bool StopUpdating = false;		
 int DEFAULT_HERO_HEALTH = 10;												//
+
+bool GenerateMap = true;
 															//
 using namespace std;													//
 
@@ -223,6 +257,8 @@ public:
 				return "Musket";
 			case 403:
 				return "Stick";
+			case 404:
+				return "Shotgun";
 			case 450:
 				return "Steel bullets";
 			case 500:
@@ -317,31 +353,38 @@ public:
 				symbol = 400;
 				damage = 2;
 				weight = 3;
-				range = 1;
 				Ranged = false;
 				break;
 			case 1:
 				symbol = 401;
 				damage = 3;
 				weight = 5;
-				range = 1;
 				Ranged = false;
 				break;
 			case 2:
 				symbol = 402;
 				damage = 1;
 				weight = 3;
-				cooldown = 1;
-				range = 2;
+				range = 5;
 				Ranged = true;
+				damageBonus = 3;
+				type = 1;
 				break;
 			case 3:
 				symbol = 403;
 				damage = 1;
 				weight = 1;
-				cooldown = 1;
-				range = 1;
 				Ranged = false;
+				break;
+			case 4:
+				symbol = 404;
+				damage = 1;
+				weight = 4;
+				Ranged = true;
+				range = 1;
+				damageBonus = 5;
+				type = 2;
+				break;
 		}
 		isStackable = false;
 	};
@@ -349,8 +392,11 @@ public:
 	int damage;
 
 	int range; 									// Ranged bullets have additional effect on this paramether
+	int damageBonus;								// And on this too
 	bool Ranged;
-	int cooldown;
+	int type;									// I think, it's nedlectful, because shotgun will shoot at three sides, but musket - only at one
+/*	int magazineVolume;
+	int current*/
 
 	Weapon(){};
 	~Weapon(){};
@@ -366,8 +412,8 @@ public:
 			case 0:
 				symbol = 450;
 				weight = 1;
-				range = 5;
-				damage = 5;
+				range = 2;
+				damage = 1;
 				count = 1;
 				break;
 		}
@@ -658,6 +704,7 @@ public:
 				inventoryVol = 2;
 				symbol = 201;
 				vision = 5;
+				xpIncreasing = 3;
 				break;
 			case 1:
 				health = 15;
@@ -666,6 +713,7 @@ public:
 				inventoryVol = 1;
 				symbol = 202;
 				vision = 3;
+				xpIncreasing = 2;
 				break;
 		}
 		dist = 0;
@@ -674,6 +722,7 @@ public:
 	int dir;
 	int dist;
 	int movedOnTurn;
+	int xpIncreasing;
 
 	Enemy(){}
 	~Enemy(){}
@@ -684,9 +733,11 @@ int Luck;
 class Hero: public Unit
 {
 public:
-	Hero(): isBurdened(false), CanHeroMoveThroughWalls(false) {};
+	Hero(): isBurdened(false), CanHeroMoveThroughWalls(false), xp(0), level(1) {};
 
 	int hunger;
+	int xp;
+	int level;
 	PossibleItem* heroArmor;
 	PossibleItem* heroWeapon;
 	bool isBurdened;
@@ -706,7 +757,7 @@ public:
 
 		while(1)
 		{
-			seenUpdated[dirH][posL] = 1;
+			seenUpdated[dirH][posL] = 100;
 			seenUpdated[dirH][posL + 1] = 1;
 			seenUpdated[dirH][posL - 1] = 1;
 
@@ -1636,7 +1687,7 @@ public:
 							if(getch() == 'l')
 							{
 								hunger = 3000;
-								health = DEFAULT_HERO_HEALTH;
+								health = DEFAULT_HERO_HEALTH * 100;
 							}
 						}
 					}
@@ -1784,11 +1835,13 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
 	{
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
-		PossibleUnit buffer = UnitsMap[posH][posL];
+		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
+/*		PossibleUnit buffer = UnitsMap[posH][posL];
 		UnitsMap[posH][posL].type = UnitEmpty;
 		posH += a1;
 		posL += a2;
 		UnitsMap[posH][posL] = buffer;
+*/
 	}
 }
 
@@ -1809,6 +1862,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					if(UnitsMap[posH][posL + i + 1].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL + i + 1].type = UnitEmpty;
+						xp += UnitsMap[posH][posL + i + 1].unit.uEnemy.xpIncreasing;
 					}
 					break;
 				}
@@ -1843,6 +1897,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					if(UnitsMap[posH][posL - i - 1].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL - i - 1].type = UnitEmpty;
+						xp += UnitsMap[posH][posL - i - 1].unit.uEnemy.xpIncreasing;
 					}
 					break;
 				}
@@ -1877,6 +1932,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					if(UnitsMap[posH - i - 1][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i - 1][posL].type = UnitEmpty;
+						xp += UnitsMap[posH - i - 1][posL].unit.uEnemy.xpIncreasing;
 					}
 					break;
 				}
@@ -1911,6 +1967,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					if(UnitsMap[posH + i + 1][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i + 1][posL].type = UnitEmpty;
+						xp += UnitsMap[posH + 1 + i][posL].unit.uEnemy.xpIncreasing;
 					}
 					break;
 				}
@@ -1962,10 +2019,11 @@ void Hero::Shoot()
 				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;
+					UnitsMap[posH][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL - i].type = UnitEmpty;
+						xp += UnitsMap[posH][posL - i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL - i].GetUnit().health);
 					message += tmp;
@@ -1985,10 +2043,11 @@ void Hero::Shoot()
 				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH + i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL].type = UnitEmpty;
+						xp += UnitsMap[posH + i][posL].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
 					message += tmp;
@@ -2007,10 +2066,11 @@ void Hero::Shoot()
 				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;		
+					UnitsMap[posH - i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;		
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL].type = UnitEmpty;
+						xp += UnitsMap[posH - i][posL].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL].GetUnit().health);
 					message += tmp;
@@ -2029,10 +2089,11 @@ void Hero::Shoot()
 				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL + i].type = UnitEmpty;
+						xp += UnitsMap[posH][posL + i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL + i].GetUnit().health);
 					message += tmp;
@@ -2051,10 +2112,11 @@ void Hero::Shoot()
 				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL - i].type = UnitEmpty;
+						xp += UnitsMap[posH - i][posL - i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL - i].GetUnit().health);
 					message += tmp;
@@ -2073,10 +2135,11 @@ void Hero::Shoot()
 				if(map[posH - i][posL + i] == 2) break;
 				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL + i].type = UnitEmpty;
+						xp += UnitsMap[posH - i][posL + i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL + i].GetUnit().health);
 					message += tmp;
@@ -2095,10 +2158,11 @@ void Hero::Shoot()
 				if(map[posH + i][posL - i] == 2) break;
 				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL - i].type = UnitEmpty;
+						xp += UnitsMap[posH + i][posL - i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL - i].GetUnit().health);
 					message += tmp;
@@ -2117,10 +2181,11 @@ void Hero::Shoot()
 				if(map[posH + i][posL + i] == 2) break;
 				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage;	
+					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL + i].type = UnitEmpty;
+						xp += UnitsMap[posH + i][posL + i].unit.uEnemy.xpIncreasing;
 					}
 					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL + i].GetUnit().health);
 					message += tmp;
@@ -2142,7 +2207,7 @@ void Hero::Shoot()
 
 void Hero::mHLogic(int& a1, int& a2)
 {
-	if(map[posH + a1][posL + a2] != 2 || (map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls))
+	if(map[posH + a1][posL + a2] != 2 || (map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls) && (posH + a1 > 0 && posH + a1 < Height - 1 && posL + a2 > 0 && posL + a2 < Length - 1))
 	{
 		if(UnitsMap[posH + a1][posL + a2].type == UnitEmpty)
 		{
@@ -2584,10 +2649,13 @@ void Draw(){
 							addch('/' | COLOR_PAIR(YELLOW_BLACK));
 							break;
 						case 402:
-							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
 							break;
 						case 403:
 							addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;
+						case 404:
+							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
@@ -2732,10 +2800,13 @@ void Draw(){
 								addch('/' | COLOR_PAIR(YELLOW_BLACK));
 								break;
 							case 402:
-								addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
 								break;
 							case 403:
 								addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+								break;	
+							case 404:
+								addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								break;
 							case 450:
 								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
@@ -2817,10 +2888,13 @@ void Draw(){
 							addch('/' | COLOR_PAIR(YELLOW_BLACK));
 							break;
 						case 402:
-							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
 							break;
 						case 403:
 							addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
+							break;	
+						case 404:
+							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
@@ -2867,6 +2941,132 @@ void ClearScreen()
 	}
 }
 
+void mSettingsMode()
+{
+	int SwitchMode = 1;
+	while(1)
+	{
+		move(0, 0);
+		printw("Choose mode");
+
+		move(1, 0);
+		if(SwitchMode == 1)
+		{
+			addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
+		}
+		else addch('1');
+		printw(" Normal");
+		
+		move(2, 0);
+		if(SwitchMode == 2)
+		{
+			addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
+		}
+		else addch('2');
+		printw(" Hard");
+
+		switch(getch())
+		{
+			case CONTROL_DOWN:
+				if(SwitchMode < 2) SwitchMode++;
+				break;
+			case CONTROL_UP:
+				if(SwitchMode > 1) SwitchMode--;
+				break;
+			case '\033':
+				ClearScreen();
+				return;
+				break;
+			case CONTROL_CONFIRM:
+				switch(SwitchMode)
+				{
+					case 1:
+						MODE = 1;
+						break;
+					case 2:
+						MODE = 2;
+						break;
+				}
+				break;
+		}
+		ClearScreen();
+	}
+}
+
+void mSettingsMap()
+{
+	ClearScreen();
+	move(0, 0);
+	printw("Do you want to load map from file?");
+	char inpChar = getch();
+	if(inpChar == 'y' || inpChar == 'Y')
+	{
+		GenerateMap = false;
+	}
+	ClearScreen();
+}
+
+void mSettings()
+{
+	int SwitchSettings = 1;
+	ClearScreen();
+	while(1)
+	{
+		move(0, 0);
+		printw("Settings");
+
+		move(1, 0);
+		if(SwitchSettings == 1)
+		{
+			addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
+		}
+		else addch('1');
+		printw(" Mode");
+
+		move(2, 0);
+		if(SwitchSettings == 2)
+		{
+			addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
+		}
+		else addch('2');
+		printw(" Maps");
+
+		switch(getch())
+		{
+			case CONTROL_DOWN:
+				if(SwitchSettings < 2) SwitchSettings ++;
+				break;
+			case CONTROL_UP:
+				if(SwitchSettings > 1) SwitchSettings --;
+				break;
+			case CONTROL_CONFIRM:
+			{
+				switch(SwitchSettings)
+				{
+					case 1:
+					{
+						mSettingsMode();
+						break;
+					}
+					case 2:
+					{
+						mSettingsMap();
+						break;
+					}
+				}
+				break;
+			}
+			case '\033':
+			{
+				MenuCondition = 0;
+				ClearScreen();
+				return;
+				break;
+			}
+		}
+	}
+}
+
 void MainMenu()
 {
 	int Switch = 1;
@@ -2877,6 +3077,7 @@ void MainMenu()
 			ClearScreen();
 			move(0, 0);
 			printw("Welcome to RLRPG /*lol*/");
+
 			move(1, 0);
 			if(Switch == 1)
 			{
@@ -2884,6 +3085,7 @@ void MainMenu()
 			}
 			else addch('1');
 			printw(" Start game");
+
 			move(2, 0);
 			if(Switch == 2)
 			{
@@ -2891,6 +3093,7 @@ void MainMenu()
 			}
 			else addch('2');
 			printw(" Settings");
+
 			move(3, 0);
 			if(Switch == 3)
 			{
@@ -2898,6 +3101,7 @@ void MainMenu()
 			}
 			else addch('3');
 			printw(" About");
+
 			move(4, 0);
 			if(Switch == 4)
 			{
@@ -2905,6 +3109,7 @@ void MainMenu()
 			}
 			else addch('4');
 			printw(" Help");
+
 			move(5, 0);
 			if(Switch == 5)
 			{
@@ -2942,28 +3147,36 @@ void MainMenu()
 		}
 		else if(MenuCondition == 2)
 		{
-			ClearScreen();
-			move(0, 0);
-			printw("Choose mode:\n1.Normal\n2.Hard\n");
-			char hv = getch();
-			switch(hv)
-			{
-				case '1':
-					MODE = 1;
-					break;
-				case '2':
-					MODE = 2;
-					break;
-				default:
-					MODE = 1;
-					break;
-			}
-			MenuCondition = 0;
+			mSettings();
 		}
 		else if(MenuCondition == 1)
 		{
 			return;
 		}
+	}
+}
+
+void ReadMap()
+{
+	FILE* file = fopen("map.me", "r");
+	for(int i = 0; i < FIELD_ROWS; i++)
+	{
+		for(int j = 0; j < FIELD_COLS; j++)
+		{
+			fscanf(file, "%d", &map[i][j]);
+		}
+	}
+	fclose(file);
+}
+
+int LEVELUP = hero.level * hero.level * hero.level + 8;
+
+void GetXP()
+{
+	if(hero.xp > LEVELUP)
+	{
+		hero.level++;
+		LEVELUP = hero.level * hero.level * hero.level + 8;
 	}
 }
 
@@ -2986,8 +3199,22 @@ int main()
 	init_pair(BLACK_WHITE, COLOR_BLACK, COLOR_WHITE);
 
 	initialize();
+	
+	MainMenu();
+	if(EXIT)
+	{ 	
+		endwin();
+		return 0;
+	}
 
-	generate_maze();
+	if(GenerateMap)
+	{
+		generate_maze();
+	}
+	else
+	{
+		ReadMap();
+	}
 
 	hero.health = DEFAULT_HERO_HEALTH;
 	hero.symbol = 200;
@@ -3015,10 +3242,12 @@ int main()
 	Weapon BronzeSpear(1);
 	Weapon Musket(2);
 	Weapon Stick(3);
+	Weapon Shotgun(4);
 	differentWeapon[0] = CopperShortsword;
 	differentWeapon[1] = BronzeSpear;
 	differentWeapon[2] = Musket;
 	differentWeapon[3] = Stick;
+	differentWeapon[4] = Shotgun;
 	
 	Tools Pickaxe(0);
 	differentTools[0] = Pickaxe;
@@ -3045,14 +3274,6 @@ int main()
 		
 	hero.FindVisibleArray();
 
-	MainMenu();
-	if(EXIT)
-	{ 	
-		refresh();
-		endwin();
-		return 0;
-	}
-	
 	int TurnsCounter = 0;
 	
 	Draw();
@@ -3065,6 +3286,8 @@ int main()
 	sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);
 	bar += tmp;
 	sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);
+	bar += tmp;
+	sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
 	bar += tmp;
 	sprintf(tmp, "L: %i ", Luck);								// !DEBUG!
 	bar += tmp;										//
@@ -3084,100 +3307,103 @@ int main()
 			return 0;
 		}
 
-		if(!StopUpdating)
+		GetXP();
+
+		message = "";
+		bar = "";
+
+		move(hero.posH, hero.posL);
+
+		char inp = getch();
+	
+		TurnsCounter++;
+
+		if(hero.hunger < 1)
 		{
-			message = "";
-			bar = "";
-
-			move(hero.posH, hero.posL);
-
-			char inp = getch();
-		
-			TurnsCounter++;
-	
-			if(hero.hunger < 1)
-			{
-				message += "You died from starvation. Press any key to exit.";
-				printw("%- 190s", message.c_str());
-				getch();
-				break;
-			}
-
-			if(hero.health < 1)
-			{
-				move(Height + 1, 0);
-				message += "You died. Press any key to exit.";
-				printw("% -190s", message.c_str());
-				getch();
-				break;
-			}
-
-			if(TurnsCounter > 25 && MODE == 1)
-			{
-				if(hero.health < DEFAULT_HERO_HEALTH)
-				{
-					hero.health ++;
-				}
-				TurnsCounter = 0;
-			}
-			else if(MODE == 1 && TurnsCounter > 100)
-			{
-				TurnsCounter = 0;
-			}
-	
-			hero.hunger--;
-			
-			if(hero.isBurdened) hero.hunger--;
-			
-			hero.moveHero(inp);
-
-			UpdateAI();
-			
-			++turns;
-	
-			Draw();
-			
-			move(Height, 0);										//
-			sprintf(tmp, "HP: %i ", hero.health);								//
-			bar += tmp;											//
-			sprintf(tmp, "Sat: %i ", hero.hunger);								//
-			bar += tmp;											//
-			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
-			bar += tmp;											//
-			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
-			bar += tmp;											// Condition bar	
-			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
-			bar += tmp;											// !!
-			if(inventory[AMMO_SLOT].type != ItemEmpty)							//	
-			{												//
-				sprintf(tmp, "Bul: %i ", inventory[AMMO_SLOT].item.invAmmo.count);			//
-				bar += tmp;										//
-			}												//
-			if(hero.isBurdened) bar += "Burdened. ";							//
-			printw("%- 190s", bar.c_str());									//
-		
-			if(hero.hunger < 75)
-			{	
-				bar += "Hungry. ";
-			}
-	
 			move(Height + 1, 0);
-			
+			message += "You died from starvation. Press any key to exit.";
 			printw("%- 190s", message.c_str());
-			
-			if(inp == '\033')
-			{	
-				move(Height, 0);
-				printw("Are you sure want to exit?\n");
-				char inp = getch();
-				if(inp == 'y' || inp == 'Y')
-				{
-					MenuCondition = 0;
-					MainMenu();
-				}
-			}	
-			move(hero.posH, hero.posL);
+			getch();
+			break;
 		}
+
+		if(hero.health < 1)
+		{
+			move(Height + 1, 0);
+			message += "You died. Press any key to exit.";
+			printw("% -190s", message.c_str());
+			getch();
+			break;
+		}
+
+		if(TurnsCounter > 25 && MODE == 1)
+		{
+			if(hero.health < DEFAULT_HERO_HEALTH)
+			{
+				hero.health ++;
+			}
+			TurnsCounter = 0;
+		}
+		else if(MODE == 1 && TurnsCounter > 100)
+		{
+			TurnsCounter = 0;
+		}
+
+		hero.hunger--;
+		
+		if(hero.isBurdened) hero.hunger--;
+		
+		hero.moveHero(inp);
+
+		UpdateAI();
+		
+		++turns;
+
+		Draw();
+		
+		move(Height, 0);										//
+		sprintf(tmp, "HP: %i ", hero.health);								//
+		bar += tmp;											//
+		sprintf(tmp, "Sat: %i ", hero.hunger);								//
+		bar += tmp;											//
+		sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
+		bar += tmp;											//
+		sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
+		bar += tmp;											// Condition bar		
+		sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+		bar += tmp;
+		sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
+		bar += tmp;											// !!
+		if(inventory[AMMO_SLOT].type != ItemEmpty)							//	
+		{												//
+			sprintf(tmp, "Bul: %i ", inventory[AMMO_SLOT].item.invAmmo.count);			//
+			bar += tmp;										//
+		}												//
+		if(hero.isBurdened) bar += "Burdened. ";							//
+		printw("%- 190s", bar.c_str());									//
+	
+		if(hero.hunger < 75)
+		{	
+			bar += "Hungry. ";
+		}
+
+		move(Height + 1, 0);
+		
+		printw("%- 190s", message.c_str());
+		
+		if(inp == '\033')
+		{	
+			move(Height, 0);
+			printw("Are you sure want to exit?\n");
+			char inp = getch();
+			if(inp == 'y' || inp == 'Y')
+			{
+//					MenuCondition = 0;
+//					MainMenu();
+				break;
+			}
+		}	
+		move(hero.posH, hero.posL);
 	}
 		
 	refresh();
