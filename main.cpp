@@ -151,7 +151,8 @@
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
 #define Depth 20									//
-#define VISION 7									//
+#define VISION 16									//
+#define VISION_PRECISION 256
 int MaxInvItemsWeight = 25;								//
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
@@ -167,6 +168,7 @@ using namespace std;									//
 
 #include"include/level.hpp"
 #include"include/gen_map.hpp"
+#include"include/utils.hpp"
 															//
 int map[ FIELD_ROWS ][ FIELD_COLS ];											//
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
@@ -761,6 +763,51 @@ public:
 	bool isBurdened;
 	bool CanHeroMoveThroughWalls;
 	
+	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
+	{
+		double dx = to_x - from_x;
+		double dy = to_y - from_y;
+		if( ABS( dx ) > ABS( dy ) )
+		{
+			double k = dy / dx;
+			int s = SGN( dx );
+			for( int i = 0; i * s < dx * s; i += s )
+			{
+				int x = from_x + i;
+				int y = from_y + i * k;
+				if( map[y][x] == 2 )
+				{
+					return false;
+				}
+			}
+		}
+		else
+		{
+			double k = dx / dy;
+			int s = SGN( dy );
+			for( int i = 0; i * s < dy * s; i += s )
+			{
+				int x = from_x + i * k;
+				int y = from_y + i;
+				if( map[y][x] == 2 )
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	bool CanSeeCell( int h, int l )
+	{
+		double offset = 1. / VISION_PRECISION;
+		return
+		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + 1 - offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + 1 - offset );
+	}
+
 	void FindVisibleArray()
 	{
 		for(int i = 0; i < FIELD_ROWS; i++)
@@ -768,77 +815,12 @@ public:
 			for(int j = 0; j < FIELD_COLS; j++)
 			{
 				seenUpdated[i][j] = 0;
+				if( SQR( posH - i ) + SQR( posL - j ) < SQR( VISION ) )
+				{
+					seenUpdated[i][j] = CanSeeCell( i, j );
+				}
 			}
 		}
-
-		int dirH = posH, dirL = posL;
-
-		while(1)
-		{
-			seenUpdated[dirH][posL] = 100;
-			seenUpdated[dirH][posL + 1] = 1;
-			seenUpdated[dirH][posL - 1] = 1;
-
-			if(map[dirH][posL] != 2 && abs(dirH - posH) < VISION)
-			{
-				dirH++;
-			}
-			else
-			{
-				dirH = posH;
-				break;
-			}
-		}
-		while(1)
-		{
-			seenUpdated[dirH][posL] = 1;
-			seenUpdated[dirH][posL + 1] = 1;
-			seenUpdated[dirH][posL - 1] = 1;
-
-			if(map[dirH][posL] != 2 && abs(dirH - posH) < VISION)
-			{
-				dirH--;
-			}
-			else
-			{
-				dirH = posH;
-				break;
-			}
-		}
-		while(1)
-		{	
-			seenUpdated[posH][dirL] = 1;
-			seenUpdated[posH + 1][dirL] = 1;
-			seenUpdated[posH - 1][dirL] = 1;
-
-			if(map[posH][dirL] != 2 && abs(dirL - posL) < VISION)
-			{
-				dirL++;
-			}
-			else
-			{
-				dirL = posL;
-				break;
-			}
-		}
-		while(1)
-		{	
-			seenUpdated[posH][dirL] = 1;
-			seenUpdated[posH + 1][dirL] = 1;
-			seenUpdated[posH - 1][dirL] = 1;
-
-			if(map[posH][dirL] != 2 && abs(dirL - posL) < VISION)
-			{
-				dirL--;
-			}
-			else
-			{
-				dirL = posL;
-				break;
-			}
-
-		}
-
 	}
 
 	void AttackEnemy(int& a1, int& a2);
