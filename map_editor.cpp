@@ -18,7 +18,7 @@ string bar = "";
 
 int map[FIELD_ROWS][FIELD_COLS] = {};
 
-int tool = 1;
+int tool = 2;
 bool filling = 0;
 int start_x = -1;
 int start_y = -1;
@@ -96,14 +96,42 @@ void MoveBuilder()
 		case 'h':
 			if(builder.posL > 0) builder.posL --;
 			break;
-		case 'k':
-			if(builder.posH > 0) builder.posH --;
-			break;
 		case 'j':
 			if(builder.posH < Height - 1) builder.posH ++;
 			break;
+		case 'k':
+			if(builder.posH > 0) builder.posH --;
+			break;
 		case 'l':
 			if(builder.posL < Length - 1) builder.posL ++;
+			break;
+		case 'y':
+			if(builder.posL && builder.posH)
+			{
+				--builder.posH;
+				--builder.posL;
+			}
+			break;
+		case 'u':
+			if(builder.posL < Length - 1 && builder.posH)
+			{
+				--builder.posH;
+				++builder.posL;
+			}
+			break;
+		case 'b':
+			if(builder.posL && builder.posH < Height - 1)
+			{
+				++builder.posH;
+				--builder.posL;
+			}
+			break;
+		case 'n':
+			if(builder.posL < Length - 1 && builder.posH < Height - 1)
+			{
+				++builder.posH;
+				++builder.posL;
+			}
 			break;
 		case '\033':
 			move(0, FIELD_COLS + 10);
