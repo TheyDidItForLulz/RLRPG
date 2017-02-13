@@ -12,6 +12,7 @@
 											'/'(Bronze spear) == 401
 											'/'(Musket) == 402
 											'/'(Stick) == 403
+											'/'(Shotgun) == 404
 											','(Steel bullets) == 450
 											'~'(Map) == 500
 											'!'(Blue potion) == 600
@@ -82,12 +83,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
 
-#include<stdio.h>													//
-#include<iostream>													//
-#include<stdlib.h>													//
-#include<time.h>													//
-#include<ncurses.h>													//
-#include<string.h>													//
+#include<stdio.h>									//
+#include<iostream>									//
+#include<stdlib.h>									//
+#include<time.h>									//
+#include<ncurses.h>									//
+#include<string.h>									//
 
 #define DIR_LEFT 0
 #define DIR_DOWN 1
@@ -114,10 +115,11 @@
 #define CONTROL_DRINK 'q'
 #define CONTROL_EXCHANGE 'x'
 #define CONTROL_CONFIRM ' '
-#define TypesOfFood 2													//
-#define TypesOfArmor 2													//
-#define TypesOfWeapon 5													//
-#define TypesOfAmmo 1
+#define CONTROL_RELOAD 'r'
+#define TypesOfFood 2									//
+#define TypesOfArmor 2									//
+#define TypesOfWeapon 5									//
+#define TypesOfAmmo 2
 #define TypesOfScroll 1
 #define TypesOfPotion 1
 #define TypesOfTools 1
@@ -131,34 +133,37 @@
 #define CYAN_BLACK 7
 #define WHITE_BLACK 8
 #define BLACK_WHITE 9
+#define BLACK_RED 10
 #define LIGHT A_BOLD 
+#define UL A_UNDERLINE
 #define DELAY 0.03
-#define MaxInvVol 53													//
-#define TrueMaxInvVol 55
+#define BANDOLIER 3									// It means, that you can carry 3 types of ammo. Please, do NOT change it. It is unexpected.
+#define MaxInvVol 53									//
+#define TrueMaxInvVol 54+BANDOLIER							// Where 3 is supported type of ammo in inventory
 #define AMMO_SLOT 53
 #define EMPTY_SLOT 54
-#define FOODCOUNT 10													//
-#define ARMORCOUNT 4													//
-#define WEAPONCOUNT 15													//
+#define FOODCOUNT 10									//
+#define ARMORCOUNT 4									//
+#define WEAPONCOUNT 15									//
 #define AMMOCOUNT 25
 #define SCROLLCOUNT 0 /* JUST FOR !DEBUG!!*/
 #define POTIONCOUNT 0 /* IT TOO */
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
-#define Depth 20													//
-#define VISION 7													//
-int MaxInvItemsWeight = 25;												//
+#define Depth 20									//
+#define VISION 7									//
+int MaxInvItemsWeight = 25;								//
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
 int MODE = 1;	
 int MenuCondition = 0;
 bool EXIT = false;
-bool StopUpdating = false;		
-int DEFAULT_HERO_HEALTH = 10;												//
+bool Stop = false;
+int DEFAULT_HERO_HEALTH = 10;								//
 
 bool GenerateMap = true;
-															//
-using namespace std;													//
+											//
+using namespace std;									//
 
 #include"include/level.hpp"
 #include"include/gen_map.hpp"
@@ -261,6 +266,8 @@ public:
 				return "Shotgun";
 			case 450:
 				return "Steel bullets";
+			case 451:
+				return "Shotgun shells";
 			case 500:
 				return "Map";
 			case 600:
@@ -367,8 +374,10 @@ public:
 				weight = 3;
 				range = 5;
 				Ranged = true;
-				damageBonus = 3;
-				type = 1;
+				damageBonus = 4;
+				mSize = 1;
+				current_mSize = 0;
+//				type = 1;
 				break;
 			case 3:
 				symbol = 403;
@@ -383,7 +392,9 @@ public:
 				Ranged = true;
 				range = 1;
 				damageBonus = 5;
-				type = 2;
+				mSize = 6;
+				current_mSize = 0;
+//				type = 2;
 				break;
 		}
 		isStackable = false;
@@ -394,9 +405,9 @@ public:
 	int range; 									// Ranged bullets have additional effect on this paramether
 	int damageBonus;								// And on this too
 	bool Ranged;
-	int type;									// I think, it's nedlectful, because shotgun will shoot at three sides, but musket - only at one
-/*	int magazineVolume;
-	int current*/
+//	int type;									// I think, it's nedlectful, because shotgun must shoot at three sides, but musket - only at one
+	int mSize;									// Magazine size
+	int current_mSize;
 
 	Weapon(){};
 	~Weapon(){};
@@ -411,9 +422,16 @@ public:
 		{
 			case 0:
 				symbol = 450;
-				weight = 1;
+				weight = 0;
 				range = 2;
 				damage = 1;
+				count = 1;
+				break;
+			case 1:
+				symbol = 451;
+				weight = 0;
+				range = 1;
+				damage = 2;
 				count = 1;
 				break;
 		}
@@ -985,11 +1003,95 @@ public:
 		return 101010;
 	}
 
+	int FindAmmoInInventory()
+	{
+		for(int i = 0; i < BANDOLIER; i++)
+		{
+			if(inventory[AMMO_SLOT + i].type == ItemAmmo) return i;
+		}
+		return 101010;
+	}
+	
+	void PrintAmmoList(PossibleItem& pAmmo)										// Picked ammo
+	{
+		ClearRightPane();
+		move(0, Length + 10);
+		printw("In what slot do vou want to pull your ammo?");
+//		move(1, Length + 10);
+		int choise = 0;
+		int num = 0;
+		while(1)
+		{
+			num = 0;
+			for(int i = 0; i < BANDOLIER; i++)
+			{
+				move(1, Length + 12 + num);
+				num += 2;
+				if(inventory[AMMO_SLOT + i].type == ItemAmmo)
+				{
+					switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+					{
+						case 450:
+							if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
+							else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 451:
+							if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
+							else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+							break;
+						default:
+							if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+							else addch('-' | COLOR_PAIR(WHITE_BLACK));
+							break;
+					}
+				}
+				else
+				{
+					if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+					else addch('-' | COLOR_PAIR(WHITE_BLACK));
+				}
+			}
+			switch(getch())
+			{
+				case CONTROL_LEFT:
+					if(choise > 0) choise--;
+					break;
+				case CONTROL_RIGHT:
+					if(choise < BANDOLIER - 1) choise++;
+					break;
+				case CONTROL_CONFIRM:
+					if(inventory[AMMO_SLOT + choise].item.invAmmo.symbol != pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choise].type == ItemAmmo)
+					{
+						PossibleItem buffer;
+						buffer = pAmmo;
+						pAmmo = inventory[AMMO_SLOT + choise];
+						inventory[AMMO_SLOT + choise] = buffer;
+					}
+					else if(inventory[AMMO_SLOT + choise].item.invAmmo.symbol == pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choise].type == ItemAmmo)
+					{
+						inventory[AMMO_SLOT + choise].item.invAmmo.count += pAmmo.item.invAmmo.count;
+						pAmmo.type = ItemEmpty;
+					}
+					else if(inventory[AMMO_SLOT + choise].type == ItemEmpty)
+					{
+						inventory[AMMO_SLOT + choise] = pAmmo;
+						pAmmo.type = ItemEmpty;
+					}
+					return;
+					break;
+				case '\033':
+					return;
+					break;
+			}
+		}
+	}
+
 	void PickUp(){
 		
 		if(FindElementsNumberUnderThisCell(posH, posL) == 0)
 		{
 			message += "There is nothing here to pick up. ";
+			Stop = true;
 			return;
 		}
 		else if(FindElementsNumberUnderThisCell(posH, posL) == 1)
@@ -1001,7 +1103,7 @@ public:
 
 			if(ItemsMap[posH][posL][num].type == ItemAmmo)
 			{
-				if(inventory[AMMO_SLOT].type != ItemEmpty)
+/*				if(inventory[AMMO_SLOT].type != ItemEmpty)
 				{
 					if(ItemsMap[posH][posL][num].GetItem().symbol == inventory[AMMO_SLOT].GetItem().symbol)
 					{
@@ -1021,6 +1123,8 @@ public:
 					inventory[AMMO_SLOT] = ItemsMap[posH][posL][num];
 					ItemsMap[posH][posL][num].type = ItemEmpty;
 				}
+				return;*/
+				PrintAmmoList(ItemsMap[posH][posL][num]);
 				return;
 			}
 
@@ -1104,7 +1208,7 @@ public:
 			
 			if(ItemsMap[posH][posL][helpfulArray[intch]].type == ItemAmmo)
 			{
-				if(inventory[AMMO_SLOT].type != ItemEmpty)
+/*				if(inventory[AMMO_SLOT].type != ItemEmpty)
 				{
 					if(ItemsMap[posH][posL][helpfulArray[intch]].GetItem().symbol == inventory[AMMO_SLOT].GetItem().symbol)
 					{
@@ -1121,9 +1225,11 @@ public:
 				}
 				else
 				{
-				inventory[AMMO_SLOT] = ItemsMap[posH][posL][helpfulArray[intch]];
+					inventory[AMMO_SLOT] = ItemsMap[posH][posL][helpfulArray[intch]];
 					ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
 				}
+				return;*/
+				PrintAmmoList(ItemsMap[posH][posL][helpfulArray[intch]]);
 				return;
 			}
 
@@ -1674,6 +1780,14 @@ public:
 				}
 				break;
 			}
+			case CONTROL_RELOAD:
+			{
+//				if(heroWeapon->item.invWeapon.Ranged && heroWeapon->item.invWeapon.current_mSize < heroWeapon->item.invWeapon.mSize)
+//				{
+//					Reload
+//				}
+				break;
+			}
 			case '\\':
 			{
 				char hv = getch();
@@ -2001,11 +2115,18 @@ void Hero::Shoot()
 		message += "You have no ranged weapon in hands. ";
 		return;
 	}
-	if(inventory[AMMO_SLOT].type == ItemEmpty || inventory[AMMO_SLOT].item.invAmmo.count == 0)
+	int ammo_slot = FindAmmoInInventory();
+	if(FindAmmoInInventory() == 101010)
 	{
 		message += "You have no bullets. ";
 		return;
 	}
+	else if(inventory[ammo_slot].item.invAmmo.count == 0)
+	{
+		message += "You have no bullets. ";
+		return;
+	}
+	ammo_slot += AMMO_SLOT;
 	ClearRightPane();
 	move(Length + 10, 0);
 	printw("In what direction? ");
@@ -2014,19 +2135,19 @@ void Hero::Shoot()
 	{
 		case CONTROL_LEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL - i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL - i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL - i].GetUnit().health);
+//					message += tmp;
 				}
 // !COMMENT!			// You can make this (^) bullet moving through like a special skill
 				move(posH, posL - i);
@@ -2038,19 +2159,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWN:
 		{	
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH + i, posL);
 				addch('|');
@@ -2061,19 +2182,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_UP:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;		
+					UnitsMap[posH - i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;		
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH - i, posL);
 				addch('|');
@@ -2084,19 +2205,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_RIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL + i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL + i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL + i].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH, posL + i);
 				addch('-');
@@ -2107,19 +2228,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_UPLEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL - i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL - i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL - i].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH - i, posL - i);
 				addch('\\');
@@ -2130,19 +2251,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_UPRIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH - i][posL + i] == 2) break;
 				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH - i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL + i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL + i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL + i].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH - i, posL + i);
 				addch('/');
@@ -2153,19 +2274,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWNLEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH + i][posL - i] == 2) break;
 				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL - i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL - i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL - i].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH + i, posL - i);
 				addch('/');
@@ -2176,19 +2297,19 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWNRIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[AMMO_SLOT].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
 			{
 				if(map[posH + i][posL + i] == 2) break;
 				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[AMMO_SLOT].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
 						UnitsMap[posH + i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL + i].unit.uEnemy.xpIncreasing;
 					}
-					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL + i].GetUnit().health);
-					message += tmp;
+//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL + i].GetUnit().health);
+//					message += tmp;
 				}
 				move(posH + i, posL + i);
 				addch('\\');
@@ -2198,10 +2319,10 @@ void Hero::Shoot()
 			break;
 		}
 	}
-	inventory[AMMO_SLOT].item.invAmmo.count--;
-	if(inventory[AMMO_SLOT].item.invAmmo.count == 0)
+	inventory[ammo_slot].item.invAmmo.count--;
+	if(inventory[ammo_slot].item.invAmmo.count == 0)
 	{
-		inventory[AMMO_SLOT].type = ItemEmpty;
+		inventory[ammo_slot].type = ItemEmpty;
 	}
 }
 
@@ -2247,6 +2368,7 @@ void Hero::mHLogic(int& a1, int& a2)
 			}
 		}
 		message += "The wall is the way. ";
+		Stop = true;
 	}
 	FindVisibleArray();
 }
@@ -2660,6 +2782,9 @@ void Draw(){
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 							break;
+						case 451:
+							addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+							break;
 						case 500:
 							addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
 							break;
@@ -2811,6 +2936,9 @@ void Draw(){
 							case 450:
 								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 								break;
+							case 451:
+								addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								break;
 							case 100500:
 								addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
 								break;
@@ -2898,6 +3026,9 @@ void Draw(){
 							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
+							break;
+						case 451:
+							addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
 							break;
 						case 100500:
 							addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
@@ -3197,6 +3328,7 @@ int main()
 	init_pair(CYAN_BLACK, COLOR_CYAN, COLOR_BLACK);
 	init_pair(WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
 	init_pair(BLACK_WHITE, COLOR_BLACK, COLOR_WHITE);
+	init_pair(BLACK_RED, COLOR_BLACK, COLOR_RED);
 
 	initialize();
 	
@@ -3253,7 +3385,9 @@ int main()
 	differentTools[0] = Pickaxe;
 
 	Ammo SteelBullets(0);
+	Ammo ShotgunShells(1);
 	differentAmmo[0] = SteelBullets;
+	differentAmmo[1] = ShotgunShells;
 	
 	Scroll MapScroll(0);
 	differentScroll[0] = MapScroll;
@@ -3291,6 +3425,19 @@ int main()
 	bar += tmp;
 	sprintf(tmp, "L: %i ", Luck);								// !DEBUG!
 	bar += tmp;										//
+	bar += "Bul: |";
+	for(int i = 0; i < BANDOLIER; i++)
+	{
+		if(inventory[AMMO_SLOT + i].type != ItemEmpty)
+		{
+			sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
+			bar += tmp;
+		}
+		else
+		{
+			bar += "0|";
+		}
+	}
 	if(hero.isBurdened) bar += "Burdened. ";
 	printw("%- 190s", bar.c_str());
 
@@ -3316,94 +3463,139 @@ int main()
 
 		char inp = getch();
 	
-		TurnsCounter++;
-
-		if(hero.hunger < 1)
-		{
-			move(Height + 1, 0);
-			message += "You died from starvation. Press any key to exit.";
-			printw("%- 190s", message.c_str());
-			getch();
-			break;
-		}
-
-		if(hero.health < 1)
-		{
-			move(Height + 1, 0);
-			message += "You died. Press any key to exit.";
-			printw("% -190s", message.c_str());
-			getch();
-			break;
-		}
-
-		if(TurnsCounter > 25 && MODE == 1)
-		{
-			if(hero.health < DEFAULT_HERO_HEALTH)
-			{
-				hero.health ++;
-			}
-			TurnsCounter = 0;
-		}
-		else if(MODE == 1 && TurnsCounter > 100)
-		{
-			TurnsCounter = 0;
-		}
-
-		hero.hunger--;
-		
-		if(hero.isBurdened) hero.hunger--;
-		
 		hero.moveHero(inp);
 
-		UpdateAI();
-		
-		++turns;
+		if(!Stop)
+		{
+			TurnsCounter++;
 
-		Draw();
-		
-		move(Height, 0);										//
-		sprintf(tmp, "HP: %i ", hero.health);								//
-		bar += tmp;											//
-		sprintf(tmp, "Sat: %i ", hero.hunger);								//
-		bar += tmp;											//
-		sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
-		bar += tmp;											//
-		sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
-		bar += tmp;											// Condition bar		
-		sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
-		bar += tmp;
-		sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
-		bar += tmp;											// !!
-		if(inventory[AMMO_SLOT].type != ItemEmpty)							//	
-		{												//
-			sprintf(tmp, "Bul: %i ", inventory[AMMO_SLOT].item.invAmmo.count);			//
-			bar += tmp;										//
-		}												//
-		if(hero.isBurdened) bar += "Burdened. ";							//
-		printw("%- 190s", bar.c_str());									//
-	
-		if(hero.hunger < 75)
-		{	
-			bar += "Hungry. ";
-		}
-
-		move(Height + 1, 0);
-		
-		printw("%- 190s", message.c_str());
-		
-		if(inp == '\033')
-		{	
-			move(Height, 0);
-			printw("Are you sure want to exit?\n");
-			char inp = getch();
-			if(inp == 'y' || inp == 'Y')
+			if(hero.hunger < 1)
 			{
-//					MenuCondition = 0;
-//					MainMenu();
+				move(Height + 1, 0);
+				message += "You died from starvation. Press any key to exit.";
+				printw("%- 190s", message.c_str());
+				getch();
 				break;
 			}
-		}	
-		move(hero.posH, hero.posL);
+
+			if(hero.health < 1)
+			{
+				move(Height + 1, 0);
+				message += "You died. Press any key to exit.";
+				printw("% -190s", message.c_str());
+				getch();
+				break;
+			}
+
+			if(TurnsCounter > 25 && MODE == 1)
+			{
+				if(hero.health < DEFAULT_HERO_HEALTH)
+				{
+					hero.health ++;
+				}
+				TurnsCounter = 0;
+			}
+			else if(MODE == 1 && TurnsCounter > 100)
+			{
+				TurnsCounter = 0;
+			}
+
+			hero.hunger--;
+			
+			if(hero.isBurdened) hero.hunger--;
+
+			UpdateAI();
+			
+			++turns;
+
+			Draw();
+			
+			move(Height, 0);										//
+			sprintf(tmp, "HP: %i ", hero.health);								//
+			bar += tmp;											//
+			sprintf(tmp, "Sat: %i ", hero.hunger);								//
+			bar += tmp;											//
+			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
+			bar += tmp;											//
+			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
+			bar += tmp;											// Condition bar		
+			sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+			bar += tmp;
+			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
+			bar += tmp;											// !!
+			bar += "Bul: |";
+			for(int i = 0; i < BANDOLIER; i++)
+			{
+				if(inventory[AMMO_SLOT + i].type != ItemEmpty)
+				{
+					sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
+					bar += tmp;
+				}	
+				else
+				{
+					bar += "0|";
+				}
+			}
+			if(hero.isBurdened) bar += "Burdened. ";							//
+			printw("%- 190s", bar.c_str());									//
+		
+			if(hero.hunger < 75)
+			{	
+				bar += "Hungry. ";
+			}
+
+			move(Height + 1, 0);
+			
+			printw("%- 190s", message.c_str());
+			
+			if(inp == '\033')
+			{	
+				move(Height, 0);
+				printw("Are you sure want to exit?\n");
+				char inp = getch();
+				if(inp == 'y' || inp == 'Y')
+				{
+	//					MenuCondition = 0;
+	//					MainMenu();
+					break;
+				}
+			}	
+			move(hero.posH, hero.posL);
+		}
+		else
+		{
+			move(Height, 0);										//
+			sprintf(tmp, "HP: %i ", hero.health);								//
+			bar += tmp;											//
+			sprintf(tmp, "Sat: %i ", hero.hunger);								//
+			bar += tmp;											//
+			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
+			bar += tmp;											//
+			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
+			bar += tmp;											// Condition bar		
+			sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+			bar += tmp;
+			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
+			bar += tmp;											// !!
+			if(inventory[AMMO_SLOT].type != ItemEmpty)							//	
+			{												//
+				sprintf(tmp, "Bul: %i ", inventory[AMMO_SLOT].item.invAmmo.count);			//
+				bar += tmp;										//
+			}												//
+			if(hero.isBurdened) bar += "Burdened. ";							//
+			printw("%- 190s", bar.c_str());									//
+		
+			if(hero.hunger < 75)
+			{	
+				bar += "Hungry. ";
+			}
+
+			move(Height + 1, 0);
+			
+			printw("%- 190s", message.c_str());
+
+			Stop = false;
+		}
 	}
 		
 	refresh();
