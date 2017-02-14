@@ -151,7 +151,7 @@
 #define WEAPONCOUNT 15									//
 #define AMMOCOUNT 25
 #define SCROLLCOUNT 0 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 0 /* IT TOO */
+#define POTIONCOUNT 30 /* IT TOO */
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
 #define Depth 20									//
@@ -2146,7 +2146,7 @@ void Hero::Shoot()
 		return;
 	}
 	int ammo_slot = FindAmmoInInventory();
-	if(FindAmmoInInventory() == 101010)
+	if(ammo_slot == 101010)
 	{
 		message += "You have no bullets. ";
 		return;
@@ -2350,7 +2350,7 @@ void Hero::Shoot()
 		}
 	}
 	inventory[ammo_slot].item.invAmmo.count--;
-	if(inventory[ammo_slot].item.invAmmo.count == 0)
+	if(inventory[ammo_slot].item.invAmmo.count <= 0)
 	{
 		inventory[ammo_slot].type = ItemEmpty;
 	}
@@ -3339,6 +3339,11 @@ void GetXP()
 	if(hero.xp > LEVELUP)
 	{
 		hero.level++;
+		sprintf(tmp, "Now you are level %i. ", hero.level);
+		message += tmp;
+		MaxInvItemsWeight += MaxInvItemsWeight / 3;
+		DEFAULT_HERO_HEALTH += DEFAULT_HERO_HEALTH / 3;
+		hero.health = DEFAULT_HERO_HEALTH;
 		LEVELUP = hero.level * hero.level * hero.level + 8;
 	}
 }
@@ -3486,11 +3491,9 @@ int main()
 			return 0;
 		}
 
-		GetXP();
-
 		message = "";
 		bar = "";
-
+	
 		move(hero.posH, hero.posL);
 
 		char inp = getch();
@@ -3592,6 +3595,9 @@ int main()
 					break;
 				}
 			}	
+	
+			GetXP();
+
 			move(hero.posH, hero.posL);
 		}
 		else
