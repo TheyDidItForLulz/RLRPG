@@ -5,7 +5,9 @@
 											'^'(Pile) == 3
 											'%'(Egg) == 100
 											'%'(Apple) == 101
-											'@'(Hero) == 200	
+											'@'(Hero) == 200
+											'@'(Barbarian) == 201
+											'@'(Zombie) == 202
 											'&'(Leather armor) == 301
 											'&'(Chain armor) == 300
 											'/'(Copper shortsword) == 400
@@ -14,6 +16,7 @@
 											'/'(Stick) == 403
 											'/'(Shotgun) == 404
 											','(Steel bullets) == 450
+											','(Shotgun shells) == 451
 											'~'(Map) == 500
 											'!'(Blue potion) == 600
 											'\'(Pickaxe) == 700
@@ -115,7 +118,8 @@
 #define CONTROL_DRINK 'q'
 #define CONTROL_EXCHANGE 'x'
 #define CONTROL_CONFIRM ' '
-#define CONTROL_RELOAD 'r'
+//#define CONTROL_RELOAD 'r'
+#define CONTROL_OPENBANDOLIER 'a'
 #define TypesOfFood 2									//
 #define TypesOfArmor 2									//
 #define TypesOfWeapon 5									//
@@ -1085,27 +1089,6 @@ public:
 
 			if(ItemsMap[posH][posL][num].type == ItemAmmo)
 			{
-/*				if(inventory[AMMO_SLOT].type != ItemEmpty)
-				{
-					if(ItemsMap[posH][posL][num].GetItem().symbol == inventory[AMMO_SLOT].GetItem().symbol)
-					{
-						inventory[AMMO_SLOT].item.invAmmo.count += ItemsMap[posH][posL][num].item.invAmmo.count;
-						ItemsMap[posH][posL][num].type = ItemEmpty;
-					}
-					else
-					{
-						PossibleItem buffer;
-						buffer = ItemsMap[posH][posL][num];
-						ItemsMap[posH][posL][num] = inventory[AMMO_SLOT];
-						inventory[AMMO_SLOT] = buffer;
-					}
-				}
-				else
-				{
-					inventory[AMMO_SLOT] = ItemsMap[posH][posL][num];
-					ItemsMap[posH][posL][num].type = ItemEmpty;
-				}
-				return;*/
 				PrintAmmoList(ItemsMap[posH][posL][num]);
 				return;
 			}
@@ -1190,27 +1173,6 @@ public:
 			
 			if(ItemsMap[posH][posL][helpfulArray[intch]].type == ItemAmmo)
 			{
-/*				if(inventory[AMMO_SLOT].type != ItemEmpty)
-				{
-					if(ItemsMap[posH][posL][helpfulArray[intch]].GetItem().symbol == inventory[AMMO_SLOT].GetItem().symbol)
-					{
-						inventory[AMMO_SLOT].item.invAmmo.count += ItemsMap[posH][posL][helpfulArray[intch]].item.invAmmo.count;
-						ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
-					}
-					else
-					{
-						PossibleItem buffer;
-						buffer = ItemsMap[posH][posL][helpfulArray[intch]];
-						ItemsMap[posH][posL][helpfulArray[intch]] = inventory[AMMO_SLOT];
-						inventory[AMMO_SLOT] = buffer;
-					}
-				}
-				else
-				{
-					inventory[AMMO_SLOT] = ItemsMap[posH][posL][helpfulArray[intch]];
-					ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
-				}
-				return;*/
 				PrintAmmoList(ItemsMap[posH][posL][helpfulArray[intch]]);
 				return;
 			}
@@ -1604,6 +1566,89 @@ public:
 				}
 				break;
 			}
+			case CONTROL_OPENBANDOLIER:
+			{
+				ClearRightPane();
+				move(0, Length + 10);
+				printw("Here is your ammo.");
+		//		move(1, Length + 10);
+				int choise = 0;
+				int num = 0;
+				PossibleItem buffer;
+				int pos;
+				while(1)
+				{
+					num = 0;
+					for(int i = 0; i < BANDOLIER; i++)
+					{
+						move(1, Length + 12 + num);
+						num += 2;
+						if(inventory[AMMO_SLOT + i].type == ItemAmmo)
+						{
+							switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+							{
+								case 450:
+									if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
+									else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+									break;
+								case 451:
+									if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
+									else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+									break;
+								default:
+									if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+									else addch('-' | COLOR_PAIR(WHITE_BLACK));
+									break;
+							}
+						}
+						else
+						{
+							if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+							else addch('-' | COLOR_PAIR(WHITE_BLACK));
+						}
+					}
+					switch(getch())
+					{
+						case CONTROL_LEFT:
+						{
+							if(choise > 0) choise--;
+							break;
+						}
+						case CONTROL_RIGHT:
+						{
+							if(choise < BANDOLIER - 1) choise++;
+							break;
+						}
+						case CONTROL_EXCHANGE:
+						{
+							if(buffer.type != ItemEmpty)
+							{
+								inventory[pos] = inventory[AMMO_SLOT + choise];
+								inventory[AMMO_SLOT + choise] = buffer;
+								buffer.type = ItemEmpty;
+							}
+							else
+							{
+								buffer = inventory[AMMO_SLOT + choise];
+								inventory[AMMO_SLOT + choise].type = ItemEmpty;
+								pos = AMMO_SLOT + choise;
+							}
+							break;
+						}
+						case '\033':
+						{
+							if(buffer.type != ItemEmpty)
+							{
+								inventory[pos].type = ItemAmmo;
+								buffer.type = ItemEmpty;
+							}
+							return;
+							break;
+						}
+					}
+				}
+				break;
+			}
 		}
 	}
 	
@@ -1762,12 +1807,21 @@ public:
 				}
 				break;
 			}
-			case CONTROL_RELOAD:
-			{
+//			case CONTROL_RELOAD:
+//			{
 //				if(heroWeapon->item.invWeapon.Ranged && heroWeapon->item.invWeapon.current_mSize < heroWeapon->item.invWeapon.mSize)
 //				{
 //					Reload
 //				}
+//				break;
+//			}
+			case CONTROL_OPENBANDOLIER:
+			{
+				if(FindAmmoInInventory() != 101010)
+				{
+					ShowInventory(CONTROL_OPENBANDOLIER);
+				}
+				else message += "Your bandolier is empty";
 				break;
 			}
 			case '\\':
@@ -1932,12 +1986,6 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	{
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
 		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
-/*		PossibleUnit buffer = UnitsMap[posH][posL];
-		UnitsMap[posH][posL].type = UnitEmpty;
-		posH += a1;
-		posL += a2;
-		UnitsMap[posH][posL] = buffer;
-*/
 	}
 }
 
@@ -2357,6 +2405,7 @@ void Hero::mHLogic(int& a1, int& a2)
 
 bool CheckHeroVisibility(PossibleUnit& unit)
 {
+//	if(unit.unit.uEnemy.CanSeeCell(hero.posH, hero.posL)) return true;
 	for(int i = 1; i < unit.unit.uEnemy.vision; i++)
 	{
 		if(map[unit.GetUnit().posH + i][unit.GetUnit().posL] == 2) break;
@@ -2401,6 +2450,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 }
 void GetRandDir(PossibleUnit& unit)
 {
+
 	int posH = unit.GetUnit().posH, posL = unit.GetUnit().posL;
 	unit.unit.uEnemy.dist = 0;
 	do
@@ -3559,11 +3609,19 @@ int main()
 			bar += tmp;
 			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
 			bar += tmp;											// !!
-			if(inventory[AMMO_SLOT].type != ItemEmpty)							//	
-			{												//
-				sprintf(tmp, "Bul: %i ", inventory[AMMO_SLOT].item.invAmmo.count);			//
-				bar += tmp;										//
-			}												//
+			bar += "Bul: |";
+			for(int i = 0; i < BANDOLIER; i++)
+			{
+				if(inventory[AMMO_SLOT + i].type != ItemEmpty)
+				{
+					sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
+					bar += tmp;
+				}	
+				else
+				{
+					bar += "0|";
+				}
+			}
 			if(hero.isBurdened) bar += "Burdened. ";							//
 			printw("%- 190s", bar.c_str());									//
 		
