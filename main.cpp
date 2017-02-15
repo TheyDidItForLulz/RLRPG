@@ -140,7 +140,7 @@
 #define BLACK_RED 10
 #define LIGHT A_BOLD 
 #define UL A_UNDERLINE
-#define DELAY 0.03
+#define DELAY 0.07
 #define BANDOLIER 3									// It means, that you can carry 3 types of ammo. Please, do NOT change it. It is unexpected.
 #define MaxInvVol 53									//
 #define TrueMaxInvVol 54+BANDOLIER							// Where 3 is supported type of ammo in inventory
@@ -154,7 +154,7 @@
 #define POTIONCOUNT 30 /* IT TOO */
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
-#define Depth 20									//
+#define Depth MaxInvVol*2
 #define VISION 16									//
 #define VISION_PRECISION 256
 int MaxInvItemsWeight = 25;								//
@@ -1970,10 +1970,26 @@ PossibleUnit UnitsMap[FIELD_ROWS][FIELD_COLS];
 
 Enemy differentEnemies[TypesOfEnemies];
 
+void DropInventory(PossibleUnit& unit)
+{
+	int h = unit.GetUnit().posH;
+	int l =	unit.GetUnit().posL;
+/*	for(int i = 0; i < 4; i++)
+	{
+		if(unit.GetUnit().unitInventory[i].type != ItemEmpty)
+		{
+			int empty = hero.FindEmptyElementUnderThisCell(h, l);
+			if(empty != 101010)
+			{
+				ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+			}
+		}
+	}*/
+	ItemsMap[h][l][0] = unit.unit.uEnemy.unitInventory[0];
+}
+
 void Hero::AttackEnemy(int& a1, int& a2)
 {
-//	sprintf(tmp, "Attacked smth with %i hp. ", UnitsMap[posH + a1][posL + a2].GetUnit().health);
-//	message += tmp;
 	if(heroWeapon->type == ItemWeapon)
 	{
 		UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invWeapon.damage;
@@ -1984,6 +2000,7 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	}
 	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
 	{
+		DropInventory(UnitsMap[posH + a1][posL + a2]);
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
 		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
 	}
@@ -1997,7 +2014,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 	{
 		case CONTROL_RIGHT:
 		{
-			for(int i = 0; i < VISION; i++)
+			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)							// 12 is "strength"
 			{
 				if(map[posH][posL + i + 1] == 2) break;
 				if(UnitsMap[posH][posL + i + 1].type != UnitEmpty)
@@ -2005,6 +2022,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					UnitsMap[posH][posL + i + 1].GetUnit().health -= item.GetItem().weight / 2;
 					if(UnitsMap[posH][posL + i + 1].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH][posL + i + 1]);
 						UnitsMap[posH][posL + i + 1].type = UnitEmpty;
 						xp += UnitsMap[posH][posL + i + 1].unit.uEnemy.xpIncreasing;
 					}
@@ -2032,7 +2050,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 		}
 		case CONTROL_LEFT:
 		{
-			for(int i = 0; i < VISION; i++)
+			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
 			{
 				if(map[posH][posL - i - 1] == 2) break;
 				if(UnitsMap[posH][posL - i - 1].type != UnitEmpty)
@@ -2040,6 +2058,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					UnitsMap[posH][posL - i - 1].GetUnit().health -= item.GetItem().weight / 2;
 					if(UnitsMap[posH][posL - i - 1].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH][posL - i - 1]);
 						UnitsMap[posH][posL - i - 1].type = UnitEmpty;
 						xp += UnitsMap[posH][posL - i - 1].unit.uEnemy.xpIncreasing;
 					}
@@ -2067,7 +2086,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 		}
 		case CONTROL_UP:
 		{
-			for(int i = 0; i < VISION; i++)
+			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
 			{
 				if(map[posH - i - 1][posL] == 2) break;
 				if(UnitsMap[posH - i - 1][posL].type != UnitEmpty)
@@ -2075,6 +2094,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					UnitsMap[posH - i - 1][posL].GetUnit().health -= item.GetItem().weight / 2;
 					if(UnitsMap[posH - i - 1][posL].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH - i - 1][posL]);
 						UnitsMap[posH - i - 1][posL].type = UnitEmpty;
 						xp += UnitsMap[posH - i - 1][posL].unit.uEnemy.xpIncreasing;
 					}
@@ -2102,7 +2122,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 		}
 		case CONTROL_DOWN:
 		{
-			for(int i = 0; i < VISION; i++)
+			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
 			{
 				if(map[posH + i + 1][posL] == 2) break;
 				if(UnitsMap[posH + i + 1][posL].type != UnitEmpty)
@@ -2110,6 +2130,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 					UnitsMap[posH + i + 1][posL].GetUnit().health -= item.GetItem().weight / 2;
 					if(UnitsMap[posH + i + 1][posL].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH + i + 1][posL]);
 						UnitsMap[posH + i + 1][posL].type = UnitEmpty;
 						xp += UnitsMap[posH + 1 + i][posL].unit.uEnemy.xpIncreasing;
 					}
@@ -2151,7 +2172,7 @@ void Hero::Shoot()
 		message += "You have no bullets. ";
 		return;
 	}
-	else if(inventory[ammo_slot].item.invAmmo.count == 0)
+	else if(inventory[ammo_slot + AMMO_SLOT].item.invAmmo.count == 0)
 	{
 		message += "You have no bullets. ";
 		return;
@@ -2173,6 +2194,7 @@ void Hero::Shoot()
 					UnitsMap[posH][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH][posL - i]);
 						UnitsMap[posH][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL - i].unit.uEnemy.xpIncreasing;
 					}
@@ -2197,6 +2219,7 @@ void Hero::Shoot()
 					UnitsMap[posH + i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH + i][posL]);
 						UnitsMap[posH + i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL].unit.uEnemy.xpIncreasing;
 					}
@@ -2220,6 +2243,7 @@ void Hero::Shoot()
 					UnitsMap[posH - i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;		
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH - i][posL]);
 						UnitsMap[posH - i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL].unit.uEnemy.xpIncreasing;
 					}
@@ -2243,6 +2267,7 @@ void Hero::Shoot()
 					UnitsMap[posH][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH][posL + i]);
 						UnitsMap[posH][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL + i].unit.uEnemy.xpIncreasing;
 					}
@@ -2266,6 +2291,7 @@ void Hero::Shoot()
 					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH - i][posL - i]);
 						UnitsMap[posH - i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL - i].unit.uEnemy.xpIncreasing;
 					}
@@ -2289,6 +2315,7 @@ void Hero::Shoot()
 					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH - i][posL + i]);
 						UnitsMap[posH - i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL + i].unit.uEnemy.xpIncreasing;
 					}
@@ -2312,6 +2339,7 @@ void Hero::Shoot()
 					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH + i][posL - i]);
 						UnitsMap[posH + i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL - i].unit.uEnemy.xpIncreasing;
 					}
@@ -2335,6 +2363,7 @@ void Hero::Shoot()
 					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
+						DropInventory(UnitsMap[posH + i][posL + i]);
 						UnitsMap[posH + i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL + i].unit.uEnemy.xpIncreasing;
 					}
@@ -3510,7 +3539,9 @@ int main()
 				message += "You died from starvation. Press any key to exit.";
 				printw("%- 190s", message.c_str());
 				getch();
-				break;
+				refresh();
+				endwin();
+				return 0;
 			}
 
 			if(hero.health < 1)
@@ -3518,8 +3549,10 @@ int main()
 				move(Height + 1, 0);
 				message += "You died. Press any key to exit.";
 				printw("% -190s", message.c_str());
-				getch();
-				break;
+				getch();		
+				refresh();
+				endwin();
+				return 0;
 			}
 
 			if(TurnsCounter > 25 && MODE == 1)
@@ -3588,11 +3621,11 @@ int main()
 				move(Height, 0);
 				printw("Are you sure want to exit?\n");
 				char inp = getch();
-				if(inp == 'y' || inp == 'Y')
+				if(inp == 'y' || inp == 'Y' || inp == CONTROL_CONFIRM)
 				{
-	//					MenuCondition = 0;
-	//					MainMenu();
-					break;
+					refresh();
+					endwin();
+					return 0;
 				}
 			}	
 	
