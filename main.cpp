@@ -177,7 +177,7 @@ using namespace std;									//
 int map[ FIELD_ROWS ][ FIELD_COLS ];											//
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
 int active = 0;														//
-int turns = 1; /*-1*/
+int turns = 0; /*-1*/
 															//
 															//
 void init_field( void )													//
@@ -215,7 +215,6 @@ public:
 	int posH;
 	int posL;
 	int symbol;
-	int symUnder;
 	char inventorySymbol;
 	int weight;
 	int mdf;
@@ -311,7 +310,6 @@ public:
 				weight = 1;
 				break;
 		}
-		symUnder = 1;
 		isStackable = true;
 	};
 	
@@ -343,7 +341,6 @@ public:
 				weight = 7;
 				break;
 		}
-		symUnder = 1;
 		isStackable = false;
 	}
 
@@ -689,7 +686,6 @@ public:
 	int posH;
 	int posL;
 	int symbol;
-	int symUnder;
 	
 	const char* GetName()
 	{
@@ -721,6 +717,7 @@ public:
 		switch(eType)
 		{
 			case 0:
+			{
 				health = 10;
 				unitInventory[0] = differentFood[0];
 				unitInventory[1] = differentWeapon[0];
@@ -730,7 +727,9 @@ public:
 				vision = 5;
 				xpIncreasing = 3;
 				break;
+			}
 			case 1:
+			{
 				health = 15;
 				unitInventory[0] = differentWeapon[3];
 				unitWeapon = &unitInventory[0];
@@ -739,6 +738,7 @@ public:
 				vision = 3;
 				xpIncreasing = 2;
 				break;
+			}
 		}
 		dist = 0;
 	}
@@ -1863,7 +1863,7 @@ public:
 				{
 					if(getch() == 's')
 					{
-						if(getch() == 'c' && symUnder != 2)
+						if(getch() == 'c')
 						{
 							CanHeroMoveThroughWalls = false;
 						}
@@ -1974,7 +1974,7 @@ void DropInventory(PossibleUnit& unit)
 {
 	int h = unit.GetUnit().posH;
 	int l =	unit.GetUnit().posL;
-/*	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < 4; i++)
 	{
 		if(unit.GetUnit().unitInventory[i].type != ItemEmpty)
 		{
@@ -1984,8 +1984,9 @@ void DropInventory(PossibleUnit& unit)
 				ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
 			}
 		}
-	}*/
-	ItemsMap[h][l][0] = unit.unit.uEnemy.unitInventory[0];
+	}
+//	sprintf(tmp, "!%i!", unit.unit.uEnemy.unitInventory[0].item.invWeapon/*differentFood[0]*/.damage);
+//	message += tmp;
 }
 
 void Hero::AttackEnemy(int& a1, int& a2)
@@ -2001,6 +2002,8 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
 	{
 		DropInventory(UnitsMap[posH + a1][posL + a2]);
+//		sprintf(tmp, "!%i!", UnitsMap[posH + a1][posL + a2].GetUnit().unitInventory[0].GetItem().symbol);
+//		message += tmp;
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
 		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
 	}
@@ -2748,10 +2751,11 @@ void SpawnUnits()
 		if(map[h][l] == 1 && UnitsMap[h][l].type == UnitEmpty)
 		{
 			int p = rand() % TypesOfEnemies;
-			Enemy buffer = differentEnemies[p];
-			buffer.posH = h;
-			buffer.posL = l;
-			UnitsMap[h][l] = buffer;
+			UnitsMap[h][l] = differentEnemies[p];
+			UnitsMap[h][l].GetUnit().posH = h;
+			UnitsMap[h][l].GetUnit().posL = l;
+//			sprintf(tmp, ">%i<", UnitsMap[h][l].GetUnit().unitInventory[0].GetItem().symbol);
+//			message += tmp;
 		}
 		else i--;
 	}
@@ -3465,13 +3469,15 @@ int main()
 	Enemy Zombie(1);
 	differentEnemies[0] = Barbarian;
 	differentEnemies[1] = Zombie;
+//	sprintf(tmp, "!%i!", differentEnemies[0].unitInventory[0].GetItem().symbol);
+//	message += tmp;
 
 	hero.heroWeapon = &inventory[EMPTY_SLOT];
 
 	SetItems();
 
 	SpawnUnits();
-		
+
 	hero.FindVisibleArray();
 
 	int TurnsCounter = 0;
@@ -3509,8 +3515,6 @@ int main()
 
 	move(hero.posH, hero.posL);
 	
-	hero.symUnder = 1;
-
 	while(1)
 	{
 		if(EXIT)
