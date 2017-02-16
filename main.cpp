@@ -724,7 +724,7 @@ public:
 				unitWeapon = &unitInventory[1];
 				inventoryVol = 2;
 				symbol = 201;
-				vision = 5;
+				vision = 16;
 				xpIncreasing = 3;
 				break;
 			}
@@ -735,7 +735,7 @@ public:
 				unitWeapon = &unitInventory[0];
 				inventoryVol = 1;
 				symbol = 202;
-				vision = 3;
+				vision = 10;
 				xpIncreasing = 2;
 				break;
 			}
@@ -3272,7 +3272,7 @@ void MainMenu()
 		{
 			ClearScreen();
 			move(0, 0);
-			printw("Welcome to RLRPG /*lol*/");
+			printw("Welcome to RLRPG /*I fukd bugs*/");
 
 			move(1, 0);
 			if(Switch == 1)
