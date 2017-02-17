@@ -8,6 +8,7 @@
 											'@'(Hero) == 200
 											'@'(Barbarian) == 201
 											'@'(Zombie) == 202
+											'@'(Guardian) == 203
 											'&'(Leather armor) == 301
 											'&'(Chain armor) == 300
 											'/'(Copper shortsword) == 400
@@ -65,7 +66,7 @@
 												 \
 												  \
 
-											  !COMMENT! This isn't realized	(lol)
+											  !COMMENT! This isn't realized	(lol) хуй
 */
 //////////////////////////////////////////////////////////////////////////////////////// Tree of skills ///////////////////////////////////////////////////////////////////////////////////
 /*
@@ -127,7 +128,7 @@
 #define TypesOfScroll 1
 #define TypesOfPotion 1
 #define TypesOfTools 1
-#define TypesOfEnemies 2
+#define TypesOfEnemies 3
 #define BLACK_BLACK 1
 #define	RED_BLACK 2
 #define GREEN_BLACK 3
@@ -674,6 +675,8 @@ Potion differentPotion[TypesOfPotion];
 
 Tools differentTools[TypesOfTools];
 
+int Luck;
+
 class Unit
 {
 public:
@@ -683,6 +686,7 @@ public:
 	int inventoryVol;
 	PossibleItem* unitWeapon;
 	PossibleItem* unitArmor;
+	PossibleItem* unitAmmo;
 	int posH;
 	int posL;
 	int symbol;
@@ -739,6 +743,20 @@ public:
 				xpIncreasing = 2;
 				break;
 			}
+			case 2:
+			{
+				health = 7;
+				unitInventory[0] = differentWeapon[2];
+				unitInventory[1] = differentAmmo[0];
+				unitWeapon = &unitInventory[0];
+				unitAmmo = &unitInventory[1];
+				unitAmmo->item.invAmmo.count = rand() % 30 + 4;
+				inventoryVol = 2;
+				symbol = 203;
+				vision = 16;
+				xpIncreasing = 5;
+				break;
+			}
 		}
 		dist = 0;
 	}
@@ -747,12 +765,18 @@ public:
 	int dist;
 	int movedOnTurn;
 	int xpIncreasing;
+		
+	void Delay(double s)
+	{
+		clock_t clocksNow = clock();
+		while(double(clock() - clocksNow) / CLOCKS_PER_SEC < s);
+	}
+	
+	void Shoot();
 
 	Enemy(){}
 	~Enemy(){}
 };
-
-int Luck;
 
 class Hero: public Unit
 {
@@ -2388,6 +2412,90 @@ void Hero::Shoot()
 	}
 }
 
+void Enemy::Shoot()
+{
+	switch(dir)
+	{
+		case DIR_LEFT:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH][posL - i] == 2) break;
+				if(UnitsMap[posH][posL - i].type == UnitHero)
+				{
+					UnitsMap[posH][posL - i].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					sprintf(tmp, " !%i! ", UnitsMap[posH][posL - i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH, posL - i);
+				addch('-');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_DOWN:
+		{	
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH + i][posL] == 2) break;
+				if(UnitsMap[posH + i][posL].type == UnitHero)
+				{
+					UnitsMap[posH + i][posL].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					sprintf(tmp, " !%i! ", UnitsMap[posH + i][posL].GetUnit().health);
+					message += tmp;
+				}
+				move(posH + i, posL);
+				addch('|');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_UP:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH - i][posL] == 2) break;
+				if(UnitsMap[posH - i][posL].type == UnitHero)
+				{
+					UnitsMap[posH - i][posL].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
+					sprintf(tmp, " !%i! ", UnitsMap[posH - i][posL].GetUnit().health);
+					message += tmp;
+				}
+				move(posH - i, posL);
+				addch('|');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_RIGHT:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH][posL + i] == 2) break;
+				if(UnitsMap[posH][posL + i].type == UnitHero)
+				{
+					UnitsMap[posH][posL + i].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
+					sprintf(tmp, " !%i! ", UnitsMap[posH][posL + i].GetUnit().health);
+					message += tmp;
+				}
+				move(posH, posL + i);
+				addch('-');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+	}
+	unitAmmo->item.invAmmo.count--;
+	if(unitAmmo->item.invAmmo.count <= 0)
+	{
+		unitAmmo->type = ItemEmpty;
+	}
+}
+
 void Hero::mHLogic(int& a1, int& a2)
 {
 	if(map[posH + a1][posL + a2] != 2 || (map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls) && (posH + a1 > 0 && posH + a1 < Height - 1 && posL + a2 > 0 && posL + a2 < Length - 1))
@@ -2480,6 +2588,7 @@ bool CheckHeroVisibility(PossibleUnit& unit)
 	}
 	return false;
 }
+
 void GetRandDir(PossibleUnit& unit)
 {
 
@@ -2533,6 +2642,7 @@ void GetRandDir(PossibleUnit& unit)
 	}
 	while( !unit.unit.uEnemy.dist );
 }
+
 void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 {
 	if(UnitsMap[unit.GetUnit().posH + a1][unit.GetUnit().posL + a2].type == UnitHero)
@@ -2559,9 +2669,16 @@ void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 		GetRandDir(unit);
 	}
 }
+
 void UpdatePosition(PossibleUnit& unit)
 {
-	if(CheckHeroVisibility(unit) == false && unit.unit.uEnemy.dist <= 0)
+	bool HeroVisible = CheckHeroVisibility(unit);
+	if(HeroVisible && unit.unit.uEnemy.unitWeapon->item.invWeapon.Ranged == true && unit.unit.uEnemy.unitAmmo->item.invAmmo.count > 0 && unit.unit.uEnemy.unitWeapon->item.invWeapon.range >= unit.unit.uEnemy.dist)
+	{
+		unit.unit.uEnemy.Shoot();
+		return;
+	}
+	if(HeroVisible == false && unit.unit.uEnemy.dist <= 0)
 	{
 		GetRandDir(unit);
 	}
@@ -2879,6 +2996,9 @@ void Draw(){
 						case 202:
 							addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
 							break;
+						case 203:
+							addch('@' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
 					}
 				}
 			}
@@ -3034,6 +3154,9 @@ void Draw(){
 								case 202:
 									addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
 									break;
+								case 203:
+									addch('@' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+									break;							
 							}
 						}
 					}
@@ -3365,7 +3488,7 @@ void ReadMap()
 	fclose(file);
 }
 
-int LEVELUP = hero.level * hero.level * hero.level + 8;
+int LEVELUP = hero.level * hero.level + 4/* * hero.level + 8*/;
 
 void GetXP()
 {
@@ -3374,10 +3497,10 @@ void GetXP()
 		hero.level++;
 		sprintf(tmp, "Now you are level %i. ", hero.level);
 		message += tmp;
-		MaxInvItemsWeight += MaxInvItemsWeight / 3;
-		DEFAULT_HERO_HEALTH += DEFAULT_HERO_HEALTH / 3;
+		MaxInvItemsWeight += MaxInvItemsWeight / 4;
+		DEFAULT_HERO_HEALTH += DEFAULT_HERO_HEALTH / 4;
 		hero.health = DEFAULT_HERO_HEALTH;
-		LEVELUP = hero.level * hero.level * hero.level + 8;
+		LEVELUP = hero.level * hero.level + 4/* * hero.level + 8*/;
 	}
 }
 
@@ -3467,10 +3590,10 @@ int main()
 
 	Enemy Barbarian(0);
 	Enemy Zombie(1);
+	Enemy Guardian(2);
 	differentEnemies[0] = Barbarian;
 	differentEnemies[1] = Zombie;
-//	sprintf(tmp, "!%i!", differentEnemies[0].unitInventory[0].GetItem().symbol);
-//	message += tmp;
+	differentEnemies[2] = Guardian;
 
 	hero.heroWeapon = &inventory[EMPTY_SLOT];
 
