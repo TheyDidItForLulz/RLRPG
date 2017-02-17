@@ -791,6 +791,8 @@ public:
 	bool isBurdened;
 	bool CanHeroMoveThroughWalls;
 	
+//	void CopyHeroToCell();
+
 	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
 	{
 		double dx = to_x - from_x;
@@ -2013,6 +2015,8 @@ void DropInventory(PossibleUnit& unit)
 //	message += tmp;
 }
 
+//void Hero::CopyHeroToCell()
+
 void Hero::AttackEnemy(int& a1, int& a2)
 {
 	if(heroWeapon->type == ItemWeapon)
@@ -2423,8 +2427,8 @@ void Enemy::Shoot()
 				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type == UnitHero)
 				{
-					UnitsMap[posH][posL - i].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-					sprintf(tmp, " !%i! ", UnitsMap[posH][posL - i].GetUnit().health);
+/*					UnitsMap[posH][posL - i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL - i].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH, posL - i);
@@ -2441,8 +2445,8 @@ void Enemy::Shoot()
 				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type == UnitHero)
 				{
-					UnitsMap[posH + i][posL].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-					sprintf(tmp, " !%i! ", UnitsMap[posH + i][posL].GetUnit().health);
+/*					UnitsMap[posH + i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					sprintf(tmp, " !%i! ", /*UnitsMap[posH + i][posL].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH + i, posL);
@@ -2459,8 +2463,8 @@ void Enemy::Shoot()
 				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type == UnitHero)
 				{
-					UnitsMap[posH - i][posL].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
-					sprintf(tmp, " !%i! ", UnitsMap[posH - i][posL].GetUnit().health);
+/*					UnitsMap[posH - i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
+					sprintf(tmp, " !%i! ",/* UnitsMap[posH - i][posL].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH - i, posL);
@@ -2477,8 +2481,8 @@ void Enemy::Shoot()
 				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type == UnitHero)
 				{
-					UnitsMap[posH][posL + i].GetUnit().health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
-					sprintf(tmp, " !%i! ", UnitsMap[posH][posL + i].GetUnit().health);
+/*					UnitsMap[posH][posL + i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
+					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL + i].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH, posL + i);
@@ -2502,11 +2506,15 @@ void Hero::mHLogic(int& a1, int& a2)
 	{
 		if(UnitsMap[posH + a1][posL + a2].type == UnitEmpty)
 		{
-			PossibleUnit buffer = UnitsMap[posH][posL];
+/*			PossibleUnit buffer = UnitsMap[posH][posL];
 			UnitsMap[posH][posL].type = UnitEmpty;
 			posH += a1;
 			posL += a2;
-			UnitsMap[posH][posL] = buffer;
+			UnitsMap[posH][posL] = buffer;*/
+			UnitsMap[posH + a1][posL + a2] = UnitsMap[posH][posL];
+			UnitsMap[posH][posL].type = UnitEmpty;
+			posH += a1;
+			posL += a2;
 		}
 		else if(UnitsMap[posH + a1][posL + a2].type == UnitEnemy)
 		{
@@ -3649,13 +3657,16 @@ int main()
 
 		message = "";
 		bar = "";
-	
+		
 		move(hero.posH, hero.posL);
 
 		char inp = getch();
 	
 		hero.moveHero(inp);
 
+		sprintf(tmp, " hh:%i|hl:%i|s:%i|h:%i ", hero.posH, hero.posL, UnitsMap[hero.posH][hero.posL].GetUnit().symbol, UnitsMap[hero.posH][hero.posL].GetUnit().health);
+		message += tmp;
+	
 		if(!Stop)
 		{
 			TurnsCounter++;
