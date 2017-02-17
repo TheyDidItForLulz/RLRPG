@@ -20,6 +20,8 @@
 											','(Shotgun shells) == 451
 											'~'(Map) == 500
 											'!'(Blue potion) == 600
+											'!'(Green potion) == 601
+											'!'(Dark potion) == 602
 											'\'(Pickaxe) == 700
 */
 //////////////////////////////////////////////////////////////////////////////////////// Modificators /////////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +49,8 @@
 /////////////////////////////////////////////////////////////////////////////////////// Potion Effects ////////////////////////////////////////////////////////////////////////////////////
 /*
  											1 - Healing 3 hp
+											2 - Invisibility
+											3 - Random location teleport
 */
 /////////////////////////////////////////////////////////////////////////////////////// Tool possibilities ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -94,6 +98,8 @@
 #include<ncurses.h>									//
 #include<string.h>									//
 
+// !COMMENT! random potion effect, random events, modificators
+
 #define DIR_LEFT 0
 #define DIR_DOWN 1
 #define DIR_UP 2
@@ -126,7 +132,7 @@
 #define TypesOfWeapon 5									//
 #define TypesOfAmmo 2
 #define TypesOfScroll 1
-#define TypesOfPotion 1
+#define TypesOfPotion 3
 #define TypesOfTools 1
 #define TypesOfEnemies 3
 #define BLACK_BLACK 1
@@ -278,6 +284,10 @@ public:
 				return "Map";
 			case 600:
 				return "Blue potion";
+			case 601:
+				return "Green potion";
+			case 602:
+				return "Dark potion";
 			case 700:
 				return "Pickaxe";
 		}
@@ -483,6 +493,16 @@ public:
 				weight = 1;
 				effect = 1;
 				break;
+			case 1:
+				symbol = 601;
+				weight = 2;
+				effect = 1;
+				break;
+			case 2:
+				symbol = 602;
+				weight = 1;
+				effect = 3;
+				break;
 		}
 		isStackable = true;
 	}
@@ -512,7 +532,7 @@ public:
 	}
 	int possibility;
 	int uses;
-	
+
 	int damage;									// It is nedlectful to use weapon's attributes on tools
 
 	int range; 									// Ranged bullets have add effect on this paramether
@@ -676,6 +696,7 @@ Potion differentPotion[TypesOfPotion];
 Tools differentTools[TypesOfTools];
 
 int Luck;
+int INVISIBILITY = 0;
 
 class Unit
 {
@@ -1300,383 +1321,7 @@ public:
 
 	void Shoot();
 	
-	void ShowInventory(const char& inp){
-		
-		PossibleItem list[MaxInvVol];
-
-		int len = 0;
-
-		switch(inp){
-			
-			case CONTROL_SHOWINVENTORY:
-			{
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type != ItemEmpty)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-				
-				char hv[200] = "Here is your inventory.";
-
-				PrintList(list, len, hv, 1);
-					
-				char choise = getch();
-		
-				if(choise == '\033') return;
-
-				len = 0;
-
-				break;
-			}
-
-			case CONTROL_EAT:
-			{
-				
-				char hv[200] = "What do you want to eat?";
-
-				for(int i = 0; i < MaxInvVol; i++){
-				
-					if(inventory[i].type == ItemFood)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-		
-				}
-				
-				PrintList(list, len, hv, 1);
-
-				len = 0;
-
-				char choise = getch();
-
-				if(choise == '\033') return;
-				
-				int intch = choise - 'a';
-
-				if(inventory[intch].type == ItemFood)
-				{
-					int prob = rand() % Luck;
-					if(prob == 0)
-					{
-						hunger += inventory[intch].item.invFood.FoodHeal / 3;
-						health --;
-						message += "Fuck! This food was rotten! ";
-					}
-					else
-					{
-						hunger += inventory[intch].item.invFood.FoodHeal;
-					}
-					if(inventory[intch].GetItem().count == 1)
-					{
-						inventory[intch].type = ItemEmpty;
-					}
-					else
-					{
-						inventory[intch].GetItem().count--;
-					}
-				}
-				
-				break;
-			}	
-			case CONTROL_WEAR:
-			{
-				
-				char hv[200] = "What do you want to wear?";
-				
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type == ItemArmor)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-				PrintList(list, len, hv, 1);
-				len = 0;
-
-				char choise = getch();
-
-				if(choise == '\033') return;
-	
-				int intch = choise - 'a';
-
-				if(inventory[intch].type == ItemArmor)
-				{
-					sprintf(tmp, "Now you wearing %s. ", inventory[intch].GetItem().GetName());
-					message += tmp;
-
-					if(heroArmor->type != ItemEmpty)
-					{
-						heroArmor->GetItem().attribute = 100;
-					}
-					heroArmor = &inventory[intch];
-					inventory[intch].GetItem().attribute = 201;
-				}
-	
-				break;
-
-			}
-
-			case CONTROL_DROP:
-			{
-				char hv[200] = "What do you want to drop?";
-
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type != ItemEmpty)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-
-				PrintList(list, len, hv, 1);
-				len = 0;
-
-				char choise = getch();
-
-				if(choise == '\033') return;
-				
-				int intch = choise - 'a';
-				
-				int num = FindEmptyElementUnderThisCell(posH, posL);
-				if(num == 101010)
-				{
-					message += "There is too much items";
-					return;
-				}
-				
-				if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
-				if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-
-				ItemsMap[posH][posL][num] = inventory[intch];
-				inventory[intch].type = ItemEmpty;
-
-				if(GetInventoryItemsWeight() <= MaxInvItemsWeight && isBurdened)
-				{
-					message += "You are burdened no more. ";
-					isBurdened = false;
-				}
-
-				break;
-			}
-			case CONTROL_TAKEOFF:
-			{
-				
-				heroArmor->GetItem().attribute = 100;
-				heroArmor = &inventory[EMPTY_SLOT];
-				break;
-			
-			}
-			case CONTROL_WIELD:
-			{
-				char hv[200] = "What do you want to wield?";
-
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type == ItemWeapon || inventory[i].type == ItemTools)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-
-				PrintList(list, len, hv, 1);
-				len = 0;
-				
-				char choise = getch();
-
-				if(choise == '\033') return;
-				
-				int intch = choise - 'a';
-		
-				if(inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools)
-				{
-					sprintf(tmp, "You wield %s.", inventory[intch].GetItem().GetName());
-					message += tmp;
-
-					if(heroWeapon->type != ItemEmpty)
-					{
-						heroWeapon->GetItem().attribute = 100;
-					}
-					heroWeapon = &inventory[intch];
-					inventory[intch].GetItem().attribute = 301;
-				}
-		
-				break;
-			
-			}
-			case CONTROL_UNEQUIP:
-			{
-				heroWeapon->GetItem().attribute = 100;
-				heroWeapon = &inventory[EMPTY_SLOT];
-				break;
-			}
-			case CONTROL_THROW:
-			{
-				char hv[200] = "What do you want to throw?";
-
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type != ItemEmpty)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-
-				PrintList(list, len, hv, 1);
-				len = 0;
-
-				char choise = getch();
-				if(choise == '\033') return;
-				int intch = choise - 'a';
-
-				if(inventory[intch].type != ItemEmpty)
-				{
-					ClearRightPane();
-					move(0, Length + 10);
-					printw("In what direction?");
-					char secondChoise = getch();
-					if(inventory[intch].GetItem().inventorySymbol == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
-					if(inventory[intch].GetItem().inventorySymbol == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-					ThrowAnimated(inventory[intch], secondChoise);
-				}
-				break;
-			}
-			case CONTROL_DRINK:
-			{
-				char hv[200] = "What do you want to drink?";
-
-				for(int i = 0; i < MaxInvVol; i++)
-				{
-					if(inventory[i].type == ItemPotion)
-					{
-						list[len] = inventory[i];
-						len++;
-					}
-				}
-
-				PrintList(list, len, hv, 1);
-				len = 0;
-
-				char choise = getch();
-				if(choise == '\033') return;
-				int intch = choise - 'a';
-
-				if(inventory[intch].type == ItemPotion)
-				{
-					switch(inventory[intch].item.invPotion.effect)
-					{
-						case 1:
-							health += 3;
-							if(health > DEFAULT_HERO_HEALTH)
-							{
-								health = DEFAULT_HERO_HEALTH;
-							}
-							message += "Now you feeling better. ";
-							break;
-					}
-					if( inventory[intch].GetItem().count == 1 )
-					{
-						inventory[intch].type = ItemEmpty;
-					}
-					else
-					{
-						--inventory[intch].GetItem().count;
-					}
-				}
-				break;
-			}
-			case CONTROL_OPENBANDOLIER:
-			{
-				ClearRightPane();
-				move(0, Length + 10);
-				printw("Here is your ammo.");
-		//		move(1, Length + 10);
-				int choise = 0;
-				int num = 0;
-				PossibleItem buffer;
-				int pos;
-				while(1)
-				{
-					num = 0;
-					for(int i = 0; i < BANDOLIER; i++)
-					{
-						move(1, Length + 12 + num);
-						num += 2;
-						if(inventory[AMMO_SLOT + i].type == ItemAmmo)
-						{
-							switch(inventory[AMMO_SLOT + i].GetItem().symbol)
-							{
-								case 450:
-									if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
-									else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
-									break;
-								case 451:
-									if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
-									else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
-									break;
-								default:
-									if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-									else addch('-' | COLOR_PAIR(WHITE_BLACK));
-									break;
-							}
-						}
-						else
-						{
-							if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-							else addch('-' | COLOR_PAIR(WHITE_BLACK));
-						}
-					}
-					switch(getch())
-					{
-						case CONTROL_LEFT:
-						{
-							if(choise > 0) choise--;
-							break;
-						}
-						case CONTROL_RIGHT:
-						{
-							if(choise < BANDOLIER - 1) choise++;
-							break;
-						}
-						case CONTROL_EXCHANGE:
-						{
-							if(buffer.type != ItemEmpty)
-							{
-								inventory[pos] = inventory[AMMO_SLOT + choise];
-								inventory[AMMO_SLOT + choise] = buffer;
-								buffer.type = ItemEmpty;
-							}
-							else
-							{
-								buffer = inventory[AMMO_SLOT + choise];
-								inventory[AMMO_SLOT + choise].type = ItemEmpty;
-								pos = AMMO_SLOT + choise;
-							}
-							break;
-						}
-						case '\033':
-						{
-							if(buffer.type != ItemEmpty)
-							{
-								inventory[pos].type = ItemAmmo;
-								buffer.type = ItemEmpty;
-							}
-							return;
-							break;
-						}
-					}
-				}
-				break;
-			}
-		}
-	}
+	void ShowInventory(const char& inp);
 	
 	void Eat()
 	{
@@ -1995,6 +1640,409 @@ struct PossibleUnit
 PossibleUnit UnitsMap[FIELD_ROWS][FIELD_COLS];
 
 Enemy differentEnemies[TypesOfEnemies];
+
+void Hero::ShowInventory(const char& inp)
+{	
+	PossibleItem list[MaxInvVol];
+
+	int len = 0;
+
+	switch(inp)
+	{	
+		case CONTROL_SHOWINVENTORY:
+		{
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type != ItemEmpty)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+			
+			char hv[200] = "Here is your inventory.";
+
+			PrintList(list, len, hv, 1);
+				
+			char choise = getch();
+	
+			if(choise == '\033') return;
+
+			len = 0;
+
+			break;
+		}
+
+		case CONTROL_EAT:
+		{
+			
+			char hv[200] = "What do you want to eat?";
+
+			for(int i = 0; i < MaxInvVol; i++){
+			
+				if(inventory[i].type == ItemFood)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+	
+			}
+			
+			PrintList(list, len, hv, 1);
+
+			len = 0;
+
+			char choise = getch();
+
+			if(choise == '\033') return;
+			
+			int intch = choise - 'a';
+
+			if(inventory[intch].type == ItemFood)
+			{
+				int prob = rand() % Luck;
+				if(prob == 0)
+				{
+					hunger += inventory[intch].item.invFood.FoodHeal / 3;
+					health --;
+					message += "Fuck! This food was rotten! ";
+				}
+				else
+				{
+					hunger += inventory[intch].item.invFood.FoodHeal;
+				}
+				if(inventory[intch].GetItem().count == 1)
+				{
+					inventory[intch].type = ItemEmpty;
+				}
+				else
+				{
+					inventory[intch].GetItem().count--;
+				}
+			}
+			
+			break;
+		}	
+		case CONTROL_WEAR:
+		{
+			
+			char hv[200] = "What do you want to wear?";
+			
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type == ItemArmor)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+			PrintList(list, len, hv, 1);
+			len = 0;
+
+			char choise = getch();
+
+			if(choise == '\033') return;
+
+			int intch = choise - 'a';
+
+			if(inventory[intch].type == ItemArmor)
+			{
+				sprintf(tmp, "Now you wearing %s. ", inventory[intch].GetItem().GetName());
+				message += tmp;
+
+				if(heroArmor->type != ItemEmpty)
+				{
+					heroArmor->GetItem().attribute = 100;
+				}
+				heroArmor = &inventory[intch];
+				inventory[intch].GetItem().attribute = 201;
+			}
+
+			break;
+
+		}
+
+		case CONTROL_DROP:
+		{
+			char hv[200] = "What do you want to drop?";
+
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type != ItemEmpty)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+
+			PrintList(list, len, hv, 1);
+			len = 0;
+
+			char choise = getch();
+
+			if(choise == '\033') return;
+			
+			int intch = choise - 'a';
+			
+			int num = FindEmptyElementUnderThisCell(posH, posL);
+			if(num == 101010)
+			{
+				message += "There is too much items";
+				return;
+			}
+			
+			if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
+			if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
+
+			ItemsMap[posH][posL][num] = inventory[intch];
+			inventory[intch].type = ItemEmpty;
+
+			if(GetInventoryItemsWeight() <= MaxInvItemsWeight && isBurdened)
+			{
+				message += "You are burdened no more. ";
+				isBurdened = false;
+			}
+
+			break;
+		}
+		case CONTROL_TAKEOFF:
+		{
+			
+			heroArmor->GetItem().attribute = 100;
+			heroArmor = &inventory[EMPTY_SLOT];
+			break;
+		
+		}
+		case CONTROL_WIELD:
+		{
+			char hv[200] = "What do you want to wield?";
+
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type == ItemWeapon || inventory[i].type == ItemTools)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+
+			PrintList(list, len, hv, 1);
+			len = 0;
+			
+			char choise = getch();
+
+			if(choise == '\033') return;
+			
+			int intch = choise - 'a';
+	
+			if(inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools)
+			{
+				sprintf(tmp, "You wield %s.", inventory[intch].GetItem().GetName());
+				message += tmp;
+
+				if(heroWeapon->type != ItemEmpty)
+				{
+					heroWeapon->GetItem().attribute = 100;
+				}
+				heroWeapon = &inventory[intch];
+				inventory[intch].GetItem().attribute = 301;
+			}
+	
+			break;
+		
+		}
+		case CONTROL_UNEQUIP:
+		{
+			heroWeapon->GetItem().attribute = 100;
+			heroWeapon = &inventory[EMPTY_SLOT];
+			break;
+		}
+		case CONTROL_THROW:
+		{
+			char hv[200] = "What do you want to throw?";
+
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type != ItemEmpty)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+
+			PrintList(list, len, hv, 1);
+			len = 0;
+
+			char choise = getch();
+			if(choise == '\033') return;
+			int intch = choise - 'a';
+
+			if(inventory[intch].type != ItemEmpty)
+			{
+				ClearRightPane();
+				move(0, Length + 10);
+				printw("In what direction?");
+				char secondChoise = getch();
+				if(inventory[intch].GetItem().inventorySymbol == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
+				if(inventory[intch].GetItem().inventorySymbol == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
+				ThrowAnimated(inventory[intch], secondChoise);
+			}
+			break;
+		}
+		case CONTROL_DRINK:
+		{
+			char hv[200] = "What do you want to drink?";
+
+			for(int i = 0; i < MaxInvVol; i++)
+			{
+				if(inventory[i].type == ItemPotion)
+				{
+					list[len] = inventory[i];
+					len++;
+				}
+			}
+
+			PrintList(list, len, hv, 1);
+			len = 0;
+
+			char choise = getch();
+			if(choise == '\033') return;
+			int intch = choise - 'a';
+
+			if(inventory[intch].type == ItemPotion)
+			{
+				switch(inventory[intch].item.invPotion.effect)
+				{
+					case 1:
+					{
+						health += 3;
+						if(health > DEFAULT_HERO_HEALTH)
+						{
+							health = DEFAULT_HERO_HEALTH;
+						}
+						message += "Now you feeling better. ";
+						break;
+					}
+					case 2:
+					{
+						INVISIBILITY = 200;
+						break;
+					}
+					case 3:
+					{
+						for(int i = 0; i < 1; i++)
+						{
+							int l = rand() % Length;
+							int h = rand() % Height;
+							if(map[h][l] != 2 && UnitsMap[h][l].type == UnitEmpty)
+							{
+								UnitsMap[h][l] = UnitsMap[posH][posL];
+								UnitsMap[posH][posL].type = UnitEmpty;
+								posH = h;
+								posL = l;
+							}
+							else i--;
+						}
+						break;
+					}
+				}
+				if( inventory[intch].GetItem().count == 1 )
+				{
+					inventory[intch].type = ItemEmpty;
+				}
+				else
+				{
+					--inventory[intch].GetItem().count;
+				}
+			}
+			break;
+		}
+		case CONTROL_OPENBANDOLIER:
+		{
+			ClearRightPane();
+			move(0, Length + 10);
+			printw("Here is your ammo.");
+	//		move(1, Length + 10);
+			int choise = 0;
+			int num = 0;
+			PossibleItem buffer;
+			int pos;
+			while(1)
+			{
+				num = 0;
+				for(int i = 0; i < BANDOLIER; i++)
+				{
+					move(1, Length + 12 + num);
+					num += 2;
+					if(inventory[AMMO_SLOT + i].type == ItemAmmo)
+					{
+						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+						{
+							case 450:
+								if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
+								else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
+							case 451:
+								if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
+								else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								break;
+							default:
+								if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+								else addch('-' | COLOR_PAIR(WHITE_BLACK));
+								break;
+						}
+					}
+					else
+					{
+						if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+						else addch('-' | COLOR_PAIR(WHITE_BLACK));
+					}
+				}
+				switch(getch())
+				{
+					case CONTROL_LEFT:
+					{
+						if(choise > 0) choise--;
+						break;
+					}
+					case CONTROL_RIGHT:
+					{
+						if(choise < BANDOLIER - 1) choise++;
+						break;
+					}
+					case CONTROL_EXCHANGE:
+					{
+						if(buffer.type != ItemEmpty)
+						{
+							inventory[pos] = inventory[AMMO_SLOT + choise];
+							inventory[AMMO_SLOT + choise] = buffer;
+							buffer.type = ItemEmpty;
+						}
+						else
+						{
+							buffer = inventory[AMMO_SLOT + choise];
+							inventory[AMMO_SLOT + choise].type = ItemEmpty;
+							pos = AMMO_SLOT + choise;
+						}
+						break;
+					}
+					case '\033':
+					{
+						if(buffer.type != ItemEmpty)
+						{
+							inventory[pos].type = ItemAmmo;
+							buffer.type = ItemEmpty;
+						}
+						return;
+						break;
+					}
+				}
+			}
+			break;
+		}
+	}
+}
+
 
 void DropInventory(PossibleUnit& unit)
 {
@@ -2680,7 +2728,17 @@ void CheckDestinationCell(PossibleUnit& unit, int a1, int a2)
 
 void UpdatePosition(PossibleUnit& unit)
 {
-	bool HeroVisible = CheckHeroVisibility(unit);
+	bool HeroVisible;
+
+	if(INVISIBILITY > 0)
+	{
+		HeroVisible = false;
+	}
+	else
+	{
+		HeroVisible = CheckHeroVisibility(unit);
+	}
+
 	if(HeroVisible && unit.unit.uEnemy.unitWeapon->item.invWeapon.Ranged == true && unit.unit.uEnemy.unitAmmo->item.invAmmo.count > 0 && unit.unit.uEnemy.unitWeapon->item.invWeapon.range >= unit.unit.uEnemy.dist)
 	{
 		unit.unit.uEnemy.Shoot();
@@ -2832,7 +2890,7 @@ void SetItems()
 
 		if(map[h][l] == 1)
 		{
-			int p = rand() % TypesOfScroll;
+			int p = rand() % TypesOfPotion;
 			buffer = differentPotion[p];
 			ItemsMap[h][l][rand() % Depth] = buffer;
 		}
@@ -2980,6 +3038,12 @@ void Draw(){
 							break;
 						case 600:
 							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
+						case 601:
+							addch('!' | COLOR_PAIR(GREEN_BLACK));
+							break;
+						case 602:
+							addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
 						case 700:
 							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
@@ -3141,6 +3205,12 @@ void Draw(){
 							case 600:
 								addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
 								break;
+							case 601:
+								addch('!' | COLOR_PAIR(GREEN_BLACK));
+								break;
+							case 602:
+								addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
 							case 700:
 								addch('\\' | COLOR_PAIR(YELLOW_BLACK));
 								break;
@@ -3234,6 +3304,12 @@ void Draw(){
 							break;
 						case 600:
 							addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
+							break;
+						case 601:
+							addch('!' | COLOR_PAIR(GREEN_BLACK));
+							break;
+						case 602:
+							addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
 						case 700:
 							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
@@ -3594,7 +3670,11 @@ int main()
 	differentScroll[0] = MapScroll;
 
 	Potion BluePotion(0);
+	Potion GreenPotion(1);
+	Potion DarkPotion(2);
 	differentPotion[0] = BluePotion;
+	differentPotion[1] = GreenPotion;
+	differentPotion[2] = DarkPotion;
 
 	Enemy Barbarian(0);
 	Enemy Zombie(1);
@@ -3707,7 +3787,8 @@ int main()
 			}
 
 			hero.hunger--;
-			
+			if(INVISIBILITY > 0) INVISIBILITY--;
+		
 			if(hero.isBurdened) hero.hunger--;
 
 			UpdateAI();
