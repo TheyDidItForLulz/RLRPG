@@ -22,6 +22,8 @@
 											'!'(Blue potion) == 600
 											'!'(Green potion) == 601
 											'!'(Dark potion) == 602
+											'!'(Magenta potion) == 603
+											'!'(Yellow potion) == 604
 											'\'(Pickaxe) == 700
 */
 //////////////////////////////////////////////////////////////////////////////////////// Modificators /////////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +53,8 @@
  											1 - Healing 3 hp
 											2 - Invisibility
 											3 - Random location teleport
+											4 - Nothing
+											5 - Blindness
 */
 /////////////////////////////////////////////////////////////////////////////////////// Tool possibilities ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -78,8 +82,8 @@
                                                                                          Detect, is food rotten                                                                            
                                                                                            /                \
                                                                                 Shoot through             Chance to confuse monster                                                        
-                                                                                                                                                                                           
-                                                                                                                                                                                           
+                                                                                      |                               |                                                                    
+                                                                                Combine things             Items identify by hands(?)                                                      
                                                                                                                                                                                            
                                                                                                                                                                                            
                                                                                                                                                                                            
@@ -89,7 +93,7 @@
                                                                                                                                                                                            
 */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And enemies stuff.
+//!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And other stuff.
 
 #include<stdio.h>									//
 #include<iostream>									//
@@ -132,7 +136,7 @@
 #define TypesOfWeapon 5									//
 #define TypesOfAmmo 2
 #define TypesOfScroll 1
-#define TypesOfPotion 3
+#define TypesOfPotion 5
 #define TypesOfTools 1
 #define TypesOfEnemies 3
 #define BLACK_BLACK 1
@@ -162,7 +166,9 @@
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
 #define Depth MaxInvVol*2
-#define VISION 16									//
+#define DEFAULT_VISION 16
+int VISION = 16;
+int BLINDNESS = 0;
 #define VISION_PRECISION 256
 int MaxInvItemsWeight = 25;								//
 // !COMMENT! // Level-up and items stacking
@@ -288,6 +294,10 @@ public:
 				return "Green potion";
 			case 602:
 				return "Dark potion";
+			case 603:
+				return "Magenta potion";
+			case 604:
+				return "Yellow potion";
 			case 700:
 				return "Pickaxe";
 		}
@@ -490,20 +500,22 @@ public:
 		{
 			case 0:
 				symbol = 600;
-				weight = 1;
-				effect = 1;
 				break;
 			case 1:
 				symbol = 601;
-				weight = 2;
-				effect = 1;
 				break;
 			case 2:
 				symbol = 602;
-				weight = 1;
-				effect = 3;
+				break;
+			case 3:
+				symbol = 603;
+				break;
+			case 4:
+				symbol = 604;
 				break;
 		}
+		weight = 1;
+		effect = 0;
 		isStackable = true;
 	}
 	int effect;
@@ -1921,11 +1933,13 @@ void Hero::ShowInventory(const char& inp)
 							health = DEFAULT_HERO_HEALTH;
 						}
 						message += "Now you feeling better. ";
+						message += "1";
 						break;
 					}
 					case 2:
 					{
-						INVISIBILITY = 200;
+						INVISIBILITY = 300;
+						message += "2";
 						break;
 					}
 					case 3:
@@ -1940,9 +1954,24 @@ void Hero::ShowInventory(const char& inp)
 								UnitsMap[posH][posL].type = UnitEmpty;
 								posH = h;
 								posL = l;
+								FindVisibleArray();
 							}
 							else i--;
 						}
+						message += "3";
+						break;
+					}
+					case 4:
+					{
+						message += "Well.. You didn't die. Nice. ";
+						message += "4";
+						break;
+					}
+					case 5:
+					{
+						VISION = 1;
+						BLINDNESS = 50;
+						message += "5";
 						break;
 					}
 				}
@@ -2476,7 +2505,7 @@ void Enemy::Shoot()
 				if(UnitsMap[posH][posL - i].type == UnitHero)
 				{
 /*					UnitsMap[posH][posL - i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL - i].GetUnit()*/hero.health);
+//					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL - i].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH, posL - i);
@@ -2494,7 +2523,7 @@ void Enemy::Shoot()
 				if(UnitsMap[posH + i][posL].type == UnitHero)
 				{
 /*					UnitsMap[posH + i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-					sprintf(tmp, " !%i! ", /*UnitsMap[posH + i][posL].GetUnit()*/hero.health);
+//					sprintf(tmp, " !%i! ", /*UnitsMap[posH + i][posL].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH + i, posL);
@@ -2512,7 +2541,7 @@ void Enemy::Shoot()
 				if(UnitsMap[posH - i][posL].type == UnitHero)
 				{
 /*					UnitsMap[posH - i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
-					sprintf(tmp, " !%i! ",/* UnitsMap[posH - i][posL].GetUnit()*/hero.health);
+//					sprintf(tmp, " !%i! ",/* UnitsMap[posH - i][posL].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH - i, posL);
@@ -2530,7 +2559,7 @@ void Enemy::Shoot()
 				if(UnitsMap[posH][posL + i].type == UnitHero)
 				{
 /*					UnitsMap[posH][posL + i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
-					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL + i].GetUnit()*/hero.health);
+//					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL + i].GetUnit()*/hero.health);
 					message += tmp;
 				}
 				move(posH, posL + i);
@@ -3045,6 +3074,12 @@ void Draw(){
 						case 602:
 							addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
+						case 603:
+							addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
+							break;
+						case 604:
+							addch('!' | COLOR_PAIR(YELLOW_BLACK));
+							break;
 						case 700:
 							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
 							break;
@@ -3211,6 +3246,12 @@ void Draw(){
 							case 602:
 								addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								break;
+							case 603:
+								addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
+								break;
+							case 604:
+								addch('!' | COLOR_PAIR(YELLOW_BLACK));
+								break;
 							case 700:
 								addch('\\' | COLOR_PAIR(YELLOW_BLACK));
 								break;
@@ -3310,6 +3351,12 @@ void Draw(){
 							break;
 						case 602:
 							addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 603:
+							addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
+							break;
+						case 604:
+							addch('!' | COLOR_PAIR(YELLOW_BLACK));
 							break;
 						case 700:
 							addch('\\' | COLOR_PAIR(YELLOW_BLACK));
@@ -3588,6 +3635,19 @@ void GetXP()
 	}
 }
 
+void SetRandomPotionEffects()
+{
+	for(int i = 0; i < TypesOfPotion; i++)
+	{
+		int rv = rand() % TypesOfPotion;
+		if(differentPotion[rv].effect == 0)
+		{
+			differentPotion[rv].effect = i + 1;
+		}
+		else i--;
+	}
+}
+
 int main()
 {
 	initscr();
@@ -3672,9 +3732,15 @@ int main()
 	Potion BluePotion(0);
 	Potion GreenPotion(1);
 	Potion DarkPotion(2);
+	Potion Boooring_shiiit(3);
+	Potion Fuck_It_All(4);
 	differentPotion[0] = BluePotion;
 	differentPotion[1] = GreenPotion;
 	differentPotion[2] = DarkPotion;
+	differentPotion[3] = Boooring_shiiit;
+	differentPotion[4] = Fuck_It_All;
+	
+	SetRandomPotionEffects();
 
 	Enemy Barbarian(0);
 	Enemy Zombie(1);
@@ -3744,8 +3810,8 @@ int main()
 	
 		hero.moveHero(inp);
 
-		sprintf(tmp, " hh:%i|hl:%i|s:%i|h:%i ", hero.posH, hero.posL, UnitsMap[hero.posH][hero.posL].GetUnit().symbol, UnitsMap[hero.posH][hero.posL].GetUnit().health);
-		message += tmp;
+//		sprintf(tmp, " hh:%i|hl:%i|s:%i|h:%i ", hero.posH, hero.posL, UnitsMap[hero.posH][hero.posL].GetUnit().symbol, UnitsMap[hero.posH][hero.posL].GetUnit().health);
+//		message += tmp;
 	
 		if(!Stop)
 		{
@@ -3773,21 +3839,24 @@ int main()
 				return 0;
 			}
 
-			if(TurnsCounter > 25 && MODE == 1)
+			if(TurnsCounter % 25 == 0 && TurnsCounter != 0 && MODE == 1)
 			{
 				if(hero.health < DEFAULT_HERO_HEALTH)
 				{
 					hero.health ++;
 				}
-				TurnsCounter = 0;
-			}
-			else if(MODE == 1 && TurnsCounter > 100)
-			{
-				TurnsCounter = 0;
 			}
 
 			hero.hunger--;
+			
 			if(INVISIBILITY > 0) INVISIBILITY--;
+
+			if(BLINDNESS > 1) BLINDNESS --;
+			else if(BLINDNESS == 1)
+			{
+				BLINDNESS--;
+				VISION = DEFAULT_VISION;
+			}
 		
 			if(hero.isBurdened) hero.hunger--;
 
