@@ -162,7 +162,7 @@
 #define WEAPONCOUNT 15									//
 #define AMMOCOUNT 25
 #define SCROLLCOUNT 0 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 30 /* IT TOO */
+#define POTIONCOUNT 25 /* IT TOO */
 #define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
 #define Depth MaxInvVol*2
@@ -218,6 +218,8 @@ char tmp[100];
 
 void MoveUnit(int, int&, int&, int, int);
 
+bool discoveredPotions[TypesOfPotion] = {};
+
 class Item
 {
 
@@ -236,16 +238,18 @@ public:
 	bool showMdf;
 	bool isStackable;
 
+	const char* GetPotionName(int symbol);
+
 	const char* GetMdf()
 	{
 		switch(mdf)
 		{
 			case 100:
-				return "Nothing";
+				return "nothing";
 			case 101: 
-				return "Poisoned";
+				return "poisoned";
 			case 102:
-				return "Rotten";
+				return "rotten";
 		}
 	}
 	const char* GetAttribute()
@@ -253,11 +257,11 @@ public:
 		switch(attribute)
 		{
 			case 100:
-				return "Nothing";
+				return "nothing";
 			case 201:
-				return "Being worn";
+				return "being worn";
 			case 301:
-				return "Wielded";
+				return "wielded";
 		}
 	}
 	const char* GetName()
@@ -265,41 +269,41 @@ public:
 		switch(symbol)
 		{
 			case 100:
-				return "Egg";
+				return "egg";
 			case 101:
-				return "Apple";
+				return "apple";
 			case 300:
-				return "Chain chestplate";
+				return "chain chestplate";
 			case 301:
-				return "Leather chestplate";
+				return "leather chestplate";
 			case 400:
-				return "Copper shortsword";
+				return "copper shortsword";
 			case 401:
-				return "Bronze spear";
+				return "bronze spear";
 			case 402:
-				return "Musket";
+				return "musket";
 			case 403:
-				return "Stick";
+				return "stick";
 			case 404:
-				return "Shotgun";
+				return "shotgun";
 			case 450:
-				return "Steel bullets";
+				return "steel bullets";
 			case 451:
-				return "Shotgun shells";
+				return "shotgun shells";
 			case 500:
-				return "Map";
+				return "map";
 			case 600:
-				return "Blue potion";
+				return GetPotionName(symbol);
 			case 601:
-				return "Green potion";
+				return GetPotionName(symbol);
 			case 602:
-				return "Dark potion";
+				return GetPotionName(symbol);
 			case 603:
-				return "Magenta potion";
+				return GetPotionName(symbol);
 			case 604:
-				return "Yellow potion";
+				return GetPotionName(symbol);
 			case 700:
-				return "Pickaxe";
+				return "pickaxe";
 		}
 	}
 	~Item(){};
@@ -706,6 +710,44 @@ Scroll differentScroll[TypesOfScroll];
 Potion differentPotion[TypesOfPotion];
 
 Tools differentTools[TypesOfTools];
+
+const char* Item::GetPotionName(int symbol)
+{
+	symbol -= 600;
+	
+	if(discoveredPotions[symbol])
+	{
+		switch(differentPotion[symbol].effect)
+		{
+			case 1:
+				return "potion of healing";
+			case 2:
+				return "potion of invisibility";
+			case 3:
+				return "potion of teleport";
+			case 4:
+				return "potion of... Water?";
+			case 5:
+				return "potion of blindness";
+		}
+	}
+	else
+	{
+		switch(symbol)
+		{
+			case 0:
+				return "blue potion";
+			case 1:
+				return "green potion";
+			case 2:
+				return "dark potion";
+			case 3:
+				return "magenta potion";
+			case 4:
+				return "yellow potion";
+		}
+	}
+}
 
 int Luck;
 int INVISIBILITY = 0;
@@ -1933,13 +1975,11 @@ void Hero::ShowInventory(const char& inp)
 							health = DEFAULT_HERO_HEALTH;
 						}
 						message += "Now you feeling better. ";
-						message += "1";
 						break;
 					}
 					case 2:
 					{
 						INVISIBILITY = 300;
-						message += "2";
 						break;
 					}
 					case 3:
@@ -1958,23 +1998,21 @@ void Hero::ShowInventory(const char& inp)
 							}
 							else i--;
 						}
-						message += "3";
 						break;
 					}
 					case 4:
 					{
 						message += "Well.. You didn't die. Nice. ";
-						message += "4";
 						break;
 					}
 					case 5:
 					{
 						VISION = 1;
 						BLINDNESS = 50;
-						message += "5";
 						break;
 					}
 				}
+				discoveredPotions[inventory[intch].item.invPotion.symbol - 600] = true;
 				if( inventory[intch].GetItem().count == 1 )
 				{
 					inventory[intch].type = ItemEmpty;
