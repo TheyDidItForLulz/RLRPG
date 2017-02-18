@@ -152,9 +152,9 @@
 #define LIGHT A_BOLD 
 #define UL A_UNDERLINE
 #define DELAY 0.07
-#define BANDOLIER 3									// It means, that you can carry 3 types of ammo. Please, do NOT change it. It is unexpected.
-#define MaxInvVol 53									//
-#define TrueMaxInvVol 54+BANDOLIER							// Where 3 is supported type of ammo in inventory
+#define BANDOLIER 3									// It means, that you can carry 3 types of ammo
+#define MaxInvVol 53
+#define TrueMaxInvVol 54+BANDOLIER
 #define AMMO_SLOT 53
 #define EMPTY_SLOT 54
 #define FOODCOUNT 10									//
@@ -1011,7 +1011,7 @@ public:
 		return false;
 	}
 	
-	int FindElementsNumberUnderThisCell(int h, int l)
+	int FindItemsCountUnderThisCell(int h, int l)
 	{
 		int result = 0;
 		for(int i = 0; i < Depth; i++)
@@ -1133,13 +1133,13 @@ public:
 
 	void PickUp(){
 		
-		if(FindElementsNumberUnderThisCell(posH, posL) == 0)
+		if(FindItemsCountUnderThisCell(posH, posL) == 0)
 		{
 			message += "There is nothing here to pick up. ";
 			Stop = true;
 			return;
 		}
-		else if(FindElementsNumberUnderThisCell(posH, posL) == 1)
+		else if(FindItemsCountUnderThisCell(posH, posL) == 1)
 		{
 			int num = FindNotEmptyElementUnderThisCell(posH, posL);
 
@@ -2998,7 +2998,7 @@ void Draw(){
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
 				
-/* Here */			if(hero.FindElementsNumberUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			if(hero.FindItemsCountUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					switch(mapSaved[i][j])
 					{
@@ -3024,7 +3024,7 @@ void Draw(){
 							break;
 					}
 				}
-/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.FindItemsCountUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					int MeetedElement = hero.FindNotEmptyElementUnderThisCell(i, j);
 					switch(ItemsMap[i][j][MeetedElement].GetItem().symbol){
@@ -3085,7 +3085,7 @@ void Draw(){
 							break;
 					}
 				}
-/* Here */			else if(hero.FindElementsNumberUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.FindItemsCountUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
 				}
@@ -3147,7 +3147,7 @@ void Draw(){
 		{
 			if(seenUpdated[i][j])
 			{
-				int itemsOnCell = hero.FindElementsNumberUnderThisCell(i, j);
+				int itemsOnCell = hero.FindItemsCountUnderThisCell(i, j);
 				if( itemsOnCell == 0 )
 				{
 					mapSaved[i][j] = map[i][j];
