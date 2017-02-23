@@ -99,6 +99,8 @@
 #include<time.h>									//
 #include<ncurses.h>									//
 #include<string.h>									//
+#include<vector>
+#include<queue>
 
 // !COMMENT! random potion effect, random events, modificators
 
@@ -220,7 +222,6 @@ bool discoveredPotions[TypesOfPotion] = {};
 
 class Item
 {
-
 public:
 		
 	Item(): mdf(1), showMdf(false), attribute(100), count(1){};
@@ -770,6 +771,7 @@ public:
 	int posH;
 	int posL;
 	int symbol;
+	int vision;
 	
 	const char* GetName()
 	{
@@ -783,6 +785,52 @@ public:
 				return "Zombie";
 		}
 	}
+
+	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
+	{
+		double dx = to_x - from_x;
+		double dy = to_y - from_y;
+		if( ABS( dx ) > ABS( dy ) )
+		{
+			double k = dy / dx;
+			int s = SGN( dx );
+			for( int i = 0; i * s < dx * s; i += s )
+			{
+				int x = from_x + i;
+				int y = from_y + i * k;
+				if( map[y][x] == 2 )
+				{
+					return false;
+				}
+			}
+		}
+		else
+		{
+			double k = dx / dy;
+			int s = SGN( dy );
+			for( int i = 0; i * s < dy * s; i += s )
+			{
+				int x = from_x + i * k;
+				int y = from_y + i;
+				if( map[y][x] == 2 )
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	bool CanSeeCell( int h, int l )
+	{
+		double offset = 1. / VISION_PRECISION;
+		return
+		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + 1 - offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + offset ) ||
+		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + 1 - offset );
+	}
+
 	~Unit(){};
 };
 
@@ -839,13 +887,16 @@ public:
 			}
 		}
 		dist = 0;
+		lastHeroSeenH = -1;
+		lastHeroSeenL = -1;
 	}
-	int vision;
 	int dir;
 	int dist;
 	int movedOnTurn;
 	int xpIncreasing;
-		
+	int lastHeroSeenH;
+	int lastHeroSeenL;
+
 	void Delay(double s)
 	{
 		clock_t clocksNow = clock();
@@ -872,51 +923,6 @@ public:
 	bool CanHeroMoveThroughWalls;
 	
 //	void CopyHeroToCell();
-
-	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
-	{
-		double dx = to_x - from_x;
-		double dy = to_y - from_y;
-		if( ABS( dx ) > ABS( dy ) )
-		{
-			double k = dy / dx;
-			int s = SGN( dx );
-			for( int i = 0; i * s < dx * s; i += s )
-			{
-				int x = from_x + i;
-				int y = from_y + i * k;
-				if( map[y][x] == 2 )
-				{
-					return false;
-				}
-			}
-		}
-		else
-		{
-			double k = dx / dy;
-			int s = SGN( dy );
-			for( int i = 0; i * s < dy * s; i += s )
-			{
-				int x = from_x + i * k;
-				int y = from_y + i;
-				if( map[y][x] == 2 )
-				{
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	bool CanSeeCell( int h, int l )
-	{
-		double offset = 1. / VISION_PRECISION;
-		return
-		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + 1 - offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + 1 - offset );
-	}
 
 	void FindVisibleArray()
 	{
@@ -2190,7 +2196,6 @@ void Hero::ShowInventory(const char& inp)
 	}
 }
 
-
 void DropInventory(PossibleUnit& unit)
 {
 	int h = unit.GetUnit().posH;
@@ -2611,90 +2616,6 @@ void Hero::Shoot()
 	}
 }
 
-void Enemy::Shoot()
-{
-	switch(dir)
-	{
-		case DIR_LEFT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH][posL - i] == 2) break;
-				if(UnitsMap[posH][posL - i].type == UnitHero)
-				{
-/*					UnitsMap[posH][posL - i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-//					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL - i].GetUnit()*/hero.health);
-					message += tmp;
-				}
-				move(posH, posL - i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_DOWN:
-		{	
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH + i][posL] == 2) break;
-				if(UnitsMap[posH + i][posL].type == UnitHero)
-				{
-/*					UnitsMap[posH + i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
-//					sprintf(tmp, " !%i! ", /*UnitsMap[posH + i][posL].GetUnit()*/hero.health);
-					message += tmp;
-				}
-				move(posH + i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_UP:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH - i][posL] == 2) break;
-				if(UnitsMap[posH - i][posL].type == UnitHero)
-				{
-/*					UnitsMap[posH - i][posL].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
-//					sprintf(tmp, " !%i! ",/* UnitsMap[posH - i][posL].GetUnit()*/hero.health);
-					message += tmp;
-				}
-				move(posH - i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_RIGHT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH][posL + i] == 2) break;
-				if(UnitsMap[posH][posL + i].type == UnitHero)
-				{
-/*					UnitsMap[posH][posL + i].GetUnit()*/hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
-//					sprintf(tmp, " !%i! ", /*UnitsMap[posH][posL + i].GetUnit()*/hero.health);
-					message += tmp;
-				}
-				move(posH, posL + i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-	}
-	unitAmmo->item.invAmmo.count--;
-	if(unitAmmo->item.invAmmo.count <= 0)
-	{
-		unitAmmo->type = ItemEmpty;
-	}
-}
-
 void Hero::mHLogic(int& a1, int& a2)
 {
 	if(map[posH + a1][posL + a2] != 2 || (map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls) && (posH + a1 > 0 && posH + a1 < Height - 1 && posL + a2 > 0 && posL + a2 < Length - 1))
@@ -2745,6 +2666,87 @@ void Hero::mHLogic(int& a1, int& a2)
 	}
 	FindVisibleArray();
 }
+
+/*void Enemy::Shoot()
+{
+	switch(dir)
+	{
+		case DIR_LEFT:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH][posL - i] == 2) break;
+				if(UnitsMap[posH][posL - i].type == UnitHero)
+				{
+					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					message += tmp;
+				}
+				move(posH, posL - i);
+				addch('-');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_DOWN:
+		{	
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH + i][posL] == 2) break;
+				if(UnitsMap[posH + i][posL].type == UnitHero)
+				{
+					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					message += tmp;
+				}
+				move(posH + i, posL);
+				addch('|');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_UP:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH - i][posL] == 2) break;
+				if(UnitsMap[posH - i][posL].type == UnitHero)
+				{
+					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;		
+					message += tmp;
+				}
+				move(posH - i, posL);
+				addch('|');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+		case DIR_RIGHT:
+		{
+			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
+			{
+				if(map[posH][posL + i] == 2) break;
+				if(UnitsMap[posH][posL + i].type == UnitHero)
+				{
+					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;	
+					message += tmp;
+				}
+				move(posH, posL + i);
+				addch('-');
+				refresh();
+				Delay(DELAY / 3);
+			}
+			break;
+		}
+	}
+	unitAmmo->item.invAmmo.count--;
+	if(unitAmmo->item.invAmmo.count <= 0)
+	{
+		unitAmmo->type = ItemEmpty;
+	}
+}
+
 
 bool CheckHeroVisibility(PossibleUnit& unit)
 {
@@ -2936,6 +2938,185 @@ void UpdatePosition(PossibleUnit& unit)
 			{
 				CheckDestinationCell(unit, 0, 1);
 				break;
+			}
+		}
+	}
+}
+
+*/
+
+void bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
+{
+	queue<int> x, y;
+	x.push(l);
+	y.push(h);
+	int used[Height][Length] = {};
+	used[h][l] = true;
+	while(!x.empty() && !y.empty())
+	{
+		int v_x = x.front();
+		int v_y = y.front();
+		if(v_x == targetH && v_y == targetL) break;
+		x.pop();
+		y.pop();
+	
+		if(v_y < Height - 1 && !used[v_y + 1][v_x] && (UnitsMap[v_y + 1][v_x].type == UnitEmpty || UnitsMap[v_y + 1][v_x].type == UnitHero) && map[v_y + 1][v_x] != 2)
+		{
+			y.push(v_y + 1);
+			x.push(v_x);
+			used[v_y + 1][v_x] = 1 + used[v_y][v_x];
+		}
+		if(v_y > 0 && !used[v_y - 1][v_x] && (UnitsMap[v_y - 1][v_x].type == UnitEmpty || UnitsMap[v_y - 1][v_x].type == UnitHero) && map[v_y - 1][v_x] != 2)
+		{
+			y.push(v_y - 1);
+			x.push(v_x);	
+			used[v_y - 1][v_x] = 1 + used[v_y][v_x];
+		}
+		if(v_x < Length - 1 && !used[v_y][v_x + 1] && (UnitsMap[v_y][v_x + 1].type == UnitEmpty || UnitsMap[v_y][v_x + 1].type == UnitHero) && map[v_y][v_x + 1] != 2)
+		{
+			y.push(v_y);
+			x.push(v_x + 1);
+			used[v_y][v_x + 1] = 1 + used[v_y][v_x];
+		}
+		if(v_x > 0 && !used[v_y][v_x - 1] && (UnitsMap[v_y][v_x - 1].type == UnitEmpty || UnitsMap[v_y][v_x - 1].type == UnitHero) && map[v_y][v_x - 1] != 2)
+		{
+			y.push(v_y);
+			x.push(v_x - 1);
+			used[v_y][v_x - 1] = 1 + used[v_y][v_x];	
+		}
+	}
+
+	int v_x = targetH, v_y = targetL;
+	while( used[ v_y ][ v_x ] != 2 )
+	{
+		if( v_y && used[ v_y - 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
+		{
+			--v_y;
+		}
+		else if( v_x && used[ v_y ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ] )
+		{
+			--v_x;
+		}
+		else if( v_y < Height - 1 && used[ v_y + 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
+		{
+			++v_y;
+		}
+		else if( v_x < Length - 1 && used[ v_y ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ] )
+		{
+			++v_x;
+		}
+	}
+
+	posH = v_y;
+	posL = v_x;
+
+	/* Lol, i finished this BFS for you, but im too lazy & busy to continue, so you must finish the AI by yourself */
+	/* Bitch bitch bitch, motherfuck'a, fuk yeah */
+}
+
+void UpdatePosition(PossibleUnit& unit)
+{
+	bool HeroVisible;
+
+	if(INVISIBILITY > 0)
+	{
+		HeroVisible = false;
+	}
+	else if((SQR(unit.GetUnit().posH - hero.posH) + SQR(unit.GetUnit().posL - hero.posL) < SQR(unit.GetUnit().vision)) && unit.GetUnit().CanSeeCell(hero.posH, hero.posL))
+	{
+		HeroVisible = true;
+	}
+	else
+	{
+		HeroVisible = false;
+	}
+	
+	int pH, pL;
+
+	if(HeroVisible)
+	{
+		unit.unit.uEnemy.lastHeroSeenH = hero.posH;
+		unit.unit.uEnemy.lastHeroSeenL = hero.posL;
+
+		bfs(hero.posH, hero.posL, unit.GetUnit().posH, unit.GetUnit().posL, pH, pL);
+
+		if(UnitsMap[pH][pL].type == UnitEnemy)
+		{
+			return;
+		}
+		else if(UnitsMap[pH][pL].type == UnitHero)
+		{
+			if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+			{
+				if(hero.heroArmor->item.invArmor.mdf != 2)
+				{
+					hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+				}
+				else
+				{
+					unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+				}
+			}
+			else if(unit.GetUnit().unitWeapon->type == ItemTools)
+			{
+				if(hero.heroArmor->item.invArmor.mdf != 2)
+				{
+					hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+				}
+				else
+				{
+					unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+				}
+			}
+			if(unit.GetUnit().health <= 0)
+			{
+				unit.type = UnitEmpty;
+			}
+		}
+		else
+		{
+			unit.GetUnit().posH = pH;
+			unit.GetUnit().posL = pL;
+			UnitsMap[pH][pL] = unit;
+			unit.type = UnitEmpty;
+		}
+	}
+	else
+	{
+		if(unit.unit.uEnemy.lastHeroSeenH != -1 && (unit.unit.uEnemy.lastHeroSeenH != unit.GetUnit().posH || unit.unit.uEnemy.lastHeroSeenL != unit.GetUnit().posL))
+		{
+			bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL);
+			unit.GetUnit().posH = pH;
+			unit.GetUnit().posL = pL;
+			UnitsMap[pH][pL] = unit;
+			unit.type = UnitEmpty;
+		}
+		else
+		{
+//			return;
+			/* Here must be random moving */
+			for(int i = 0; i < 1; i++)
+			{
+				int rposH = rand() % unit.GetUnit().vision * 2 - unit.GetUnit().vision + unit.GetUnit().posH;
+				int rposL = rand() % unit.GetUnit().vision * 2 - unit.GetUnit().vision + unit.GetUnit().posL;
+				if(!(rposH < Height - 1 && rposH > 0 && rposL < Length - 1 && rposL > 0))
+				{
+					i--;
+				}
+				else
+				{
+					if(map[rposH][rposL] != 2 && unit.GetUnit().CanSeeCell(rposH, rposL))
+					{
+						unit.unit.uEnemy.lastHeroSeenH = rposH;
+						unit.unit.uEnemy.lastHeroSeenL = rposL;
+						bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL);
+						unit.GetUnit().posH = pH;
+						unit.GetUnit().posL = pL;
+						UnitsMap[pH][pL] = unit;
+						unit.type = UnitEmpty;
+					}
+					else i--;
+				}
 			}
 		}
 	}
