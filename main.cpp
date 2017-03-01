@@ -2945,8 +2945,10 @@ void UpdatePosition(PossibleUnit& unit)
 
 */
 
-void bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
+int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 {
+	int depth = 2 + ABS(targetH - h) + ABS(targetL - l) + 100;						// <- smth on little bit strange
+	int currD = 0;
 	queue<int> x, y;
 	x.push(l);
 	y.push(h);
@@ -2956,7 +2958,7 @@ void bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 	{
 		int v_x = x.front();
 		int v_y = y.front();
-		if(v_x == targetH && v_y == targetL) break;
+		if(v_y == targetH && v_x == targetL) break;
 		x.pop();
 		y.pop();
 	
@@ -2986,7 +2988,7 @@ void bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		}
 	}
 
-	int v_x = targetH, v_y = targetL;
+	int v_y = targetH, v_x = targetL;
 	while( used[ v_y ][ v_x ] != 2 )
 	{
 		if( v_y && used[ v_y - 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
@@ -3005,6 +3007,8 @@ void bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		{
 			++v_x;
 		}
+		currD ++;
+		if(currD > depth) return -1;
 	}
 
 	posH = v_y;
@@ -3086,38 +3090,65 @@ void UpdatePosition(PossibleUnit& unit)
 		if(unit.unit.uEnemy.lastHeroSeenH != -1 && (unit.unit.uEnemy.lastHeroSeenH != unit.GetUnit().posH || unit.unit.uEnemy.lastHeroSeenL != unit.GetUnit().posL))
 		{
 			bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL);
-			unit.GetUnit().posH = pH;
-			unit.GetUnit().posL = pL;
-			UnitsMap[pH][pL] = unit;
-			unit.type = UnitEmpty;
+			if(pH < Height && pH > 0 && pL < Length && pL > 0)
+			{
+				unit.GetUnit().posH = pH;
+				unit.GetUnit().posL = pL;
+				UnitsMap[pH][pL] = unit;
+				unit.type = UnitEmpty;
+			}
+			else
+			{
+				message += " >pH || pL error< ";
+			}
 		}
 		else
 		{
 //			return;
-			/* Here must be random moving */
-			for(int i = 0; i < 1; i++)
+			vector<int> visionArrayH;
+			vector<int> visionArrayL;
+
+			int psH = unit.GetUnit().posH, psL = unit.GetUnit().posL, vis = unit.GetUnit().vision;
+
+			for(int i = MAX(psH - vis, 0); i < MIN(Height, psH + vis); i++)
 			{
-				int rposH = rand() % unit.GetUnit().vision * 2 - unit.GetUnit().vision + unit.GetUnit().posH;
-				int rposL = rand() % unit.GetUnit().vision * 2 - unit.GetUnit().vision + unit.GetUnit().posL;
-				if(!(rposH < Height - 1 && rposH > 0 && rposL < Length - 1 && rposL > 0))
+				for(int j = MAX(psL - vis, 0); j < MIN(psL + vis, Length); j++)
 				{
-					i--;
-				}
-				else
-				{
-					if(map[rposH][rposL] != 2 && unit.GetUnit().CanSeeCell(rposH, rposL))
+					if(SQR(psH - i) + SQR(psL - j) < SQR(vis) && map[i][j] != 2 && UnitsMap[i][j].type == UnitEmpty && unit.GetUnit().CanSeeCell(i, j))
 					{
-						unit.unit.uEnemy.lastHeroSeenH = rposH;
-						unit.unit.uEnemy.lastHeroSeenL = rposL;
-						bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL);
-						unit.GetUnit().posH = pH;
-						unit.GetUnit().posL = pL;
-						UnitsMap[pH][pL] = unit;
-						unit.type = UnitEmpty;
+						visionArrayH.push_back(i);
+						visionArrayL.push_back(j);
 					}
-					else i--;
-				}
+				}	
 			}
+
+			int r; 
+			int rposH = visionArrayH[r = (rand() % visionArrayH.size())];
+			int rposL = visionArrayL[r];
+			
+			unit.unit.uEnemy.lastHeroSeenH = rposH;
+			unit.unit.uEnemy.lastHeroSeenL = rposL;
+
+			if(bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1)
+			{
+				message += " >bfs error< ";
+				return;
+			}
+			if(pH < Height && pH > 0 && pL < Length && pL > 0)
+			{
+				unit.GetUnit().posH = pH;
+				unit.GetUnit().posL = pL;
+				UnitsMap[pH][pL] = unit;
+	//			UnitsMap[pH][pL].GetUnit().posH = pH;
+	//			UnitsMap[pH][pL].GetUnit().posL = pL;
+				unit.type = UnitEmpty;
+			}
+			else
+			{
+				message += " >pH or pL error< ";
+			}
+
+			/* Here must be random moving */
 		}
 	}
 }
@@ -3841,6 +3872,19 @@ void mSettings()
 
 void MainMenu()
 {
+	string Tips[200];
+	int TipsCount = 10;
+	Tips[0] = "lol";
+	Tips[1] = "kek";
+	Tips[2] = "azaza";
+	Tips[3] = "I fukd bugs";
+	Tips[4] = "seriously? Again?";
+	Tips[5] = "it's all about the.. Bugs";
+	Tips[6] = "I used to fuck bugs. Now I fukd them too, but it doesn't matter";
+	Tips[7] = "bugs, bugs, bugs...";
+	Tips[8] = "Tip of the day";
+	Tips[9] = "nice to meet you, lol";
+
 	int Switch = 1;
 	while(1)
 	{
@@ -3848,7 +3892,7 @@ void MainMenu()
 		{
 			ClearScreen();
 			move(0, 0);
-			printw("Welcome to RLRPG /*I fukd bugs*/");
+			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[rand() % TipsCount].c_str());
 
 			move(1, 0);
 			if(Switch == 1)
