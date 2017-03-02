@@ -2965,29 +2965,70 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		x.pop();
 		y.pop();
 	
-		if(v_y < Height - 1 && !used[v_y + 1][v_x] && (UnitsMap[v_y + 1][v_x].type == UnitEmpty || UnitsMap[v_y + 1][v_x].type == UnitHero) && map[v_y + 1][v_x] != 2)
+		if(v_y < Height - 1 && !used[v_y + 1][v_x] && (UnitsMap[v_y + 1][v_x].type == UnitEmpty 
+			|| UnitsMap[v_y + 1][v_x].type == UnitHero) && map[v_y + 1][v_x] != 2)
 		{
 			y.push(v_y + 1);
 			x.push(v_x);
 			used[v_y + 1][v_x] = 1 + used[v_y][v_x];
 		}
-		if(v_y > 0 && !used[v_y - 1][v_x] && (UnitsMap[v_y - 1][v_x].type == UnitEmpty || UnitsMap[v_y - 1][v_x].type == UnitHero) && map[v_y - 1][v_x] != 2)
+		if(v_y > 0 && !used[v_y - 1][v_x] && (UnitsMap[v_y - 1][v_x].type == UnitEmpty 
+			|| UnitsMap[v_y - 1][v_x].type == UnitHero) && map[v_y - 1][v_x] != 2)
 		{
 			y.push(v_y - 1);
 			x.push(v_x);	
 			used[v_y - 1][v_x] = 1 + used[v_y][v_x];
 		}
-		if(v_x < Length - 1 && !used[v_y][v_x + 1] && (UnitsMap[v_y][v_x + 1].type == UnitEmpty || UnitsMap[v_y][v_x + 1].type == UnitHero) && map[v_y][v_x + 1] != 2)
+		if(v_x < Length - 1 && !used[v_y][v_x + 1] && (UnitsMap[v_y][v_x + 1].type == UnitEmpty 
+			|| UnitsMap[v_y][v_x + 1].type == UnitHero) && map[v_y][v_x + 1] != 2)
 		{
 			y.push(v_y);
 			x.push(v_x + 1);
 			used[v_y][v_x + 1] = 1 + used[v_y][v_x];
 		}
-		if(v_x > 0 && !used[v_y][v_x - 1] && (UnitsMap[v_y][v_x - 1].type == UnitEmpty || UnitsMap[v_y][v_x - 1].type == UnitHero) && map[v_y][v_x - 1] != 2)
+		if(v_x > 0 && !used[v_y][v_x - 1] && (UnitsMap[v_y][v_x - 1].type == UnitEmpty 
+			|| UnitsMap[v_y][v_x - 1].type == UnitHero) && map[v_y][v_x - 1] != 2)
 		{
 			y.push(v_y);
 			x.push(v_x - 1);
 			used[v_y][v_x - 1] = 1 + used[v_y][v_x];	
+		}
+		if( MODE == 2 )
+		{
+			if( v_y < Height - 1 )
+			{
+				if( v_x && !used[v_y + 1][v_x - 1] && (UnitsMap[v_y + 1][v_x - 1].type == UnitEmpty 
+					|| UnitsMap[v_y + 1][v_x - 1].type == UnitHero) && map[v_y + 1][v_x - 1] != 2 )
+				{
+					y.push( v_y + 1 );
+					x.push( v_x - 1 );
+					used[v_y + 1][v_x - 1] = 1 + used[v_y][v_x];
+				}
+				if( v_x < Length - 1 && !used[v_y + 1][v_x + 1] && (UnitsMap[v_y + 1][v_x + 1].type == UnitEmpty 
+					|| UnitsMap[v_y + 1][v_x + 1].type == UnitHero) && map[v_y + 1][v_x + 1] != 2 )
+				{ 
+					y.push( v_y + 1 );
+					x.push( v_x + 1 );
+					used[v_y + 1][v_x + 1] = 1 + used[v_y][v_x];
+				}
+			}
+			if( v_y )
+			{
+				if( v_x && !used[v_y - 1][v_x - 1] && (UnitsMap[v_y - 1][v_x - 1].type == UnitEmpty 
+					|| UnitsMap[v_y - 1][v_x - 1].type == UnitHero) && map[v_y - 1][v_x - 1] != 2 )
+				{
+					y.push( v_y - 1 );
+					x.push( v_x - 1 );
+					used[v_y - 1][v_x - 1] = 1 + used[v_y][v_x];
+				}
+				if( v_x < Length - 1 && !used[v_y - 1][v_x + 1] && (UnitsMap[v_y - 1][v_x + 1].type == UnitEmpty 
+					|| UnitsMap[v_y - 1][v_x + 1].type == UnitHero) && map[v_y - 1][v_x + 1] != 2 )
+				{
+					y.push( v_y - 1 );
+					x.push( v_x + 1 );
+					used[v_y - 1][v_x + 1] = 1 + used[v_y][v_x];
+				}
+			}
 		}
 	}
 
@@ -2998,21 +3039,52 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 	int v_y = targetH, v_x = targetL;
 	while( used[ v_y ][ v_x ] != 2 )
 	{
+		if( MODE == 2 )
+		{
+			if( v_y && v_x && used[ v_y - 1 ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ] )
+			{
+				--v_y;
+				--v_x;
+				continue;
+			}
+			if( v_y && v_x < Length - 1 && used[ v_y - 1 ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ] )
+			{
+				--v_y;
+				++v_x;
+				continue;
+			}
+			if( v_y < Height - 1 && v_x && used[ v_y + 1 ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ] )
+			{
+				++v_y;
+				--v_x;
+				continue;
+			}
+			if( v_y < Height - 1 && v_x < Length - 1 && used[ v_y + 1 ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ] )
+			{
+				++v_y;
+				++v_x;
+				continue;
+			}
+		}
 		if( v_y && used[ v_y - 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
 		{
 			--v_y;
+			continue;
 		}
-		else if( v_x && used[ v_y ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ] )
+		if( v_x && used[ v_y ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ] )
 		{
 			--v_x;
+			continue;
 		}
-		else if( v_y < Height - 1 && used[ v_y + 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
+		if( v_y < Height - 1 && used[ v_y + 1 ][ v_x ] + 1 == used[ v_y ][ v_x ] )
 		{
 			++v_y;
+			continue;
 		}
-		else if( v_x < Length - 1 && used[ v_y ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ] )
+		if( v_x < Length - 1 && used[ v_y ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ] )
 		{
 			++v_x;
+			continue;
 		}
 	}
 
@@ -3084,8 +3156,6 @@ void UpdatePosition(PossibleUnit& unit)
 			}
 			else
 			{
-				sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
-				message += tmp;
 				unit.GetUnit().posH = pH;
 				unit.GetUnit().posL = pL;
 				UnitsMap[pH][pL] = unit;
@@ -3109,8 +3179,6 @@ void UpdatePosition(PossibleUnit& unit)
 			{
 				if(pH < Height && pH > 0 && pL < Length && pL > 0)
 				{
-					sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
-					message += tmp;
 					unit.GetUnit().posH = pH;
 					unit.GetUnit().posL = pL;
 					UnitsMap[pH][pL] = unit;
@@ -3164,8 +3232,6 @@ void UpdatePosition(PossibleUnit& unit)
 				}
 				if(pH < Height && pH > 0 && pL < Length && pL > 0)
 				{
-					sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
-					message += tmp;
 					unit.GetUnit().posH = pH;
 					unit.GetUnit().posL = pL;
 					UnitsMap[pH][pL] = unit;
