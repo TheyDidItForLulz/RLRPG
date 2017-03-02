@@ -2947,7 +2947,7 @@ void UpdatePosition(PossibleUnit& unit)
 
 int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 {
-	int depth = 2 + ABS(targetH - h) + ABS(targetL - l) + 100;						// <- smth on little bit strange
+	int depth = 2 + ABS(targetH - h) + ABS(targetL - l);						// <- smth a little bit strange
 	int currD = 0;
 	queue<int> x, y;
 	x.push(l);
