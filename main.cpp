@@ -887,15 +887,15 @@ public:
 			}
 		}
 		dist = 0;
-		lastHeroSeenH = -1;
-		lastHeroSeenL = -1;
+		targetH = -1;
+		targetL = -1;
 	}
 	int dir;
 	int dist;
 	int movedOnTurn;
 	int xpIncreasing;
-	int lastHeroSeenH;
-	int lastHeroSeenL;
+	int targetH;
+	int targetL;
 
 	void Delay(double s)
 	{
@@ -2948,7 +2948,6 @@ void UpdatePosition(PossibleUnit& unit)
 int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 {
 	int depth = 2 + ABS(targetH - h) + ABS(targetL - l);						// <- smth a little bit strange
-	int currD = 0;
 	queue<int> x, y;
 	x.push(l);
 	y.push(h);
@@ -2959,6 +2958,10 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		int v_x = x.front();
 		int v_y = y.front();
 		if(v_y == targetH && v_x == targetL) break;
+		if( used[ v_y ][ v_x ] > depth )
+		{
+			return -1;
+		}
 		x.pop();
 		y.pop();
 	
@@ -2988,6 +2991,10 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		}
 	}
 
+	if( !used[ targetH ][ targetL ] )
+	{
+		return -1;
+	}
 	int v_y = targetH, v_x = targetL;
 	while( used[ v_y ][ v_x ] != 2 )
 	{
@@ -3007,8 +3014,6 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		{
 			++v_x;
 		}
-		currD ++;
-		if(currD > depth) return -1;
 	}
 
 	posH = v_y;
@@ -3020,7 +3025,7 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 
 void UpdatePosition(PossibleUnit& unit)
 {
-	bool HeroVisible;
+	bool HeroVisible = false;
 
 	if(INVISIBILITY > 0)
 	{
@@ -3030,79 +3035,98 @@ void UpdatePosition(PossibleUnit& unit)
 	{
 		HeroVisible = true;
 	}
-	else
-	{
-		HeroVisible = false;
-	}
 	
-	int pH, pL;
+	int pH = 1, pL = 1;
 
 	if(HeroVisible)
 	{
-		unit.unit.uEnemy.lastHeroSeenH = hero.posH;
-		unit.unit.uEnemy.lastHeroSeenL = hero.posL;
+		unit.unit.uEnemy.targetH = hero.posH;
+		unit.unit.uEnemy.targetL = hero.posL;
 
-		bfs(hero.posH, hero.posL, unit.GetUnit().posH, unit.GetUnit().posL, pH, pL);
-
-		if(UnitsMap[pH][pL].type == UnitEnemy)
+		if( bfs(hero.posH, hero.posL, unit.GetUnit().posH, unit.GetUnit().posL, pH, pL) == -1 )
 		{
-			return;
-		}
-		else if(UnitsMap[pH][pL].type == UnitHero)
-		{
-			if(unit.GetUnit().unitWeapon->type == ItemWeapon)
-			{
-				if(hero.heroArmor->item.invArmor.mdf != 2)
-				{
-					hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
-				}
-				else
-				{
-					unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
-				}
-			}
-			else if(unit.GetUnit().unitWeapon->type == ItemTools)
-			{
-				if(hero.heroArmor->item.invArmor.mdf != 2)
-				{
-					hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
-				}
-				else
-				{
-					unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
-				}
-			}
-			if(unit.GetUnit().health <= 0)
-			{
-				unit.type = UnitEmpty;
-			}
+			HeroVisible = false;
 		}
 		else
 		{
-			unit.GetUnit().posH = pH;
-			unit.GetUnit().posL = pL;
-			UnitsMap[pH][pL] = unit;
-			unit.type = UnitEmpty;
-		}
-	}
-	else
-	{
-		if(unit.unit.uEnemy.lastHeroSeenH != -1 && (unit.unit.uEnemy.lastHeroSeenH != unit.GetUnit().posH || unit.unit.uEnemy.lastHeroSeenL != unit.GetUnit().posL))
-		{
-			bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL);
-			if(pH < Height && pH > 0 && pL < Length && pL > 0)
+			if(UnitsMap[pH][pL].type == UnitEnemy)
 			{
+				return;
+			}
+			else if(UnitsMap[pH][pL].type == UnitHero)
+			{
+				if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+				{
+					if(hero.heroArmor->item.invArmor.mdf != 2)
+					{
+						hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+					}
+					else
+					{
+						unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+					}
+				}
+				else if(unit.GetUnit().unitWeapon->type == ItemTools)
+				{
+					if(hero.heroArmor->item.invArmor.mdf != 2)
+					{
+						hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+					}
+					else
+					{
+						unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+					}
+				}
+				if(unit.GetUnit().health <= 0)
+				{
+					unit.type = UnitEmpty;
+				}
+			}
+			else
+			{
+				sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
+				message += tmp;
 				unit.GetUnit().posH = pH;
 				unit.GetUnit().posL = pL;
 				UnitsMap[pH][pL] = unit;
 				unit.type = UnitEmpty;
 			}
+		}
+	}
+	if( !HeroVisible )
+	{
+		bool needRandDir = 0;
+		if(unit.unit.uEnemy.targetH != -1 && (unit.unit.uEnemy.targetH != unit.GetUnit().posH || unit.unit.uEnemy.targetL != unit.GetUnit().posL))
+		{
+
+			if( bfs(unit.unit.uEnemy.targetH, unit.unit.uEnemy.targetL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1 )
+			{
+				needRandDir = 1;
+				/*sprintf( tmp, " $$>yet another bfs error (%d;%d;%d)<$$ ", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
+				message += tmp;*/
+			}
 			else
 			{
-				message += " >pH || pL error< ";
+				if(pH < Height && pH > 0 && pL < Length && pL > 0)
+				{
+					sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
+					message += tmp;
+					unit.GetUnit().posH = pH;
+					unit.GetUnit().posL = pL;
+					UnitsMap[pH][pL] = unit;
+					unit.type = UnitEmpty;
+				}
+				else
+				{
+					message += " >pH || pL error< ";
+				}
 			}
 		}
 		else
+		{
+			needRandDir = 1;
+		}
+		if( needRandDir )
 		{
 //			return;
 			vector<int> visionArrayH;
@@ -3114,41 +3138,48 @@ void UpdatePosition(PossibleUnit& unit)
 			{
 				for(int j = MAX(psL - vis, 0); j < MIN(psL + vis, Length); j++)
 				{
-					if(SQR(psH - i) + SQR(psL - j) < SQR(vis) && map[i][j] != 2 && UnitsMap[i][j].type == UnitEmpty && unit.GetUnit().CanSeeCell(i, j))
+					if((i != psH || j != psL )
+					&& SQR(psH - i) + SQR(psL - j) < SQR(vis) && map[i][j] != 2 
+					&& UnitsMap[i][j].type == UnitEmpty && unit.GetUnit().CanSeeCell(i, j))
 					{
 						visionArrayH.push_back(i);
 						visionArrayL.push_back(j);
 					}
 				}	
 			}
-
-			int r; 
-			int rposH = visionArrayH[r = (rand() % visionArrayH.size())];
-			int rposL = visionArrayL[r];
-			
-			unit.unit.uEnemy.lastHeroSeenH = rposH;
-			unit.unit.uEnemy.lastHeroSeenL = rposL;
-
-			if(bfs(unit.unit.uEnemy.lastHeroSeenH, unit.unit.uEnemy.lastHeroSeenL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1)
+			while( 1 )
 			{
-				message += " >bfs error< ";
-				return;
-			}
-			if(pH < Height && pH > 0 && pL < Length && pL > 0)
-			{
-				unit.GetUnit().posH = pH;
-				unit.GetUnit().posL = pL;
-				UnitsMap[pH][pL] = unit;
-	//			UnitsMap[pH][pL].GetUnit().posH = pH;
-	//			UnitsMap[pH][pL].GetUnit().posL = pL;
-				unit.type = UnitEmpty;
-			}
-			else
-			{
-				message += " >pH or pL error< ";
-			}
+				int r; 
+				int rposH = visionArrayH[r = (rand() % visionArrayH.size())];
+				int rposL = visionArrayL[r];
+				
+				unit.unit.uEnemy.targetH = rposH;
+				unit.unit.uEnemy.targetL = rposL;
 
-			/* Here must be random moving */
+				if(bfs(unit.unit.uEnemy.targetH, unit.unit.uEnemy.targetL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1)
+				{
+					//message += " >bfs error< ";
+					//return;
+					continue;
+				}
+				if(pH < Height && pH > 0 && pL < Length && pL > 0)
+				{
+					sprintf( tmp, "(( moving %d to (%d;%d) ))", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
+					message += tmp;
+					unit.GetUnit().posH = pH;
+					unit.GetUnit().posL = pL;
+					UnitsMap[pH][pL] = unit;
+		//			UnitsMap[pH][pL].GetUnit().posH = pH;
+		//			UnitsMap[pH][pL].GetUnit().posL = pL;
+					unit.type = UnitEmpty;
+				}
+				else
+				{
+					message += " >pH or pL error< ";
+				}
+				break;
+				/* Here must be random moving */
+			}
 		}
 	}
 }
