@@ -2094,7 +2094,15 @@ void Hero::ShowInventory(const char& inp)
 						int intin = in - 'a';
 						if(inventory[intin].type != ItemEmpty)
 						{
-							inventory[intin].GetItem().showMdf = true;
+							if(inventory[intin].type != ItemPotion)
+							{
+								inventory[intin].GetItem().showMdf = true;
+							}
+							else if(inventory[intin].type == ItemPotion)
+							{
+								discoveredPotions[inventory[intin].GetItem().symbol - 600] = true;
+							}	
+						
 							if( inventory[intch].GetItem().count == 1 )
 							{
 								inventory[intch].type = ItemEmpty;
