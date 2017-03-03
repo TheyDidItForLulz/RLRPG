@@ -3983,13 +3983,14 @@ void MainMenu()
 	Tips[9] = "nice to meet you, lol";
 
 	int Switch = 1;
+	int tip = rand() % TipsCount;
 	while(1)
 	{
 		if(MenuCondition == 0)
 		{
 			ClearScreen();
 			move(0, 0);
-			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[rand() % TipsCount].c_str());
+			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[/*rand() % TipsCount*/tip].c_str());
 
 			move(1, 0);
 			if(Switch == 1)
