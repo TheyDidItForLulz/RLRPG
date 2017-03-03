@@ -1469,17 +1469,15 @@ public:
 			}
 			case CONTROL_PICKUP:
 			{
-				
 				PickUp();
+/*->*/				Stop = true;
 				break;
-
 			}
 			case CONTROL_EAT:
 			{
-
 				Eat();
+/*->*/				Stop = true;
 				break;
-
 			}
 			case CONTROL_SHOWINVENTORY:
 			{
@@ -1491,39 +1489,41 @@ public:
 				{
 					message += "Your inventory is empty. ";
 				}
+/*->*/				Stop = true;
 				break;				
 			}
 			case CONTROL_WEAR:
 			{
 
-				if(isArmorInInventory() == true){
-				
+				if(isArmorInInventory() == true)
+				{
 					ShowInventory(CONTROL_WEAR);
-
 				}
 				else message += "You don't have anything to wear. ";
+/*->*/				Stop = true;
 				break;
 
 			}
 			case CONTROL_WIELD:
 			{
-			
 				if(isWeaponOrToolsInInventory() == true)
 				{
 					ShowInventory(CONTROL_WIELD);
 				}
 				else message += "You don't have anything to wield. ";
+/*->*/				Stop = true;
 				break;
-			
 			}
 			case CONTROL_TAKEOFF:
 			{
 				ShowInventory(CONTROL_TAKEOFF);
+/*->*/				Stop = true;
 				break;
 			}
 			case CONTROL_UNEQUIP:
 			{
 				ShowInventory(CONTROL_UNEQUIP);
+/*->*/				Stop = true;
 				break;
 			}
 			case CONTROL_DROP:
@@ -1532,6 +1532,7 @@ public:
 				{
 					ShowInventory(CONTROL_DROP);
 				}
+/*->*/				Stop = true;
 				break;		
 			}
 			case CONTROL_THROW:
@@ -1553,6 +1554,7 @@ public:
 				{
 					ShowInventory(CONTROL_DRINK);
 				}
+/*->*/				Stop = true;
 				break;
 			}
 //			case CONTROL_RELOAD:
@@ -1570,6 +1572,7 @@ public:
 					ShowInventory(CONTROL_OPENBANDOLIER);
 				}
 				else message += "Your bandolier is empty. ";
+/*->*/				Stop = true;
 				break;
 			}
 			case CONTROL_READ:
@@ -1579,6 +1582,7 @@ public:
 					ShowInventory(CONTROL_READ);
 				}
 				else message += "You don't have anything to read. ";
+/*->*/				Stop = true;
 				break;
 			}
 			case '\\':
@@ -4350,9 +4354,9 @@ int main()
 			bar += tmp;											//
 			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
 			bar += tmp;											// Condition bar		
-			sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+			sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
 			bar += tmp;
-			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
+			sprintf(tmp, "Lu: %i ", Luck);									// !DEBUG!
 			bar += tmp;											// !!
 			bar += "Bul: |";
 			for(int i = 0; i < BANDOLIER; i++)
@@ -4398,6 +4402,8 @@ int main()
 		}
 		else
 		{
+			Draw();
+
 			move(Height, 0);										//
 			sprintf(tmp, "HP: %i ", hero.health);								//
 			bar += tmp;											//
@@ -4407,9 +4413,9 @@ int main()
 			bar += tmp;											//
 			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
 			bar += tmp;											// Condition bar		
-			sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+			sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
 			bar += tmp;
-			sprintf(tmp, "L: %i ", Luck);									// !DEBUG!
+			sprintf(tmp, "Lu: %i ", Luck);									// !DEBUG!
 			bar += tmp;											// !!
 			bar += "Bul: |";
 			for(int i = 0; i < BANDOLIER; i++)
@@ -4441,9 +4447,7 @@ int main()
 	}
 		
 	refresh();
-		
 	endwin();
-		
+
 	return 0;
-	
 }
