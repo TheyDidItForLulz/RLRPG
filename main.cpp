@@ -16,6 +16,7 @@
 											'/'(Musket) == 402
 											'/'(Stick) == 403
 											'/'(Shotgun) == 404
+											'/'(Pistol) == 405
 											','(Steel bullets) == 450
 											','(Shotgun shells) == 451
 											'~'(Map) == 500
@@ -137,7 +138,7 @@
 #define CONTROL_OPENBANDOLIER 'a'
 #define TypesOfFood 2									//
 #define TypesOfArmor 2									//
-#define TypesOfWeapon 5									//
+#define TypesOfWeapon 6									//
 #define TypesOfAmmo 2
 #define TypesOfScroll 2
 #define TypesOfPotion 5
@@ -181,7 +182,7 @@ int MODE = 1;
 int MenuCondition = 0;
 bool EXIT = false;
 bool Stop = false;
-int DEFAULT_HERO_HEALTH = 10;								//
+int DEFAULT_HERO_HEALTH = 15;
 
 bool GenerateMap = true;
 											//
@@ -289,6 +290,8 @@ public:
 				return "a stick";
 			case 404:
 				return "a shotgun";
+			case 405:
+				return "a pistol";
 			case 450:
 				return "a steel bullets";
 			case 451:
@@ -360,13 +363,13 @@ public:
 		{
 			case 0:
 				symbol = 300;
-				defence = 20;
+				defence =33;
 				durability = 20;
 				weight = 20;
 				break;
 			case 1:
 				symbol = 301;
-				defence = 10;
+				defence = 20;
 				durability = 15;
 				weight = 7;
 				break;
@@ -392,43 +395,54 @@ public:
 		{
 			case 0:
 				symbol = 400;
-				damage = 2;
+				damage = 3;
 				weight = 3;
 				Ranged = false;
 				break;
 			case 1:
 				symbol = 401;
-				damage = 3;
+				damage = 4;
 				weight = 5;
 				Ranged = false;
 				break;
 			case 2:
 				symbol = 402;
-				damage = 1;
+				damage = 3;
 				weight = 3;
-				range = 5;
+				range = 14;
 				Ranged = true;
 				damageBonus = 4;
-				mSize = 1;
-				current_mSize = 0;
+//				mSize = 1;
+//				current_mSize = 0;
 //				type = 1;
 				break;
 			case 3:
 				symbol = 403;
-				damage = 1;
+				damage = 2;
 				weight = 1;
 				Ranged = false;
 				break;
 			case 4:
 				symbol = 404;
-				damage = 1;
+				damage = 2;
 				weight = 4;
 				Ranged = true;
-				range = 1;
+				range = 5;
 				damageBonus = 5;
-				mSize = 6;
-				current_mSize = 0;
+//				mSize = 6;
+//				current_mSize = 0;
 //				type = 2;
+				break;
+			case 5:
+				symbol = 405;
+				damage = 1;
+				weight = 2;
+				Ranged = true;
+				range = 7;
+				damageBonus = 2;
+//				mSize = 10;
+//				current_mSize = 0;
+//				type = 1;
 				break;
 		}
 		isStackable = false;
@@ -860,7 +874,7 @@ public:
 		{
 			case 0:
 			{
-				health = 10;
+				health = 7;
 				unitInventory[0] = differentFood[0];
 				unitInventory[1] = differentWeapon[0];
 				unitWeapon = &unitInventory[1];
@@ -872,7 +886,7 @@ public:
 			}
 			case 1:
 			{
-				health = 15;
+				health = 10;
 				unitInventory[0] = differentWeapon[3];
 				unitWeapon = &unitInventory[0];
 				inventoryVol = 1;
@@ -883,8 +897,8 @@ public:
 			}
 			case 2:
 			{
-				health = 7;
-				unitInventory[0] = differentWeapon[2];
+				health = 5;
+				unitInventory[0] = differentWeapon[5];
 				unitInventory[1] = differentAmmo[0];
 				unitWeapon = &unitInventory[0];
 				unitAmmo = &unitInventory[1];
@@ -2695,9 +2709,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH, posL - i);
@@ -2711,9 +2726,10 @@ void Enemy::Shoot()
 		{	
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH + i, posL);
@@ -2727,9 +2743,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH - i, posL);
@@ -2743,9 +2760,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH, posL + i);
@@ -2759,9 +2777,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroarmor->item.invarmor.defence) / 100.0);
 					break;
 				}
 				move(posH - i, posL - i);
@@ -2775,9 +2794,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH - i][posL + i] == 2) break;
 				if(UnitsMap[posH - i][posL + i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH - i, posL + i);
@@ -2791,9 +2811,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH + i][posL - i] == 2) break;
 				if(UnitsMap[posH + i][posL - i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH + i, posL - i);
@@ -2807,9 +2828,10 @@ void Enemy::Shoot()
 		{
 			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 			{
+				if(map[posH + i][posL + i] == 2) break;
 				if(UnitsMap[posH + i][posL + i].type == UnitHero)
 				{
-					hero.health -= unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus;
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH + i, posL + i);
@@ -2997,7 +3019,9 @@ void UpdatePosition(PossibleUnit& unit)
 		if((unit.GetUnit().posH == hero.posH || 
 				unit.GetUnit().posL == hero.posL || 
 				ABS(hero.posH - unit.GetUnit().posH) == ABS(hero.posL - unit.GetUnit().posL)) && 
-				unit.GetUnit().unitWeapon->item.invWeapon.Ranged == true)
+				unit.GetUnit().unitWeapon->item.invWeapon.Ranged == true &&
+				unit.GetUnit().unitWeapon->item.invWeapon.range + unit.GetUnit().unitAmmo->item.invAmmo.range >= 
+				ABS(hero.posH - unit.GetUnit().posH) + ABS(hero.posL - unit.GetUnit().posL))
 		{
 			unit.unit.uEnemy.Shoot();
 		}
@@ -3389,6 +3413,9 @@ void Draw(){
 						case 404:
 							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 							break;
+						case 405:
+							addch('/' | COLOR_PAIR(WHITE_BLACK));
+							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 							break;
@@ -3561,6 +3588,9 @@ void Draw(){
 							case 404:
 								addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								break;
+							case 405:
+								addch('/' | COLOR_PAIR(WHITE_BLACK));
+								break;
 							case 450:
 								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
 								break;
@@ -3669,6 +3699,9 @@ void Draw(){
 							break;	
 						case 404:
 							addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 405:
+							addch('/' | COLOR_PAIR(WHITE_BLACK));
 							break;
 						case 450:
 							addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
@@ -4074,11 +4107,13 @@ int main()
 	Weapon Musket(2);
 	Weapon Stick(3);
 	Weapon Shotgun(4);
+	Weapon Pistol(5);
 	differentWeapon[0] = CopperShortsword;
 	differentWeapon[1] = BronzeSpear;
 	differentWeapon[2] = Musket;
 	differentWeapon[3] = Stick;
 	differentWeapon[4] = Shotgun;
+	differentWeapon[5] = Pistol;
 	
 	Tools Pickaxe(0);
 	differentTools[0] = Pickaxe;
@@ -4134,9 +4169,9 @@ int main()
 	bar += tmp;
 	sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);
 	bar += tmp;
-	sprintf(tmp, "XP/L: %i/%i ", hero.xp, hero.level);
+	sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
 	bar += tmp;
-	sprintf(tmp, "L: %i ", Luck);								// !DEBUG!
+	sprintf(tmp, "Lu: %i ", Luck);								// !DEBUG!
 	bar += tmp;										//
 	bar += "Bul: |";
 	for(int i = 0; i < BANDOLIER; i++)
