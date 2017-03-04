@@ -2780,7 +2780,7 @@ void Enemy::Shoot()
 				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type == UnitHero)
 				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroarmor->item.invarmor.defence) / 100.0);
+					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 					break;
 				}
 				move(posH - i, posL - i);
