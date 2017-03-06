@@ -1,4 +1,0 @@
-This is a test file
-Added in other branch
-Added in master
-
