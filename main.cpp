@@ -137,13 +137,6 @@
 #define CONTROL_READ 'r'
 #define CONTROL_OPENBANDOLIER 'a'
 #define CONTROL_RELOAD 'R'
-#define TypesOfFood 2									//
-#define TypesOfArmor 2									//
-#define TypesOfWeapon 6									//
-#define TypesOfAmmo 2
-#define TypesOfScroll 2
-#define TypesOfPotion 5
-#define TypesOfTools 1
 #define TypesOfEnemies 3
 #define BLACK_BLACK 1
 #define	RED_BLACK 2
@@ -158,20 +151,9 @@
 #define LIGHT A_BOLD 
 #define UL A_UNDERLINE
 #define DELAY 0.07
-#define BANDOLIER TypesOfAmmo
-#define MaxInvVol 53
-#define TrueMaxInvVol 54+BANDOLIER
 #define AMMO_SLOT 53
 #define EMPTY_SLOT 54
-#define FOODCOUNT 10									//
-#define ARMORCOUNT 4									//
-#define WEAPONCOUNT 15									//
-#define AMMOCOUNT 25
-#define SCROLLCOUNT 70 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 25 /* IT TOO */
-#define TOOLSCOUNT 0 /* AND IT */
 #define ENEMIESCOUNT 17
-#define Depth MaxInvVol*2
 #define DEFAULT_VISION 16
 int VISION = 16;
 int BLINDNESS = 0;
@@ -190,6 +172,7 @@ bool GenerateMap = true;
 using namespace std;									//
 
 #include"include/level.hpp"
+#include"include/item.hpp"
 #include"include/gen_map.hpp"
 #include"include/utils.hpp"
 															//
