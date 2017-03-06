@@ -136,6 +136,7 @@
 #define CONTROL_CONFIRM ' '
 #define CONTROL_READ 'r'
 #define CONTROL_OPENBANDOLIER 'a'
+#define CONTROL_RELOAD 'R'
 #define TypesOfFood 2									//
 #define TypesOfArmor 2									//
 #define TypesOfWeapon 6									//
@@ -157,7 +158,7 @@
 #define LIGHT A_BOLD 
 #define UL A_UNDERLINE
 #define DELAY 0.07
-#define BANDOLIER 3									// It means, that you can carry 3 types of ammo
+#define BANDOLIER TypesOfAmmo
 #define MaxInvVol 53
 #define TrueMaxInvVol 54+BANDOLIER
 #define AMMO_SLOT 53
@@ -386,81 +387,6 @@ public:
 
 };
 
-class Weapon: public Item
-{
-public:
-	Weapon(int WeaponType)
-	{
-		switch(WeaponType)
-		{
-			case 0:
-				symbol = 400;
-				damage = 3;
-				weight = 3;
-				Ranged = false;
-				break;
-			case 1:
-				symbol = 401;
-				damage = 4;
-				weight = 5;
-				Ranged = false;
-				break;
-			case 2:
-				symbol = 402;
-				damage = 3;
-				weight = 3;
-				range = 14;
-				Ranged = true;
-				damageBonus = 4;
-//				mSize = 1;
-//				current_mSize = 0;
-//				type = 1;
-				break;
-			case 3:
-				symbol = 403;
-				damage = 2;
-				weight = 1;
-				Ranged = false;
-				break;
-			case 4:
-				symbol = 404;
-				damage = 2;
-				weight = 4;
-				Ranged = true;
-				range = 5;
-				damageBonus = 5;
-//				mSize = 6;
-//				current_mSize = 0;
-//				type = 2;
-				break;
-			case 5:
-				symbol = 405;
-				damage = 1;
-				weight = 2;
-				Ranged = true;
-				range = 7;
-				damageBonus = 2;
-//				mSize = 10;
-//				current_mSize = 0;
-//				type = 1;
-				break;
-		}
-		isStackable = false;
-	};
-	
-	int damage;
-
-	int range; 									// Ranged bullets have additional effect on this paramether
-	int damageBonus;								// And on this too
-	bool Ranged;
-//	int type;									// I think, it's nedlectful, because shotgun must shoot at three sides, but musket - only at one
-	int mSize;									// Magazine size
-	int current_mSize;
-
-	Weapon(){};
-	~Weapon(){};
-};
-
 class Ammo: public Item
 {
 public:
@@ -492,6 +418,90 @@ public:
 
 	Ammo(){}
 	~Ammo(){}
+};
+
+class Weapon: public Item
+{
+public:
+	Weapon(int WeaponType)
+	{
+		cartridgeSize = 0;
+		currentCS = 0;
+		switch(WeaponType)
+		{
+			case 0:
+				symbol = 400;
+				damage = 3;
+				weight = 3;
+				Ranged = false;
+				break;
+			case 1:
+				symbol = 401;
+				damage = 4;
+				weight = 5;
+				Ranged = false;
+				break;
+			case 2:
+				symbol = 402;
+				damage = 3;
+				weight = 3;
+				range = 14;
+				Ranged = true;
+				damageBonus = 4;
+				cartridgeSize = 1;
+//				mSize = 1;
+//				current_mSize = 0;
+//				type = 1;
+				break;
+			case 3:
+				symbol = 403;
+				damage = 2;
+				weight = 1;
+				Ranged = false;
+				break;
+			case 4:
+				symbol = 404;
+				damage = 2;
+				weight = 4;
+				Ranged = true;
+				range = 4;
+				damageBonus = 5;
+				cartridgeSize = 6;
+//				mSize = 6;
+//				current_mSize = 0;
+//				type = 2;
+				break;
+			case 5:
+				symbol = 405;
+				damage = 1;
+				weight = 2;
+				Ranged = true;
+				range = 7;
+				damageBonus = 2;
+				cartridgeSize = 1;
+//				mSize = 10;
+//				current_mSize = 0;
+//				type = 1;
+				break;
+		}
+		isStackable = false;
+	};
+	
+	int damage;
+
+	int range; 									// Ranged bullets have additional effect on this paramether
+	int damageBonus;								// And on this too
+	bool Ranged;
+//	int type;									// I think, it's nedlectful, because shotgun must shoot at three sides, but musket - only at one
+//	int mSize;									// Magazine size
+//	int current_mSize;
+	int cartridgeSize;
+	int currentCS;
+	
+	Ammo cartridge[200];
+
+	Weapon(){};
+	~Weapon(){};
 };
 
 class Scroll: public Item
@@ -1593,6 +1603,19 @@ public:
 /*->*/				Stop = true;
 				break;
 			}
+			case CONTROL_RELOAD:
+			{
+				if(FindAmmoInInventory() != 101010)
+				{
+					ShowInventory(CONTROL_RELOAD);
+				}
+				else
+				{
+					message += "You have no bullets to reload";
+					Stop = true;
+				}
+				break;
+			}
 			case CONTROL_READ:
 			{
 				if(FindScrollInInventory() != 101010)
@@ -2223,6 +2246,68 @@ void Hero::ShowInventory(const char& inp)
 			}
 			break;
 		}
+		case CONTROL_RELOAD:
+		{
+			ClearRightPane();
+			move(0, Length + 10);
+			printw("Now you can load your weapon");
+			while(1)
+			{
+				for(int i = 0; i < heroWeapon->item.invWeapon.cartridgeSize; i++)
+				{
+					move(1, 10 + Length + i * 2);
+					switch(heroWeapon->item.invWeapon.cartridge[i].symbol)
+					{
+						case 450:
+							addch('i' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							break;
+						case 451:
+							addch('i' | COLOR_PAIR(RED_BLACK) | LIGHT);
+							break;
+						default:
+							addch('_');
+					}
+				}
+				for(int i = 0; i < BANDOLIER; i++)
+				{
+					move(2, 10 + Length + i);
+					printw("[%i|", i);
+					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
+					{
+						printw("%i|", inventory[AMMO_SLOT + i].item.invArmor.count);
+						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+						{
+							case 450:
+								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
+							case 451:
+								addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								break;
+							default:
+								addch('!');
+						}
+						printw("]");
+					}
+					else printw("0|_]");
+				}
+				char in = getch();
+				if(in == '\033') return;
+				int intin = (int)in;
+				if(inventory[AMMO_SLOT + intin].type != ItemEmpty)
+				{
+					if(heroWeapon->item.invWeapon.currentCS >= heroWeapon->item.invWeapon.cartridgeSize)
+					{
+						message += "Weapon is loaded ";
+						return;
+					}
+					heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS] = inventory[AMMO_SLOT + intin].item.invAmmo;
+					heroWeapon->item.invWeapon.currentCS++;
+					if(inventory[AMMO_SLOT + intin].item.invAmmo.count > 1) inventory[AMMO_SLOT + intin].item.invAmmo.count --;
+					else inventory[AMMO_SLOT + intin].type = ItemEmpty;
+				}
+			}
+			break;
+		}
 	}
 }
 
@@ -2244,8 +2329,6 @@ void DropInventory(PossibleUnit& unit)
 //	sprintf(tmp, "!%i!", unit.unit.uEnemy.unitInventory[0].item.invWeapon/*differentFood[0]*/.damage);
 //	message += tmp;
 }
-
-//void Hero::CopyHeroToCell()
 
 void Hero::AttackEnemy(int& a1, int& a2)
 {
