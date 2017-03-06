@@ -1568,14 +1568,6 @@ public:
 /*->*/				Stop = true;
 				break;
 			}
-//			case CONTROL_RELOAD:
-//			{
-//				if(heroWeapon->item.invWeapon.Ranged && heroWeapon->item.invWeapon.current_mSize < heroWeapon->item.invWeapon.mSize)
-//				{
-//					Reload
-//				}
-//				break;
-//			}
 			case CONTROL_OPENBANDOLIER:
 			{
 				if(FindAmmoInInventory() != 101010)
@@ -1588,13 +1580,18 @@ public:
 			}
 			case CONTROL_RELOAD:
 			{
-				if(FindAmmoInInventory() != 101010)
+				if(!heroWeapon->item.invWeapon.Ranged)
+				{
+					message += "You have no ranged weapon in hands. ";
+					Stop = true;
+				}
+				else if(FindAmmoInInventory() != 101010)
 				{
 					ShowInventory(CONTROL_RELOAD);
 				}
 				else
 				{
-					message += "You have no bullets to reload";
+					message += "You have no bullets to reload. ";
 					Stop = true;
 				}
 				break;
@@ -2254,9 +2251,11 @@ void Hero::ShowInventory(const char& inp)
 							addch('_');
 					}
 				}
-				for(int i = 0; i < BANDOLIER; i++)
+				for(int i = 0; i < BANDOLIER; i++)					//[15|1000|,]
 				{
-					move(2, 10 + Length + i);
+					int ac = inventory[AMMO_SLOT + i].item.invArmor.count;
+					int num = 4 + i + (bool)(i/10) + (bool)(i/100) + 1 + (bool)(ac/10) + (bool)(ac/100) + (bool)(ac/1000) + (bool)(ac/10000) + 1;
+					move(2, 10 + Length + i + num);
 					printw("[%i|", i);
 					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
 					{
@@ -2278,7 +2277,7 @@ void Hero::ShowInventory(const char& inp)
 				}
 				char in = getch();
 				if(in == '\033') return;
-				int intin = (int)in;
+				int intin = in - '0';
 				if(inventory[AMMO_SLOT + intin].type != ItemEmpty)
 				{
 					if(heroWeapon->item.invWeapon.currentCS >= heroWeapon->item.invWeapon.cartridgeSize)
