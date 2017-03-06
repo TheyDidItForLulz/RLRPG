@@ -2056,7 +2056,8 @@ void Hero::ShowInventory(const char& inp)
 					}
 					case 2:
 					{
-						INVISIBILITY = 300;
+						INVISIBILITY = 150;
+						message += "Am I invisible? Oh, lol! ";
 						break;
 					}
 					case 3:
@@ -2075,6 +2076,7 @@ void Hero::ShowInventory(const char& inp)
 							}
 							else i--;
 						}
+						message += "Teleportation is so straaange thing! ";
 						break;
 					}
 					case 4:
@@ -2086,6 +2088,7 @@ void Hero::ShowInventory(const char& inp)
 					{
 						VISION = 1;
 						BLINDNESS = 50;
+						message += "My eyes!! ";
 						break;
 					}
 				}
@@ -2731,7 +2734,9 @@ void Hero::Shoot()
 
 void Hero::mHLogic(int& a1, int& a2)
 {
-	if(map[posH + a1][posL + a2] != 2 || (map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls) && (posH + a1 > 0 && posH + a1 < Height - 1 && posL + a2 > 0 && posL + a2 < Length - 1))
+	if(map[posH + a1][posL + a2] != 2 || 
+			(map[posH + a1][posL + a2] == 2 && CanHeroMoveThroughWalls) && 
+			(posH + a1 > 0 && posH + a1 < Height - 1 && posL + a2 > 0 && posL + a2 < Length - 1))
 	{
 		if(UnitsMap[posH + a1][posL + a2].type == UnitEmpty)
 		{
@@ -3178,14 +3183,42 @@ void UpdatePosition(PossibleUnit& unit)
 			{
 				if(pH < Height && pH > 0 && pL < Length && pL > 0)
 				{
-					unit.GetUnit().posH = pH;
-					unit.GetUnit().posL = pL;
-					UnitsMap[pH][pL] = unit;
-					unit.type = UnitEmpty;
-				}
-				else
-				{
-					message += " >pH || pL error< ";
+					if(UnitsMap[pH][pL].type == UnitHero)
+					{
+						if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+						{
+							if(hero.heroArmor->item.invArmor.mdf != 2)
+							{
+								hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							}
+							else
+							{
+								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+							}
+						}
+						else if(unit.GetUnit().unitWeapon->type == ItemTools)
+						{
+							if(hero.heroArmor->item.invArmor.mdf != 2)
+							{
+								hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							}
+							else
+							{
+								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+							}
+						}
+						if(unit.GetUnit().health <= 0)
+						{
+							unit.type = UnitEmpty;
+						}
+					}
+					else
+					{
+						unit.GetUnit().posH = pH;
+						unit.GetUnit().posL = pL;
+						UnitsMap[pH][pL] = unit;
+						unit.type = UnitEmpty;
+					}
 				}
 			}
 		}
@@ -3225,25 +3258,49 @@ void UpdatePosition(PossibleUnit& unit)
 
 				if(bfs(unit.unit.uEnemy.targetH, unit.unit.uEnemy.targetL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1)
 				{
-					//message += " >bfs error< ";
-					//return;
 					continue;
 				}
 				if(pH < Height && pH > 0 && pL < Length && pL > 0)
 				{
-					unit.GetUnit().posH = pH;
-					unit.GetUnit().posL = pL;
-					UnitsMap[pH][pL] = unit;
-		//			UnitsMap[pH][pL].GetUnit().posH = pH;
-		//			UnitsMap[pH][pL].GetUnit().posL = pL;
-					unit.type = UnitEmpty;
-				}
-				else
-				{
-					message += " >pH or pL error< ";
+					if(UnitsMap[pH][pL].type == UnitHero)
+					{
+						if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+						{
+							if(hero.heroArmor->item.invArmor.mdf != 2)
+							{
+								hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							}
+							else
+							{
+								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+							}
+						}
+						else if(unit.GetUnit().unitWeapon->type == ItemTools)
+						{
+							if(hero.heroArmor->item.invArmor.mdf != 2)
+							{
+								hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							}
+							else
+							{
+								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+							}
+						}
+						if(unit.GetUnit().health <= 0)
+						{
+							unit.type = UnitEmpty;
+						}
+					}
+					else
+					{
+						unit.GetUnit().posH = pH;
+						unit.GetUnit().posL = pL;
+						UnitsMap[pH][pL] = unit;
+						unit.type = UnitEmpty;
+					}
 				}
 				break;
-				/* Here must be random moving */
+				/* Here ^ is random moving */
 			}
 		}
 	}
@@ -4183,7 +4240,7 @@ int main()
 	inventoryVol++;
 	hero.heroArmor = &inventory[0];
 	hero.heroArmor->GetItem().attribute = 201;
-	if(rand() % 500 / Luck == 0)hero.heroArmor->GetItem().mdf = 2;
+	if(rand() % (500 / Luck) == 0)hero.heroArmor->GetItem().mdf = 2;
 	
 	Weapon CopperShortsword(0);
 	Weapon BronzeSpear(1);
@@ -4266,7 +4323,7 @@ int main()
 		}
 		else
 		{
-			bar += "0|";
+			bar += "0| ";
 		}
 	}
 	if(hero.isBurdened) bar += "Burdened. ";
@@ -4302,7 +4359,7 @@ int main()
 			if(hero.hunger < 1)
 			{
 				move(Height + 1, 0);
-				message += "You died from starvation. Press any key to exit.";
+				message += "You died from starvation. Press any key to exit. ";
 				printw("%- 190s", message.c_str());
 				getch();
 				refresh();
@@ -4313,7 +4370,7 @@ int main()
 			if(hero.health < 1)
 			{
 				move(Height + 1, 0);
-				message += "You died. Press any key to exit.";
+				message += "You died. Press any key to exit. ";
 				printw("% -190s", message.c_str());
 				getch();		
 				refresh();
@@ -4371,7 +4428,7 @@ int main()
 				}	
 				else
 				{
-					bar += "0|";
+					bar += "0| ";
 				}
 			}
 			if(hero.isBurdened) bar += "Burdened. ";							//
@@ -4430,7 +4487,7 @@ int main()
 				}	
 				else
 				{
-					bar += "0|";
+					bar += "0| ";
 				}
 			}
 			if(hero.isBurdened) bar += "Burdened. ";							//
