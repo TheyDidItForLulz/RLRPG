@@ -2518,6 +2518,7 @@ void Hero::Shoot()
 	move(0, Length + 10);
 	printw("In what direction? ");
 	char choise = getch();
+	int bullet_power = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + hero.heroWeapon->item.invWeapon.damageBonus;
 	switch(choise)
 	{
 		case CONTROL_LEFT:
@@ -2527,9 +2528,7 @@ void Hero::Shoot()
 				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH][posL - i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH][posL - i]);
@@ -2551,9 +2550,7 @@ void Hero::Shoot()
 				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH + i][posL].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL]);
@@ -2575,9 +2572,7 @@ void Hero::Shoot()
 				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH - i][posL].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL]);
@@ -2599,9 +2594,7 @@ void Hero::Shoot()
 				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH][posL + i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH][posL + i]);
@@ -2623,9 +2616,7 @@ void Hero::Shoot()
 				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH - i][posL - i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL - i]);
@@ -2647,9 +2638,7 @@ void Hero::Shoot()
 				if(map[posH - i][posL + i] == 2) break;
 				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH - i][posL + i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL + i]);
@@ -2671,9 +2660,7 @@ void Hero::Shoot()
 				if(map[posH + i][posL - i] == 2) break;
 				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH + i][posL - i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL - i]);
@@ -2695,9 +2682,7 @@ void Hero::Shoot()
 				if(map[posH + i][posL + i] == 2) break;
 				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
-						hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH + i][posL + i].GetUnit().health -= bullet_power - i / 3;
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL + i]);
