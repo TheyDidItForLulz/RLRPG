@@ -201,67 +201,12 @@ void initialize( void )													//
 															//
 string message = "";
 string bar = "";
+string weapon_bar = "";
 char tmp[100];
 
 void MoveUnit(int, int&, int&, int, int);
 
-bool discoveredPotions[TypesOfPotion] = {};
-
-
-PossibleItem inventory[TrueMaxInvVol];
 int inventoryVol = 0;
-
-Food differentFood[TypesOfFood];
-
-Armor differentArmor[TypesOfArmor];
-
-Weapon differentWeapon[TypesOfWeapon];
-
-Ammo differentAmmo[TypesOfAmmo];
-
-Scroll differentScroll[TypesOfScroll];
-
-Potion differentPotion[TypesOfPotion];
-
-Tools differentTools[TypesOfTools];
-
-const char* GetPotionName(int sym)
-{
-	sym -= 600;
-	
-	if(discoveredPotions[sym])
-	{
-		switch(differentPotion[sym].effect)
-		{
-			case 1:
-				return "a potion of healing";
-			case 2:
-				return "a potion of invisibility";
-			case 3:
-				return "a potion of teleport";
-			case 4:
-				return "a potion of... Water?";
-			case 5:
-				return "a potion of blindness";
-		}
-	}
-	else
-	{
-		switch(sym)
-		{
-			case 0:
-				return "blue potion";
-			case 1:
-				return "green potion";
-			case 2:
-				return "dark potion";
-			case 3:
-				return "magenta potion";
-			case 4:
-				return "yellow potion";
-		}
-	}
-}
 
 int Luck;
 int INVISIBILITY = 0;
@@ -451,50 +396,36 @@ public:
 
 	void mHLogic(int& a1, int& a2);
 	
-	bool isInventoryEmpty(){
-	
-		for(int i = 0; i < MaxInvVol; i++){
-
+	bool isInventoryEmpty()
+	{
+		for(int i = 0; i < MaxInvVol; i++)
+		{
 			if(inventory[i].type != ItemEmpty) return false;
-
 		}
 		return true;
-	
 	}
 
 	int FindEmptyInventoryCell()
 	{
-		
-		for(int i = 0; i < MaxInvVol; i++){
-
+		for(int i = 0; i < MaxInvVol; i++)
+		{
 			if(inventory[i].type == ItemEmpty) return i;
-
 		}
-
 		return 101010;											// Magic constant, means "Inventory is full".
-
 	}	
 	
 	int GetInventoryItemsWeight()
 	{
-
 		int toReturn = 0;
-	
-		for(int i = 0; i < MaxInvVol; i++){
-			
-			if(inventory[i].type != ItemEmpty){
-
+		for(int i = 0; i < MaxInvVol; i++)
+		{
+			if(inventory[i].type != ItemEmpty)
+			{
 				toReturn += inventory[i].GetItem().weight;
-
 			}
 		
 		}
-		
-//		sprintf(tmp, "!W: %i!", toReturn);								// !DEBUG!
-//		message += tmp;											//
-
 		return toReturn;
-	
 	}
 
 	void PrintList(PossibleItem items[], int len, char msg[], int mode)
@@ -2010,6 +1941,7 @@ void Hero::Shoot()
 	if(heroWeapon->item.invWeapon.currentCS == 0)
 	{
 		message += "You have no bullets. ";
+		Stop = true;
 		return;
 	}
 	move(0, Length + 10);
@@ -3738,13 +3670,13 @@ int main()
 	Potion BluePotion(0);
 	Potion GreenPotion(1);
 	Potion DarkPotion(2);
-	Potion Boooring_shiiit(3);
-	Potion Fuck_It_All(4);
+	Potion lol(3);
+	Potion kek(4);
 	differentPotion[0] = BluePotion;
 	differentPotion[1] = GreenPotion;
 	differentPotion[2] = DarkPotion;
-	differentPotion[3] = Boooring_shiiit;
-	differentPotion[4] = Fuck_It_All;
+	differentPotion[3] = lol;
+	differentPotion[4] = kek;
 	
 	SetRandomPotionEffects();
 
@@ -3796,6 +3728,32 @@ int main()
 	bar += " ";
 	if(hero.isBurdened) bar += "Burdened. ";
 	printw("%- 190s", bar.c_str());
+	
+	if(hero.heroWeapon->type != ItemEmpty)
+	{
+		weapon_bar = "";
+		weapon_bar += hero.heroWeapon->GetItem().GetName();
+		if(hero.heroWeapon->item.invWeapon.Ranged)
+		{
+			weapon_bar += "[";
+			for(int i = 0; i < hero.heroWeapon->item.invWeapon.cartridgeSize; i++)
+			{
+				weapon_bar += " ";
+				if(i < hero.heroWeapon->item.invWeapon.currentCS && (hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
+					hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451))
+				{
+					weapon_bar += "i";
+				}
+				else
+				{
+					weapon_bar += "_";
+				}
+			}
+			weapon_bar += " ]";
+		}		
+		move(Height + 1, 0);
+		printw("%- 190s", weapon_bar.c_str());
+	}
 
 	move(hero.posH, hero.posL);
 	
@@ -3826,7 +3784,7 @@ int main()
 
 			if(hero.hunger < 1)
 			{
-				move(Height + 1, 0);
+				move(Height + 2, 0);
 				message += "You died from starvation. Press any key to exit. ";
 				printw("%- 190s", message.c_str());
 				getch();
@@ -3837,7 +3795,7 @@ int main()
 
 			if(hero.health < 1)
 			{
-				move(Height + 1, 0);
+				move(Height + 2, 0);
 				message += "You died. Press any key to exit. ";
 				printw("% -190s", message.c_str());
 				getch();		
@@ -3901,14 +3859,41 @@ int main()
 			}
 			bar += " ";
 			if(hero.isBurdened) bar += "Burdened. ";							//
-			printw("%- 190s", bar.c_str());									//
-		
+	
 			if(hero.hunger < 75)
 			{	
 				bar += "Hungry. ";
 			}
 
-			move(Height + 1, 0);
+			printw("%- 190s", bar.c_str());									//
+		
+			if(hero.heroWeapon->type != ItemEmpty)
+			{
+				weapon_bar = "";
+				weapon_bar += hero.heroWeapon->GetItem().GetName();
+				if(hero.heroWeapon->item.invWeapon.Ranged)
+				{
+					weapon_bar += "[";
+					for(int i = 0; i < hero.heroWeapon->item.invWeapon.cartridgeSize; i++)
+					{
+						weapon_bar += " ";
+						if(i < hero.heroWeapon->item.invWeapon.currentCS && (hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
+							hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451))
+						{
+							weapon_bar += "i";
+						}
+						else
+						{
+							weapon_bar += "_";
+						}
+					}
+					weapon_bar += " ]";
+				}
+				move(Height + 1, 0);
+				printw("%- 100s", weapon_bar.c_str());
+			}
+
+			move(Height + 2, 0);
 			
 			printw("%- 190s", message.c_str());
 			
@@ -3968,7 +3953,7 @@ int main()
 				bar += "Hungry. ";
 			}
 
-			move(Height + 1, 0);
+			move(Height + 2, 0);
 			
 			printw("%- 190s", message.c_str());
 
