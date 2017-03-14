@@ -10,11 +10,11 @@
 #define TypesOfTools 1
 #define FOODCOUNT 10
 #define ARMORCOUNT 4
-#define WEAPONCOUNT 15
+#define WEAPONCOUNT 25	/* JUST FOR !DEBUG!!*/
 #define AMMOCOUNT 25
-#define SCROLLCOUNT 70 /* JUST FOR !DEBUG!!*/
+#define SCROLLCOUNT 15 /* JUST FOR !DEBUG!!*/
 #define POTIONCOUNT 25 /* IT TOO */
-#define TOOLSCOUNT 0 /* AND IT */
+#define TOOLSCOUNT 5 /* AND IT */
 #define BANDOLIER TypesOfAmmo
 #define MaxInvVol 53
 #define TrueMaxInvVol 54+BANDOLIER

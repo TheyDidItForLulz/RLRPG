@@ -461,7 +461,7 @@ public:
 				Ranged = true;
 				range = 7;
 				damageBonus = 2;
-				cartridgeSize = 1;
+				cartridgeSize = 10;
 //				mSize = 10;
 //				current_mSize = 0;
 //				type = 1;
@@ -2239,42 +2239,56 @@ void Hero::ShowInventory(const char& inp)
 				for(int i = 0; i < heroWeapon->item.invWeapon.cartridgeSize; i++)
 				{
 					move(1, 10 + Length + i * 2);
-					switch(heroWeapon->item.invWeapon.cartridge[i].symbol)
+					if(heroWeapon->item.invWeapon.cartridge[i].count == 1)
 					{
-						case 450:
-							addch('i' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
-							break;
-						case 451:
-							addch('i' | COLOR_PAIR(RED_BLACK) | LIGHT);
-							break;
-						default:
-							addch('_');
+						switch(heroWeapon->item.invWeapon.cartridge[i].symbol)
+						{
+							case 450:
+								addch('i' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								break;
+							case 451:
+								addch('i' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								break;
+							default:
+								addch('?');
+						}
+					}
+					else
+					{
+						addch('_');
 					}
 				}
-				for(int i = 0; i < BANDOLIER; i++)					//[15|1000|,]
+				
+				string load_string = "";
+				
+				for(int i = 0; i < BANDOLIER; i++)
 				{
 					int ac = inventory[AMMO_SLOT + i].item.invArmor.count;
-					int num = 4 + i + (bool)(i/10) + (bool)(i/100) + 1 + (bool)(ac/10) + (bool)(ac/100) + (bool)(ac/1000) + (bool)(ac/10000) + 1;
-					move(2, 10 + Length + i + num);
-					printw("[%i|", i);
+					move(2, 10 + Length);
+					sprintf(tmp, "[%i|", i);
+					load_string += tmp;
 					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
 					{
-						printw("%i|", inventory[AMMO_SLOT + i].item.invArmor.count);
+	//					sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invArmor.count);
+	//					load_string += tmp;
 						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
 						{
 							case 450:
-								addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								load_string += " steel bullets ";
 								break;
 							case 451:
-								addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+								load_string += " shotgun shells ";
 								break;
 							default:
-								addch('!');
+								load_string += " omgwth? ";
 						}
-						printw("]");
+						load_string += "]";
 					}
-					else printw("0|_]");
+					else load_string += " nothing ]";
 				}
+				
+				printw("%s", load_string.c_str());
+				
 				char in = getch();
 				if(in == '\033') return;
 				int intin = in - '0';
@@ -2286,6 +2300,7 @@ void Hero::ShowInventory(const char& inp)
 						return;
 					}
 					heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS] = inventory[AMMO_SLOT + intin].item.invAmmo;
+					heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS].count = 1;
 					heroWeapon->item.invWeapon.currentCS++;
 					if(inventory[AMMO_SLOT + intin].item.invAmmo.count > 1) inventory[AMMO_SLOT + intin].item.invAmmo.count --;
 					else inventory[AMMO_SLOT + intin].type = ItemEmpty;
@@ -2495,42 +2510,33 @@ void Hero::Shoot()
 		message += "You have no ranged weapon in hands. ";
 		return;
 	}
-	int ammo_slot = FindAmmoInInventory();
-	if(ammo_slot == 101010)
+	if(heroWeapon->item.invWeapon.currentCS == 0)
 	{
 		message += "You have no bullets. ";
 		return;
 	}
-	else if(inventory[ammo_slot + AMMO_SLOT].item.invAmmo.count == 0)
-	{
-		message += "You have no bullets. ";
-		return;
-	}
-	ammo_slot += AMMO_SLOT;
-	ClearRightPane();
-	move(Length + 10, 0);
+	move(0, Length + 10);
 	printw("In what direction? ");
 	char choise = getch();
 	switch(choise)
 	{
 		case CONTROL_LEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH][posL - i] == 2) break;
 				if(UnitsMap[posH][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;
+					UnitsMap[posH][posL - i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH][posL - i]);
 						UnitsMap[posH][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL - i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL - i].GetUnit().health);
-//					message += tmp;
 				}
-// !COMMENT!			// You can make this (^) bullet moving through like a special skill
 				move(posH, posL - i);
 				addch('-');
 				refresh();
@@ -2540,20 +2546,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWN:
 		{	
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH + i][posL] == 2) break;
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL]);
 						UnitsMap[posH + i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH + i, posL);
 				addch('|');
@@ -2564,20 +2570,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_UP:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH - i][posL] == 2) break;
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;		
+					UnitsMap[posH - i][posL].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL]);
 						UnitsMap[posH - i][posL].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH - i, posL);
 				addch('|');
@@ -2588,20 +2594,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_RIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH][posL + i] == 2) break;
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH][posL + i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH][posL + i]);
 						UnitsMap[posH][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH][posL + i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH][posL + i].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH, posL + i);
 				addch('-');
@@ -2612,20 +2618,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_UPLEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH - i][posL - i] == 2) break;
 				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH - i][posL - i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL - i]);
 						UnitsMap[posH - i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL - i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL - i].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH - i, posL - i);
 				addch('\\');
@@ -2636,20 +2642,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_UPRIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH - i][posL + i] == 2) break;
 				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH - i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH - i][posL + i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH - i][posL + i]);
 						UnitsMap[posH - i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH - i][posL + i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH - i][posL + i].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH - i, posL + i);
 				addch('/');
@@ -2660,20 +2666,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWNLEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH + i][posL - i] == 2) break;
 				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL - i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL - i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL - i]);
 						UnitsMap[posH + i][posL - i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL - i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL - i].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH + i, posL - i);
 				addch('/');
@@ -2684,20 +2690,20 @@ void Hero::Shoot()
 		}
 		case CONTROL_DOWNRIGHT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + inventory[ammo_slot].item.invAmmo.range; i++)
+			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 			{
 				if(map[posH + i][posL + i] == 2) break;
 				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
 				{
-					UnitsMap[posH + i][posL + i].GetUnit().health -= inventory[ammo_slot].item.invAmmo.damage + hero.heroWeapon->item.invWeapon.damageBonus;	
+					UnitsMap[posH + i][posL + i].GetUnit().health -= 
+						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
 						DropInventory(UnitsMap[posH + i][posL + i]);
 						UnitsMap[posH + i][posL + i].type = UnitEmpty;
 						xp += UnitsMap[posH + i][posL + i].unit.uEnemy.xpIncreasing;
 					}
-//					sprintf(tmp, "!HP:%i!", UnitsMap[posH + i][posL + i].GetUnit().health);
-//					message += tmp;
 				}
 				move(posH + i, posL + i);
 				addch('\\');
@@ -2707,11 +2713,8 @@ void Hero::Shoot()
 			break;
 		}
 	}
-	inventory[ammo_slot].item.invAmmo.count--;
-	if(inventory[ammo_slot].item.invAmmo.count <= 0)
-	{
-		inventory[ammo_slot].type = ItemEmpty;
-	}
+	heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count = 0;
+	heroWeapon->item.invWeapon.currentCS--;
 }
 
 void Hero::mHLogic(int& a1, int& a2)
@@ -4305,9 +4308,10 @@ int main()
 		}
 		else
 		{
-			bar += "0| ";
+			bar += "0|";
 		}
 	}
+	bar += " ";
 	if(hero.isBurdened) bar += "Burdened. ";
 	printw("%- 190s", bar.c_str());
 
@@ -4410,9 +4414,10 @@ int main()
 				}	
 				else
 				{
-					bar += "0| ";
+					bar += "0|";
 				}
 			}
+			bar += " ";
 			if(hero.isBurdened) bar += "Burdened. ";							//
 			printw("%- 190s", bar.c_str());									//
 		
@@ -4469,9 +4474,10 @@ int main()
 				}	
 				else
 				{
-					bar += "0| ";
+					bar += "0|";
 				}
 			}
+			bar += " ";
 			if(hero.isBurdened) bar += "Burdened. ";							//
 			printw("%- 190s", bar.c_str());									//
 		
