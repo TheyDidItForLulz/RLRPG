@@ -2528,7 +2528,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH][posL - i].type != UnitEmpty)
 				{
 					UnitsMap[posH][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
 					{
@@ -2552,7 +2552,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH + i][posL].type != UnitEmpty)
 				{
 					UnitsMap[posH + i][posL].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
 					{
@@ -2576,7 +2576,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH - i][posL].type != UnitEmpty)
 				{
 					UnitsMap[posH - i][posL].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
 					{
@@ -2600,7 +2600,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH][posL + i].type != UnitEmpty)
 				{
 					UnitsMap[posH][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
 					{
@@ -2624,7 +2624,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
 				{
 					UnitsMap[posH - i][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
 					{
@@ -2648,7 +2648,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
 				{
 					UnitsMap[posH - i][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
 					{
@@ -2672,7 +2672,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
 				{
 					UnitsMap[posH + i][posL - i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
 					{
@@ -2696,7 +2696,7 @@ void Hero::Shoot()
 				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
 				{
 					UnitsMap[posH + i][posL + i].GetUnit().health -= 
-						heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + 
 						hero.heroWeapon->item.invWeapon.damageBonus;
 					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
 					{
