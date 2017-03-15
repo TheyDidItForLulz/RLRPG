@@ -1582,7 +1582,7 @@ void Hero::ShowInventory(const char& inp)
 			{
 				for(int i = 0; i < heroWeapon->item.invWeapon.cartridgeSize; i++)
 				{
-					move(1, 10 + Length + i * 2);
+					move(1, 10 + Length + i);
 					if(heroWeapon->item.invWeapon.cartridge[i].count == 1)
 					{
 						switch(heroWeapon->item.invWeapon.cartridge[i].symbol)
@@ -3650,7 +3650,6 @@ int main()
 			weapon_bar += "[";
 			for(int i = 0; i < hero.heroWeapon->item.invWeapon.cartridgeSize; i++)
 			{
-				weapon_bar += " ";
 				if(i < hero.heroWeapon->item.invWeapon.currentCS && (hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
 					hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451))
 				{
@@ -3661,7 +3660,7 @@ int main()
 					weapon_bar += "_";
 				}
 			}
-			weapon_bar += " ]";
+			weapon_bar += "]";
 		}		
 		move(Height + 1, 0);
 		printw("%- 190s", weapon_bar.c_str());
@@ -3785,7 +3784,6 @@ int main()
 					weapon_bar += "[";
 					for(int i = 0; i < hero.heroWeapon->item.invWeapon.cartridgeSize; i++)
 					{
-						weapon_bar += " ";
 						if(i < hero.heroWeapon->item.invWeapon.currentCS && (hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
 							hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451))
 						{
@@ -3796,10 +3794,10 @@ int main()
 							weapon_bar += "_";
 						}
 					}
-					weapon_bar += " ]";
+					weapon_bar += "]";
 				}
 				move(Height + 1, 0);
-				printw("%- 100s", weapon_bar.c_str());
+				printw("%- 190s", weapon_bar.c_str());
 			}
 
 			move(Height + 2, 0);
