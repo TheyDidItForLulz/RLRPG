@@ -1859,6 +1859,18 @@ void Hero::Shoot()
 	move(0, Length + 10);
 	printw("In what direction? ");
 	char choise = getch();
+	if(choise != CONTROL_UP 
+			&& choise != CONTROL_DOWN 
+			&& choise != CONTROL_LEFT 
+			&& choise != CONTROL_RIGHT 
+			&& choise != CONTROL_UPLEFT 
+			&& choise != CONTROL_UPRIGHT 
+			&& choise != CONTROL_DOWNLEFT
+			&& choise != CONTROL_DOWNRIGHT)
+	{
+		Stop = true;
+		return;
+	}
 	int bullet_power = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + hero.heroWeapon->item.invWeapon.damageBonus;
 	switch(choise)
 	{
