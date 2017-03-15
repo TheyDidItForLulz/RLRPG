@@ -202,5 +202,23 @@ struct PossibleItem
 };
 
 extern PossibleItem ItemsMap[FIELD_ROWS][FIELD_COLS][Depth];
+extern PossibleItem inventory[TrueMaxInvVol];
+
+extern Food differentFood[TypesOfFood];
+
+extern Armor differentArmor[TypesOfArmor];
+
+extern Weapon differentWeapon[TypesOfWeapon];
+
+extern Ammo differentAmmo[TypesOfAmmo];
+
+extern Scroll differentScroll[TypesOfScroll];
+
+extern Potion differentPotion[TypesOfPotion];
+
+extern Tools differentTools[TypesOfTools];
+
+extern bool discoveredPotions[TypesOfPotion];
+
 #endif // ITEM_HPP
 

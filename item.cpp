@@ -395,3 +395,61 @@ Item& PossibleItem::GetItem()
 }
 
 PossibleItem ItemsMap[FIELD_ROWS][FIELD_COLS][Depth];
+
+PossibleItem inventory[TrueMaxInvVol];
+
+Food differentFood[TypesOfFood];
+
+Armor differentArmor[TypesOfArmor];
+
+Weapon differentWeapon[TypesOfWeapon];
+
+Ammo differentAmmo[TypesOfAmmo];
+
+Scroll differentScroll[TypesOfScroll];
+
+Potion differentPotion[TypesOfPotion];
+
+Tools differentTools[TypesOfTools];
+
+bool discoveredPotions[TypesOfPotion] = {};
+
+const char* GetPotionName(int sym)
+{
+	sym -= 600;
+	
+	if(discoveredPotions[sym])
+	{
+		switch(differentPotion[sym].effect)
+		{
+			case 1:
+				return "a potion of healing";
+			case 2:
+				return "a potion of invisibility";
+			case 3:
+				return "a potion of teleport";
+			case 4:
+				return "a potion of... Water?";
+			case 5:
+				return "a potion of blindness";
+		}
+	}
+	else
+	{
+		switch(sym)
+		{
+			case 0:
+				return "blue potion";
+			case 1:
+				return "green potion";
+			case 2:
+				return "dark potion";
+			case 3:
+				return "magenta potion";
+			case 4:
+				return "yellow potion";
+		}
+	}
+}
+
+
