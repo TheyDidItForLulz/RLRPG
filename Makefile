@@ -2,8 +2,8 @@ CC=g++ -std=c++14
 DEFINES=-DDEBUG
 LIBS=-lncurses
 OBJ_DIR=obj/
-OBJS=$(OBJ_DIR)main.o $(OBJ_DIR)item.o $(OBJ_DIR)gen_map.o
-OBJS_DEBUG=$(OBJ_DIR)_main.o $(OBJ_DIR)_item.o $(OBJ_DIR)_gen_map.o
+OBJS=$(OBJ_DIR)main.o $(OBJ_DIR)unit.o $(OBJ_DIR)item.o $(OBJ_DIR)gen_map.o
+OBJS_DEBUG=$(OBJ_DIR)_main.o $(OBJ_DIR)_unit.o $(OBJ_DIR)_item.o $(OBJ_DIR)_gen_map.o
 BIN_DIR=bin/
 BINARY=$(BIN_DIR)game.out
 BINARY_DEBUG=$(BIN_DIR)debug.out
@@ -29,6 +29,9 @@ $(BINARY): $(OBJS)
 $(OBJ_DIR)main.o: main.cpp
 	$(CC) -c $< -o $@
 
+$(OBJ_DIR)unit.o: unit.cpp
+	$(CC) -c $< -o $@
+
 $(OBJ_DIR)item.o: item.cpp
 	$(CC) -c $< -o $@
 
@@ -46,6 +49,9 @@ $(BINARY_DEBUG): $(OBJS_DEBUG)
 
 $(OBJ_DIR)_main.o: main.cpp
 	$(CC) $(DEFINES) -c -g $< -o $@
+
+$(OBJ_DIR)_unit.o: unit.cpp
+	$(CC) -c $< -o $@
 
 $(OBJ_DIR)_item.o: item.cpp
 	$(CC) $(DEFINES) -c -g $< -o $@
