@@ -2825,14 +2825,16 @@ void Draw(){
 						case 1:
 							if(near)
 							{
-								addch('_');
+								addch('.');
 							}
 							else
 							{
-								addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								addch(' ');
 							}
 							break;
 						case 2:
+							/*
 							if(near)
 							{
 								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
@@ -2841,7 +2843,52 @@ void Draw(){
 							{
 								addch('#' | COLOR_PAIR(WHITE_BLACK));
 							}
-							break;
+							*/
+							{
+								bool u = (i && map[i - 1][j] == 2);
+								bool r = (j < Length - 1 && map[i][j + 1] == 2);
+								bool d = (i < Height - 1 && map[i + 1][j] == 2);
+								bool l = (j && map[i][j - 1] == 2);
+								int count = u + r + d + l;
+								int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT * near);
+								switch (count) {
+								case 0:
+								case 4:
+									addch(ACS_PLUS | attrib);
+									break;
+								case 1:
+									if (u || d)
+										addch(ACS_VLINE | attrib);
+									else
+										addch(ACS_HLINE | attrib);
+									break;
+								case 2:
+									if (u && r)
+										addch(ACS_LLCORNER | attrib);
+									else if (u && d)
+										addch(ACS_VLINE | attrib);
+									else if (u && l)
+										addch(ACS_LRCORNER | attrib);
+									else if (r && d)
+										addch(ACS_ULCORNER | attrib);
+									else if (r && l)
+										addch(ACS_HLINE | attrib);
+									else
+										addch(ACS_URCORNER | attrib);
+									break;
+								case 3:
+									if (!u)
+										addch(ACS_TTEE | attrib);
+									else if (!r)
+										addch(ACS_RTEE | attrib);
+									else if (!d)
+										addch(ACS_BTEE | attrib);
+									else
+										addch(ACS_LTEE | attrib);
+									break;
+								}
+								break;
+							}
 					}
 				}
 /* Here */			else if(hero.FindItemsCountUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
@@ -3004,6 +3051,73 @@ void Draw(){
 					{
 						switch( mapSaved[i][j] )
 						{
+						case 1:
+							//if(near)
+							//{
+								addch('.');
+							//}
+							//else
+							//{
+								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+							//	addch(' ');
+							//}
+							break;
+						case 2:
+							/*
+							if(near)
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
+							}
+							else
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK));
+							}
+							*/
+							{
+								bool u = (i && map[i - 1][j] == 2);
+								bool r = (j < Length - 1 && map[i][j + 1] == 2);
+								bool d = (i < Height - 1 && map[i + 1][j] == 2);
+								bool l = (j && map[i][j - 1] == 2);
+								int count = u + r + d + l;
+								int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT);
+								switch (count) {
+								case 0:
+								case 4:
+									addch(ACS_PLUS | attrib);
+									break;
+								case 1:
+									if (u || d)
+										addch(ACS_VLINE | attrib);
+									else
+										addch(ACS_HLINE | attrib);
+									break;
+								case 2:
+									if (u && r)
+										addch(ACS_LLCORNER | attrib);
+									else if (u && d)
+										addch(ACS_VLINE | attrib);
+									else if (u && l)
+										addch(ACS_LRCORNER | attrib);
+									else if (r && d)
+										addch(ACS_ULCORNER | attrib);
+									else if (r && l)
+										addch(ACS_HLINE | attrib);
+									else
+										addch(ACS_URCORNER | attrib);
+									break;
+								case 3:
+									if (!u)
+										addch(ACS_TTEE | attrib);
+									else if (!r)
+										addch(ACS_RTEE | attrib);
+									else if (!d)
+										addch(ACS_BTEE | attrib);
+									else
+										addch(ACS_LTEE | attrib);
+									break;
+								}
+								break;
+							}/*
 							case 1:
 								if(seenUpdated[i][j])
 								{
@@ -3023,7 +3137,7 @@ void Draw(){
 								{
 									addch('#' | COLOR_PAIR(WHITE_BLACK));
 								}
-								break;
+								break;*/
 							case 100:
 								addch('%');
 								break;
@@ -3117,6 +3231,73 @@ void Draw(){
 					switch( mapSaved[i][j] )
 					{
 						case 1:
+							//if(near)
+							//{
+							//	addch('_');
+							//}
+							//else
+							//{
+								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+								addch(' ');
+							//}
+							break;
+						case 2:
+							/*
+							if(near)
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
+							}
+							else
+							{
+								addch('#' | COLOR_PAIR(WHITE_BLACK));
+							}
+							*/
+							{
+								bool u = (i && map[i - 1][j] == 2);
+								bool r = (j < Length - 1 && map[i][j + 1] == 2);
+								bool d = (i < Height - 1 && map[i + 1][j] == 2);
+								bool l = (j && map[i][j - 1] == 2);
+								int count = u + r + d + l;
+								int attrib = COLOR_PAIR(WHITE_BLACK)/* | (LIGHT * near)*/;
+								switch (count) {
+								case 0:
+								case 4:
+									addch(ACS_PLUS | attrib);
+									break;
+								case 1:
+									if (u || d)
+										addch(ACS_VLINE | attrib);
+									else
+										addch(ACS_HLINE | attrib);
+									break;
+								case 2:
+									if (u && r)
+										addch(ACS_LLCORNER | attrib);
+									else if (u && d)
+										addch(ACS_VLINE | attrib);
+									else if (u && l)
+										addch(ACS_LRCORNER | attrib);
+									else if (r && d)
+										addch(ACS_ULCORNER | attrib);
+									else if (r && l)
+										addch(ACS_HLINE | attrib);
+									else
+										addch(ACS_URCORNER | attrib);
+									break;
+								case 3:
+									if (!u)
+										addch(ACS_TTEE | attrib);
+									else if (!r)
+										addch(ACS_RTEE | attrib);
+									else if (!d)
+										addch(ACS_BTEE | attrib);
+									else
+										addch(ACS_LTEE | attrib);
+									break;
+								}
+								break;
+							}/*
+						case 1:
 							if(near)
 							{
 								addch('_');
@@ -3135,7 +3316,7 @@ void Draw(){
 							{
 								addch('#' | COLOR_PAIR(WHITE_BLACK));
 							}
-							break;
+							break;*/
 						case 100:
 							addch('%');
 							break;
