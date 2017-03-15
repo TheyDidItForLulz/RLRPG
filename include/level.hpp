@@ -9,4 +9,8 @@
 #define Length FIELD_COLS												//
 #define Height FIELD_ROWS												//
 
+extern int map[ FIELD_ROWS ][ FIELD_COLS ];											//
+
+#define FLOOR 1
+
 #endif // LEVEL_HPP

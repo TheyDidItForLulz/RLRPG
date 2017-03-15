@@ -150,14 +150,10 @@
 #define BLACK_RED 10
 #define LIGHT A_BOLD 
 #define UL A_UNDERLINE
-#define DELAY 0.07
 #define AMMO_SLOT 53
-#define EMPTY_SLOT 54
-#define ENEMIESCOUNT 17
-#define DEFAULT_VISION 16
+#define EMPTY_SLOT 52
 int VISION = 16;
 int BLINDNESS = 0;
-#define VISION_PRECISION 256
 int MaxInvItemsWeight = 25;								//
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
@@ -174,6 +170,7 @@ using namespace std;									//
 #include"include/level.hpp"
 #include"include/item.hpp"
 #include"include/gen_map.hpp"
+#include"include/unit.hpp"
 #include"include/utils.hpp"
 															//
 int map[ FIELD_ROWS ][ FIELD_COLS ];											//
@@ -211,87 +208,6 @@ int inventoryVol = 0;
 int Luck;
 int INVISIBILITY = 0;
 
-class Unit
-{
-public:
-	Unit(): inventoryVol(0){};
-	int health;
-	PossibleItem unitInventory[4];
-	int inventoryVol;
-	PossibleItem* unitWeapon;
-	PossibleItem* unitArmor;
-	PossibleItem* unitAmmo;
-	int posH;
-	int posL;
-	int symbol;
-	int vision;
-	
-	const char* GetName()
-	{
-		switch(symbol)
-		{
-			case 200:
-				return "Hero";
-			case 201:
-				return "Barbarian";
-			case 202:
-				return "Zombie";
-		}
-	}
-
-	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
-	{
-		double dx = to_x - from_x;
-		double dy = to_y - from_y;
-		if( ABS( dx ) > ABS( dy ) )
-		{
-			double k = dy / dx;
-			int s = SGN( dx );
-			for( int i = 0; i * s < dx * s; i += s )
-			{
-				int x = from_x + i;
-				int y = from_y + i * k;
-				if( map[y][x] == 2 )
-				{
-					return false;
-				}
-			}
-		}
-		else
-		{
-			double k = dx / dy;
-			int s = SGN( dy );
-			for( int i = 0; i * s < dy * s; i += s )
-			{
-				int x = from_x + i * k;
-				int y = from_y + i;
-				if( map[y][x] == 2 )
-				{
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	bool CanSeeCell( int h, int l )
-	{
-		double offset = 1. / VISION_PRECISION;
-		return
-		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + offset, h + 1 - offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + offset ) ||
-		LinearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + 1 - offset );
-	}
-
-	void Delay(double s)
-	{
-		clock_t clocksNow = clock();
-		while(double(clock() - clocksNow) / CLOCKS_PER_SEC < s);
-	}	
-
-	~Unit(){};
-};
 
 class EmptyUnit: public Unit
 {
@@ -1754,8 +1670,6 @@ void DropInventory(PossibleUnit& unit)
 			}
 		}
 	}
-//	sprintf(tmp, "!%i!", unit.unit.uEnemy.unitInventory[0].item.invWeapon/*differentFood[0]*/.damage);
-//	message += tmp;
 }
 
 void Hero::AttackEnemy(int& a1, int& a2)
@@ -1771,8 +1685,6 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
 	{
 		DropInventory(UnitsMap[posH + a1][posL + a2]);
-//		sprintf(tmp, "!%i!", UnitsMap[posH + a1][posL + a2].GetUnit().unitInventory[0].GetItem().symbol);
-//		message += tmp;
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
 		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
 	}
@@ -3775,9 +3687,6 @@ int main()
 	
 		hero.moveHero(inp);
 
-//		sprintf(tmp, " hh:%i|hl:%i|s:%i|h:%i ", hero.posH, hero.posL, UnitsMap[hero.posH][hero.posL].GetUnit().symbol, UnitsMap[hero.posH][hero.posL].GetUnit().health);
-//		message += tmp;
-	
 		if(!Stop)
 		{
 			TurnsCounter++;
@@ -3908,6 +3817,7 @@ int main()
 					endwin();
 					return 0;
 				}
+				Stop = true;
 			}	
 	
 			GetXP();
