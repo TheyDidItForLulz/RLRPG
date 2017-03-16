@@ -2823,9 +2823,9 @@ void Draw(){
 					switch(mapSaved[i][j])
 					{
 						case 1:
-							if(near)
+							if(seenUpdated[i][j])
 							{
-								addch('.');
+								addch(ACS_BULLET);
 							}
 							else
 							{
@@ -2845,12 +2845,12 @@ void Draw(){
 							}
 							*/
 							{
-								bool u = (i && map[i - 1][j] == 2);
-								bool r = (j < Length - 1 && map[i][j + 1] == 2);
-								bool d = (i < Height - 1 && map[i + 1][j] == 2);
-								bool l = (j && map[i][j - 1] == 2);
+								bool u = (i && mapSaved[i - 1][j] == 2);
+								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
+								bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
+								bool l = (j && mapSaved[i][j - 1] == 2);
 								int count = u + r + d + l;
-								int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT * near);
+								int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT * seenUpdated[i][j]);
 								switch (count) {
 								case 0:
 								case 4:
@@ -3054,7 +3054,7 @@ void Draw(){
 						case 1:
 							//if(near)
 							//{
-								addch('.');
+								addch(ACS_BULLET);
 							//}
 							//else
 							//{
@@ -3074,10 +3074,10 @@ void Draw(){
 							}
 							*/
 							{
-								bool u = (i && map[i - 1][j] == 2);
-								bool r = (j < Length - 1 && map[i][j + 1] == 2);
-								bool d = (i < Height - 1 && map[i + 1][j] == 2);
-								bool l = (j && map[i][j - 1] == 2);
+								bool u = (i && mapSaved[i - 1][j] == 2);
+								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
+								bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
+								bool l = (j && mapSaved[i][j - 1] == 2);
 								int count = u + r + d + l;
 								int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT);
 								switch (count) {
@@ -3253,10 +3253,10 @@ void Draw(){
 							}
 							*/
 							{
-								bool u = (i && map[i - 1][j] == 2);
-								bool r = (j < Length - 1 && map[i][j + 1] == 2);
-								bool d = (i < Height - 1 && map[i + 1][j] == 2);
-								bool l = (j && map[i][j - 1] == 2);
+								bool u = (i && mapSaved[i - 1][j] == 2);
+								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
+								bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
+								bool l = (j && mapSaved[i][j - 1] == 2);
 								int count = u + r + d + l;
 								int attrib = COLOR_PAIR(WHITE_BLACK)/* | (LIGHT * near)*/;
 								switch (count) {
