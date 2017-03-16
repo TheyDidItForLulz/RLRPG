@@ -1,97 +1,97 @@
-//////////////////////////////////////////////////////////////////////////////////////// Symbols //////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////// Symbols ///////////////////////////////////////////////////////////////////
 /*
-											'_'(Floor) == 1
-											'#'(Wall) == 2
-											'^'(Pile) == 3
-											'%'(Egg) == 100
-											'%'(Apple) == 101
-											'@'(Hero) == 200
-											'@'(Barbarian) == 201
-											'@'(Zombie) == 202
-											'@'(Guardian) == 203
-											'&'(Leather armor) == 301
-											'&'(Chain armor) == 300
-											'/'(Copper shortsword) == 400
-											'/'(Bronze spear) == 401
-											'/'(Musket) == 402
-											'/'(Stick) == 403
-											'/'(Shotgun) == 404
-											'/'(Pistol) == 405
-											','(Steel bullets) == 450
-											','(Shotgun shells) == 451
-											'~'(Map) == 500
-											'~'(Identify scroll) == 501
-											'!'(Blue potion) == 600
-											'!'(Green potion) == 601
-											'!'(Dark potion) == 602
-											'!'(Magenta potion) == 603
-											'!'(Yellow potion) == 604
-											'\'(Pickaxe) == 700
+																				'_'(Floor) == 1
+																				'#'(Wall) == 2
+																				'^'(Pile) == 3
+																				'%'(Egg) == 100
+																				'%'(Apple) == 101
+																				'@'(Hero) == 200
+																				'@'(Barbarian) == 201
+																				'@'(Zombie) == 202
+																				'@'(Guardian) == 203
+																				'&'(Leather armor) == 301
+																				'&'(Chain armor) == 300
+																				'/'(Copper shortsword) == 400
+																				'/'(Bronze spear) == 401
+																				'/'(Musket) == 402
+																				'/'(Stick) == 403
+																				'/'(Shotgun) == 404
+																				'/'(Pistol) == 405
+																				','(Steel bullets) == 450
+																				','(Shotgun shells) == 451
+																				'~'(Map) == 500
+																				'~'(Identify scroll) == 501
+																				'!'(Blue potion) == 600
+																				'!'(Green potion) == 601
+																				'!'(Dark potion) == 602
+																				'!'(Magenta potion) == 603
+																				'!'(Yellow potion) == 604
+																				'\'(Pickaxe) == 700
 */
-//////////////////////////////////////////////////////////////////////////////////////// Modificators /////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////// Modificators //////////////////////////////////////////////////////////////
 /*
-   											1 - Nothing
-											2 - Thorns (chance to turn damage back)
+																				1 - Nothing
+																				2 - Thorns (chance to turn damage back)
 */
-//////////////////////////////////////////////////////////////////////////////////////// Attributes ///////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////// Attributes ////////////////////////////////////////////////////////////////
 /*
-											100 - Notning
-											101..199 - Food attributes
-											200..299 - Armor attributes
-											300..399 - Weapon attributes
-										   	201 - Worn
-											301 - Wielded
+																				100 - Notning
+																				101..199 - Food attributes
+																				200..299 - Armor attributes
+																				300..399 - Weapon attributes
+																				201 - Worn
+																				301 - Wielded
 */
-///////////////////////////////////////////////////////////////////////////////////////// Effects /////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////// Effects //////////////////////////////////////////////////////////////////
 /*
- 											1 - Map recording in Hard-mode				
-											2 - Identify
+																				1 - Map recording in Hard-mode				
+																				2 - Identify
 */
-/////////////////////////////////////////////////////////////////////////////////////// Potion Effects ////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////// Potion Effects /////////////////////////////////////////////////////////////
 /*
- 											1 - Healing 3 hp
-											2 - Invisibility
-											3 - Random location teleport
-											4 - Nothing
-											5 - Blindness
+																				1 - Healing 3 hp
+																				2 - Invisibility
+																				3 - Random location teleport
+																				4 - Nothing
+																				5 - Blindness
 */
-/////////////////////////////////////////////////////////////////////////////////////// Tool possibilities ////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////// Tool possibilities /////////////////////////////////////////////////////////
 /*
-   											1 - Digging through walls
+																				1 - Digging through walls
 */
-///////////////////////////////////////////////////////////////////////////////////// Types of weapon construction ////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////// Types of weapon construction /////////////////////////////////////////////////
 /*
- 											1 - One direction(Musket), scheme:
+																				1 - One direction(Musket), scheme:
 
-											        @--->
-											
-											2 - Triple direction(Shotgun), scheme:
-									
-							      	 				  /
-								       	 			 /
-												@--->
-												 \
-												  \
+																						@--->
+																				
+																				2 - Triple direction(Shotgun), scheme:
+																		
+																						  /
+																						 /
+																					@--->
+																					 \
+																					  \
 
-											  !COMMENT! This isn't realized	(lol) хуй
+																				  !COMMENT! This isn't realized	(lol) хуй
 */
-//////////////////////////////////////////////////////////////////////////////////////// Tree of skills ///////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////// Tree of skills ////////////////////////////////////////////////////////////
 /*
-                                                                                                                                                                                           
-                                                                                         Detect, is food rotten                                                                            
+                                                                                                                                                                   
+                                                                                         Detect, is food rotten                                                     
                                                                                            /                \
-                                                                                Shoot through             Chance to confuse monster                                                        
-                                                                                      |                               |                                                                    
-                                                                                Combine things             Items identify by hands(?)                                                      
-                                                                                                                                                                                           
-                                                                                                                                                                                           
-                                                                                                                                                                                           
-                                                                                                                                                                                           
-                                                                                                                                                                                           
-                                                                                                                                                                                           
-                                                                                                                                                                                           
+                                                                                Shoot through             Chance to confuse monster                                 
+                                                                                      |                               |                                             
+                                                                                Combine things             Items identify by hands(?)                               
+                                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                    
 */
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //!COMMENT! // Also it isn't needed to show to the player his satiation. And luck too. And other stuff.
 
 #include<stdio.h>									//
@@ -154,7 +154,7 @@
 #define EMPTY_SLOT 52
 int VISION = 16;
 int BLINDNESS = 0;
-int MaxInvItemsWeight = 25;								//
+int MaxInvItemsWeight = 25;								
 // !COMMENT! // Level-up and items stacking
 // !COMMENT! // Enemies must move at first turn
 int MODE = 1;	
@@ -164,29 +164,29 @@ bool Stop = false;
 int DEFAULT_HERO_HEALTH = 15;
 
 bool GenerateMap = true;
-											//
-using namespace std;									//
+
+using namespace std;									
 
 #include"include/level.hpp"
 #include"include/item.hpp"
 #include"include/gen_map.hpp"
 #include"include/unit.hpp"
 #include"include/utils.hpp"
-															//
-int map[ FIELD_ROWS ][ FIELD_COLS ];											//
+															
+int map[ FIELD_ROWS ][ FIELD_COLS ];											
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
-int active = 0;														//
+int active = 0;														
 int turns = 0; /*-1*/
-															//
-void init_field( void )													//
-{															//
-	for( int i = 0; i < FIELD_ROWS; ++i )										//
-	{														//
-		for( int j = 0; j < FIELD_COLS; ++j )									//
-		{													//
-			map[ i ][ j ] = 1;										//
-		}													//
-	}														//
+															
+void init_field( void )													
+{															
+	for( int i = 0; i < FIELD_ROWS; ++i )										
+	{														
+		for( int j = 0; j < FIELD_COLS; ++j )									
+		{													
+			map[ i ][ j ] = 1;										
+		}													
+	}														
 }															//
 															//
 void initialize( void )													//
