@@ -3932,7 +3932,7 @@ int main()
 		message = "";
 		bar = "";
 	
-		sprintf(tmp, "map: %i; Imap: %i; Umap: %i ! ! ", sizeof(map), sizeof(ItemsMap), sizeof(UnitsMap));
+		sprintf(tmp, "w: %i; Imap: %i; Umap: %i ! ! ", sizeof(Weapon), sizeof(ItemsMap), sizeof(UnitsMap));
 		message += tmp;
 
 		if(hero.hunger < 1)

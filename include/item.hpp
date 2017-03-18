@@ -20,7 +20,8 @@
 #define BANDOLIER TypesOfAmmo
 #define MaxInvVol 53
 #define TrueMaxInvVol 54+BANDOLIER
-#define Depth MaxInvVol*2
+#define Depth 11
+#define MaxCartridgeVol 10
 
 enum ItemType
 {
@@ -115,7 +116,7 @@ public:
 	int cartridgeSize;
 	int currentCS;
 	
-	Ammo cartridge[200];
+	Ammo cartridge[MaxCartridgeVol];
 
 	Weapon();
 	~Weapon();
