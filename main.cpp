@@ -1609,7 +1609,7 @@ void Hero::ShowInventory(const char& inp)
 				{
 					int ac = inventory[AMMO_SLOT + i].item.invArmor.count;
 					move(2, 10 + Length);
-					sprintf(tmp, "[%i|", i);
+					sprintf(tmp, "[%i|", i + 1);
 					load_string += tmp;
 					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
 					{
@@ -1631,26 +1631,77 @@ void Hero::ShowInventory(const char& inp)
 					else load_string += " nothing ]";
 				}
 				
+				load_string += "   [u] - unload ";
+				
 				printw("%s", load_string.c_str());
 				
 				char in = getch();
 				if(in == '\033') return;
-				int intin = in - '0';
-				if(inventory[AMMO_SLOT + intin].type != ItemEmpty)
+				if(in == 'u')
 				{
-					if(heroWeapon->item.invWeapon.currentCS >= heroWeapon->item.invWeapon.cartridgeSize)
+					bool found = false;
+					for(int j = 0; j < BANDOLIER; j++)
 					{
-						message += "Weapon is loaded ";
-						return;
+						if(inventory[AMMO_SLOT + j].GetItem().symbol == 
+								heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
+						{
+							inventory[AMMO_SLOT + j].item.invAmmo.count++;
+							heroWeapon->item.invWeapon.currentCS--;
+							found = true;
+							break;
+						}
 					}
-					heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS] = inventory[AMMO_SLOT + intin].item.invAmmo;
-					heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS].count = 1;
-					heroWeapon->item.invWeapon.currentCS++;
-					if(inventory[AMMO_SLOT + intin].item.invAmmo.count > 1) inventory[AMMO_SLOT + intin].item.invAmmo.count --;
-					else inventory[AMMO_SLOT + intin].type = ItemEmpty;
+					if(!found)
+					{
+						for(int j = 0; j < BANDOLIER; j++)
+						{
+							if(inventory[AMMO_SLOT + j].type == ItemEmpty)
+							{
+								inventory[AMMO_SLOT + j].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+								inventory[AMMO_SLOT + j].type = ItemAmmo;
+								heroWeapon->item.invWeapon.currentCS--;
+								found = true;
+								break;
+							}
+						}
+					}
+					if(!found)
+					{
+						int empty = FindEmptyItemUnderThisCell(posH, posL);
+						if(empty != 101010)
+						{
+								ItemsMap[posH][posL][empty].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+								ItemsMap[posH][posL][empty].type = ItemAmmo;
+								heroWeapon->item.invWeapon.currentCS--;
+								found = true;
+						}
+					}
+					if(!found)
+					{
+						message += "You can`t unload your weapon";
+					}
+					sprintf(tmp, "! f:%i, cs:%i !", (int)found, heroWeapon->item.invWeapon.currentCS - 1);
+					message += tmp;
+				}
+				else
+				{
+					int intin = in - '1';
+					if(inventory[AMMO_SLOT + intin].type != ItemEmpty)
+					{
+						if(heroWeapon->item.invWeapon.currentCS >= heroWeapon->item.invWeapon.cartridgeSize)
+						{
+							message += "Weapon is loaded ";
+							return;
+						}
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS] = inventory[AMMO_SLOT + intin].item.invAmmo;
+						heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS].count = 1;
+						heroWeapon->item.invWeapon.currentCS++;
+						if(inventory[AMMO_SLOT + intin].item.invAmmo.count > 1) inventory[AMMO_SLOT + intin].item.invAmmo.count --;
+						else inventory[AMMO_SLOT + intin].type = ItemEmpty;
+					}
 				}
 			}
-			break;
+			break;	/*!!!FUCK!!!*/// Add unload option
 		}
 	}
 }
@@ -1659,7 +1710,7 @@ void DropInventory(PossibleUnit& unit)
 {
 	int h = unit.GetUnit().posH;
 	int l =	unit.GetUnit().posL;
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < UNITINVENTORY; i++)
 	{
 		if(unit.GetUnit().unitInventory[i].type != ItemEmpty)
 		{
@@ -1667,6 +1718,14 @@ void DropInventory(PossibleUnit& unit)
 			if(empty != 101010)
 			{
 				ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+/*				if(unit.GetUnit().unitInventory[i].GetItem().isStackable)
+				{
+					
+				}
+				for(int j = 0; j < Depth; j++)
+				{
+
+				}*/ /*!!!FUCK!!!*/
 			}
 		}
 	}
@@ -3872,7 +3931,33 @@ int main()
 
 		message = "";
 		bar = "";
-		
+	
+		sprintf(tmp, "map: %i; Imap: %i; Umap: %i ! ! ", sizeof(map), sizeof(ItemsMap), sizeof(UnitsMap));
+		message += tmp;
+
+		if(hero.hunger < 1)
+		{
+			move(Height + 2, 0);
+			message += "You died from starvation. Press any key to exit. ";
+			printw("%- 190s", message.c_str());
+			getch();
+			refresh();
+			endwin();
+			return 0;
+		}
+
+		if(hero.health < 1)
+		{
+			hero.health = 0;
+			move(Height + 2, 0);
+			message += "You died. Press any key to exit. ";
+			printw("% -190s", message.c_str());
+			getch();		
+			refresh();
+			endwin();
+			return 0;
+		}
+
 		move(hero.posH, hero.posL);
 
 		char inp = getch();
@@ -3882,28 +3967,6 @@ int main()
 		if(!Stop)
 		{
 			TurnsCounter++;
-
-			if(hero.hunger < 1)
-			{
-				move(Height + 2, 0);
-				message += "You died from starvation. Press any key to exit. ";
-				printw("%- 190s", message.c_str());
-				getch();
-				refresh();
-				endwin();
-				return 0;
-			}
-
-			if(hero.health < 1)
-			{
-				move(Height + 2, 0);
-				message += "You died. Press any key to exit. ";
-				printw("% -190s", message.c_str());
-				getch();		
-				refresh();
-				endwin();
-				return 0;
-			}
 
 			if(TurnsCounter % 25 == 0 && TurnsCounter != 0 && MODE == 1)
 			{

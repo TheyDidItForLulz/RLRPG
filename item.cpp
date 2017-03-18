@@ -162,13 +162,13 @@ Weapon::Weapon(int WeaponType)
 	{
 		case 0:
 			symbol = 400;
-			damage = 3;
+			damage = 4;
 			weight = 3;
 			Ranged = false;
 			break;
 		case 1:
 			symbol = 401;
-			damage = 4;
+			damage = 5;
 			weight = 5;
 			Ranged = false;
 			break;

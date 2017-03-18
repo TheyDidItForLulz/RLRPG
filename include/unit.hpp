@@ -6,13 +6,14 @@
 #define ENEMIESCOUNT 17
 #define DEFAULT_VISION 16
 #define VISION_PRECISION 256
+#define UNITINVENTORY 4
 
 class Unit
 {
 public:
 	Unit();
 	int health;
-	PossibleItem unitInventory[4];
+	PossibleItem unitInventory[UNITINVENTORY];
 	int inventoryVol;
 	PossibleItem* unitWeapon;
 	PossibleItem* unitArmor;
