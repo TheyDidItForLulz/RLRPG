@@ -87,7 +87,6 @@ public:
 
 	Armor();
 	~Armor();
-
 };
 
 class Ammo: public Item

@@ -208,6 +208,14 @@ int inventoryVol = 0;
 int Luck;
 int INVISIBILITY = 0;
 
+int FindStackable(int h, int l, int sym)
+{
+	for(int i = 0; i < Depth; i++)
+	{
+		if(ItemsMap[h][l][i].type != ItemEmpty && ItemsMap[h][l][i].GetItem().symbol == sym) return i;
+	}
+	return 101010;
+}
 
 class EmptyUnit: public Unit
 {
@@ -225,7 +233,7 @@ public:
 		{
 			case 0:
 			{
-				health = 7;
+				health = 15;
 				unitInventory[0] = differentFood[0];
 				unitInventory[1] = differentWeapon[0];
 				unitWeapon = &unitInventory[1];
@@ -237,7 +245,7 @@ public:
 			}
 			case 1:
 			{
-				health = 10;
+				health = 20;
 				unitInventory[0] = differentWeapon[3];
 				unitWeapon = &unitInventory[0];
 				inventoryVol = 1;
@@ -248,7 +256,7 @@ public:
 			}
 			case 2:
 			{
-				health = 5;
+				health = 12;
 				unitInventory[0] = differentWeapon[5];
 				unitInventory[1] = differentAmmo[0];
 				unitWeapon = &unitInventory[0];
@@ -366,7 +374,11 @@ public:
 						}
 						else
 						{
-							printw("[%c] %s (%s) {%s}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().GetMdf());
+							printw("[%c] %s (%s) {%s}. ", 
+									items[i].GetItem().inventorySymbol, 
+									items[i].GetItem().GetName(), 
+									items[i].GetItem().GetAttribute(), 
+									items[i].GetItem().GetMdf());
 						}
 					}
 					else if(items[i].GetItem().count > 1)
@@ -377,7 +389,11 @@ public:
 						}
 						else
 						{
-							printw("[%c] %s (%s) {%i}. ", items[i].GetItem().inventorySymbol, items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().count);
+							printw("[%c] %s (%s) {%i}. ", 
+									items[i].GetItem().inventorySymbol, 
+									items[i].GetItem().GetName(), 
+									items[i].GetItem().GetAttribute(), 
+									items[i].GetItem().count);
 						}
 					}
 					else if( items[i].GetItem().attribute == 100 )
@@ -399,7 +415,11 @@ public:
 					move(num, Length + 10);
 					if(items[i].GetItem().showMdf == true)
 					{
-						printw("[%c] %s (%s) {%s}. ", i + 'a', items[i].GetItem().GetName(), items[i].GetItem().GetAttribute(), items[i].GetItem().GetMdf());
+						printw("[%c] %s (%s) {%s}. ", 
+								i + 'a', 
+								items[i].GetItem().GetName(), 
+								items[i].GetItem().GetAttribute(), 
+								items[i].GetItem().GetMdf());
 					}
 					else printw("[%c] %s (%s). ", i + 'a', items[i].GetItem().GetName(), items[i].GetItem().GetAttribute());
 					num ++;
@@ -1248,9 +1268,55 @@ void Hero::ShowInventory(const char& inp)
 			
 			if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
 			if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-
-			ItemsMap[posH][posL][num] = inventory[intch];
-			inventory[intch].type = ItemEmpty;
+			
+			if(inventory[intch].GetItem().isStackable && inventory[intch].GetItem().count > 1)
+			{
+				ClearRightPane();
+				move(0, Length + 10);
+				printw("How much items you want to drop?[1-9]");
+				int drop_count = getch() - '0';
+				if(drop_count > inventory[intch].GetItem().count) drop_count = inventory[intch].GetItem().count;
+				if(drop_count < 1) drop_count = 1;
+				int dep = FindStackable(posH, posL, inventory[intch].GetItem().symbol);
+				if(dep == 101010)
+				{		
+					ItemsMap[posH][posL][num] = inventory[intch];
+					ItemsMap[posH][posL][num].GetItem().count = drop_count;
+					inventory[intch].GetItem().count -= drop_count;
+					if(inventory[intch].GetItem().count < 1)
+					{
+						inventory[intch].type = ItemEmpty;
+					}
+				}
+				else
+				{			
+					ItemsMap[posH][posL][dep].GetItem().count += drop_count;
+					inventory[intch].GetItem().count -= drop_count;
+					if(inventory[intch].GetItem().count < 1)
+					{
+						inventory[intch].type = ItemEmpty;
+					}
+				}
+			}
+			else if(inventory[intch].GetItem().isStackable && inventory[intch].GetItem().count == 1)
+			{
+				int dep = FindStackable(posH, posL, inventory[intch].GetItem().symbol);
+				if(dep == 101010)
+				{		
+					ItemsMap[posH][posL][num] = inventory[intch];
+				}
+				else
+				{			
+					ItemsMap[posH][posL][dep].GetItem().count++;
+					inventory[intch].GetItem().count--;
+				}
+				inventory[intch].type = ItemEmpty;
+			}
+			else
+			{
+				ItemsMap[posH][posL][num] = inventory[intch];
+				inventory[intch].type = ItemEmpty;
+			}
 
 			if(GetInventoryItemsWeight() <= MaxInvItemsWeight && isBurdened)
 			{
@@ -1639,49 +1705,91 @@ void Hero::ShowInventory(const char& inp)
 				if(in == '\033') return;
 				if(in == 'u')
 				{
-					bool found = false;
-					for(int j = 0; j < BANDOLIER; j++)
+					if(heroWeapon->item.invWeapon.currentCS == 0)
 					{
-						if(inventory[AMMO_SLOT + j].GetItem().symbol == 
-								heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
-						{
-							inventory[AMMO_SLOT + j].item.invAmmo.count++;
-							heroWeapon->item.invWeapon.currentCS--;
-							found = true;
-							break;
-						}
+						continue;
 					}
-					if(!found)
+					else
 					{
+						bool found = false;
 						for(int j = 0; j < BANDOLIER; j++)
 						{
-							if(inventory[AMMO_SLOT + j].type == ItemEmpty)
+							if(inventory[AMMO_SLOT + j].type == ItemAmmo && 
+									inventory[AMMO_SLOT + j].GetItem().symbol == 
+									heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
 							{
-								inventory[AMMO_SLOT + j].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
-								inventory[AMMO_SLOT + j].type = ItemAmmo;
+								heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+								inventory[AMMO_SLOT + j].item.invAmmo.count++;
 								heroWeapon->item.invWeapon.currentCS--;
 								found = true;
 								break;
 							}
 						}
-					}
-					if(!found)
-					{
-						int empty = FindEmptyItemUnderThisCell(posH, posL);
-						if(empty != 101010)
+
+	//					sprintf(tmp, "|1: %i|", (int)found);
+	//					message += tmp;
+
+						if(!found)
 						{
-								ItemsMap[posH][posL][empty].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
-								ItemsMap[posH][posL][empty].type = ItemAmmo;
-								heroWeapon->item.invWeapon.currentCS--;
-								found = true;
+							for(int j = 0; j < BANDOLIER; j++)
+							{
+								if(inventory[AMMO_SLOT + j].type == ItemEmpty)
+								{
+									inventory[AMMO_SLOT + j] = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+									inventory[AMMO_SLOT + j].type = ItemAmmo;
+									heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+									heroWeapon->item.invWeapon.currentCS--;
+									found = true;
+									break;
+								}
+							}
 						}
+
+	//					sprintf(tmp, "|2: %i|", (int)found);
+	//					message += tmp;
+
+						if(!found)
+						{
+							bool can_stack = false;
+							for(int j = 0; j < Depth; j++)
+							{
+								if(ItemsMap[posH][posL][j].type == 
+										ItemAmmo && 
+										ItemsMap[posH][posL][j].GetItem().symbol == 
+										heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
+								{
+									ItemsMap[posH][posL][j].item.invAmmo.count++;
+									heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+									heroWeapon->item.invWeapon.currentCS--;
+									can_stack = true;
+									found = true;
+								}
+							}
+							if(!can_stack)
+							{
+								int empty = FindEmptyItemUnderThisCell(posH, posL);
+								if(empty != 101010)
+								{
+										ItemsMap[posH][posL][empty].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+										ItemsMap[posH][posL][empty].type = ItemAmmo;
+										heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+										heroWeapon->item.invWeapon.currentCS--;
+										found = true;
+								}
+							}
+						}
+
+	//					sprintf(tmp, "|3: %i|", (int)found);
+	//					message += tmp;
+
+						if(!found)
+						{
+							message += "You can`t unload your weapon. Idk, why. ";
+						}
+
+	/*					sprintf(tmp, "! f:%i, cs:%i !", (int)found, heroWeapon->item.invWeapon.currentCS - 1);
+						message += tmp;*/
 					}
-					if(!found)
-					{
-						message += "You can`t unload your weapon";
-					}
-					sprintf(tmp, "! f:%i, cs:%i !", (int)found, heroWeapon->item.invWeapon.currentCS - 1);
-					message += tmp;
 				}
 				else
 				{
@@ -1701,7 +1809,7 @@ void Hero::ShowInventory(const char& inp)
 					}
 				}
 			}
-			break;	/*!!!FUCK!!!*/// Add unload option
+			break;	
 		}
 	}
 }
@@ -1710,22 +1818,33 @@ void DropInventory(PossibleUnit& unit)
 {
 	int h = unit.GetUnit().posH;
 	int l =	unit.GetUnit().posL;
-	for(int i = 0; i < UNITINVENTORY; i++)
+	for(int i = 0; i < UNITINVENTORY; i++)										/* Here are some changes, that we need to test */
 	{
 		if(unit.GetUnit().unitInventory[i].type != ItemEmpty)
 		{
-			int empty = hero.FindEmptyItemUnderThisCell(h, l);
-			if(empty != 101010)
+			if(unit.GetUnit().unitInventory[i].GetItem().isStackable)
 			{
-				ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
-/*				if(unit.GetUnit().unitInventory[i].GetItem().isStackable)
+				int dep = FindStackable(unit.GetUnit().posH, unit.GetUnit().posL, unit.GetUnit().unitInventory[i].GetItem().symbol);
+				if(dep == 101010)
 				{
-					
+					int empty = hero.FindEmptyItemUnderThisCell(h, l);
+					if(empty != 101010)
+					{
+						ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+					}
 				}
-				for(int j = 0; j < Depth; j++)
+				else
 				{
-
-				}*/ /*!!!FUCK!!!*/
+					ItemsMap[unit.GetUnit().posH][unit.GetUnit().posL][dep].GetItem().count += unit.GetUnit().unitInventory[i].GetItem().count;
+				}
+			}
+			else
+			{
+				int empty = hero.FindEmptyItemUnderThisCell(h, l);
+				if(empty != 101010)
+				{
+					ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+				}
 			}
 		}
 	}
@@ -2700,6 +2819,10 @@ void UpdateAI()
 				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].GetUnit().health);
 				message += tmp;
 #				endif
+				if(MODE == 2 && turns % 200 == 0)
+				{
+					UnitsMap[i][j].GetUnit().health++;
+				}
 				UnitsMap[i][j].unit.uEnemy.movedOnTurn = turns;
 				UpdatePosition(UnitsMap[i][j]);
 			}
@@ -3874,8 +3997,8 @@ int main()
 	bar += tmp;
 	sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
 	bar += tmp;
-	sprintf(tmp, "Lu: %i ", Luck);								// !DEBUG!
-	bar += tmp;										//
+	sprintf(tmp, "Lu: %i ", Luck);			
+	bar += tmp;								
 	bar += "Bul: |";
 	for(int i = 0; i < BANDOLIER; i++)
 	{
@@ -3932,8 +4055,8 @@ int main()
 		message = "";
 		bar = "";
 	
-		sprintf(tmp, "w: %i; Imap: %i; Umap: %i ! ! ", sizeof(Weapon), sizeof(ItemsMap), sizeof(UnitsMap));
-		message += tmp;
+//		sprintf(tmp, "w: %i; Imap: %i; Umap: %i ! ! ", sizeof(Weapon), sizeof(ItemsMap), sizeof(UnitsMap));
+//		message += tmp;
 
 		if(hero.hunger < 1)
 		{
@@ -3995,19 +4118,19 @@ int main()
 
 			Draw();
 			
-			move(Height, 0);										//
-			sprintf(tmp, "HP: %i ", hero.health);								//
-			bar += tmp;											//
-			sprintf(tmp, "Sat: %i ", hero.hunger);								//
-			bar += tmp;											//
-			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
-			bar += tmp;											//
-			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
-			bar += tmp;											// Condition bar		
+			move(Height, 0);									
+			sprintf(tmp, "HP: %i ", hero.health);								
+			bar += tmp;										
+			sprintf(tmp, "Sat: %i ", hero.hunger);							
+			bar += tmp;										
+			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);  
+			bar += tmp;											
+			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);
+			bar += tmp;											
 			sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
 			bar += tmp;
-			sprintf(tmp, "Lu: %i ", Luck);									// !DEBUG!
-			bar += tmp;											// !!
+			sprintf(tmp, "Lu: %i ", Luck);								
+			bar += tmp;										
 			bar += "Bul: |";
 			for(int i = 0; i < BANDOLIER; i++)
 			{
@@ -4022,14 +4145,14 @@ int main()
 				}
 			}
 			bar += " ";
-			if(hero.isBurdened) bar += "Burdened. ";							//
+			if(hero.isBurdened) bar += "Burdened. ";							
 	
 			if(hero.hunger < 75)
 			{	
 				bar += "Hungry. ";
 			}
 
-			printw("%- 190s", bar.c_str());									//
+			printw("%- 190s", bar.c_str());									
 		
 			if(hero.heroWeapon->type != ItemEmpty)
 			{
