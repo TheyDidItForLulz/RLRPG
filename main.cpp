@@ -571,8 +571,8 @@ public:
 		}
 	}
 
-	void PickUp(){
-		
+	void PickUp()
+	{
 		if(FindItemsCountUnderThisCell(posH, posL) == 0)
 		{
 			message += "There is nothing here to pick up. ";
@@ -653,6 +653,12 @@ public:
 		if(choise == '\033') return;
 
 		int intch = choise - 'a';
+
+		if(intch >= Depth)
+		{
+			Stop = true;
+			return;
+		}
 		
 		int helpfulArray[Depth], hACounter = 0;
 
