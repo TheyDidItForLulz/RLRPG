@@ -1072,7 +1072,8 @@ union UnitedUnits
 	{
 		uEnemy = en;
 	}
-	UnitedUnits(UnitedUnits& u){}
+	UnitedUnits(const UnitedUnits& u) = delete;
+	UnitedUnits& operator=(const UnitedUnits& u) = delete;
 	UnitedUnits()
 	{
 		uEmpty = EmptyUnit();
@@ -1084,7 +1085,19 @@ struct PossibleUnit
 {
 	UnitedUnits unit;
 	UnitType type;
-	PossibleUnit(UnitedUnits u, UnitType t): unit(u), type(t) {}
+	PossibleUnit(UnitedUnits u, UnitType t): type(t) {
+		switch(type)
+		{
+			case UnitEmpty:
+				unit.uEmpty = u.uEmpty;
+				break;
+			case UnitHero:
+				unit.uHero = u.uHero;
+				break;
+			case UnitEnemy:
+				unit.uEnemy = u.uEnemy;
+		}
+	}
 	PossibleUnit()
 	{
 		type = UnitEmpty;
@@ -1103,6 +1116,35 @@ struct PossibleUnit
 	{
 		type = UnitEnemy;
 		unit.uEnemy = en;
+	}
+	PossibleUnit(const PossibleUnit& p){
+		type = p.type;
+		switch(type)
+		{
+			case UnitEmpty:
+				unit.uEmpty = p.unit.uEmpty;
+				break;
+			case UnitHero:
+				unit.uHero = p.unit.uHero;
+				break;
+			case UnitEnemy:
+				unit.uEnemy = p.unit.uEnemy;
+		}
+	}
+	PossibleUnit& operator=(const PossibleUnit& p)
+	{
+		type = p.type;
+		switch(type)
+		{
+			case UnitEmpty:
+				unit.uEmpty = p.unit.uEmpty;
+				break;
+			case UnitHero:
+				unit.uHero = p.unit.uHero;
+				break;
+			case UnitEnemy:
+				unit.uEnemy = p.unit.uEnemy;
+		}		
 	}
 	Unit& GetUnit()
 	{
@@ -3926,8 +3968,9 @@ int main()
 	differentArmor[0] = ChainChestplate;
 	differentArmor[1] = LeatherChestplate;
 
-	inventory[0].item = LeatherChestplate;
-	inventory[0].type = ItemArmor;
+	//inventory[0].item = LeatherChestplate;
+	//inventory[0].type = ItemArmor;
+	inventory[0] = LeatherChestplate;
 	inventory[0].GetItem().inventorySymbol = 'a';
 	inventoryVol++;
 	hero.heroArmor = &inventory[0];
