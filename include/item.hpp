@@ -118,8 +118,8 @@ public:
 	int cartridgeSize;
 	int currentCS;
 	
-//	Ammo cartridge[MaxCartridgeVol];
-	vector<Ammo> cartridge;
+	Ammo cartridge[MaxCartridgeVol];
+//	vector<Ammo> cartridge;
 
 	Weapon();
 	

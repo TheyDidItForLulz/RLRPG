@@ -208,18 +208,19 @@ Weapon::Weapon(int WeaponType)
 			break;
 	}
 	isStackable = false;
-	if(cartridgeSize)
+/*	if(cartridgeSize)
 	{
 		cartridge.resize(cartridgeSize);
 	}
 	else
 	{
 		cartridge.clear();
-	}
+	}*/
 };
 
-Weapon::Weapon(){
-	cartridge.clear();
+Weapon::Weapon()
+{
+//	cartridge.clear();
 };
 
 Weapon::Weapon(const Weapon& other)
@@ -234,11 +235,15 @@ Weapon::Weapon(const Weapon& other)
 	currentCS = other.currentCS;
 	if(Ranged)
 	{
-		//cartridge = other.cartridge;
-		cartridge.clear();
-		for (const Ammo& a : other.cartridge) {
-			cartridge.push_back(a);
+		for(int i = 0; i < cartridgeSize; i++)
+		{
+			cartridge[i] = other.cartridge[i];
 		}
+//		cartridge = other.cartridge;
+//		cartridge.clear();
+//		for (const Ammo& a : other.cartridge) {
+//			cartridge.push_back(a);
+//		}
 	}
 }
 
@@ -254,11 +259,15 @@ Weapon& Weapon::operator=(const Weapon& other)
 	currentCS = other.currentCS;
 	if(Ranged)
 	{
-		//cartridge = other.cartridge;
-		cartridge.clear();
-		for (const Ammo& a : other.cartridge) {
-			cartridge.push_back(a);
+		for(int i = 0; i < cartridgeSize; i++)
+		{
+			cartridge[i] = other.cartridge[i];
 		}
+//		cartridge = other.cartridge;
+//		cartridge.clear();
+//		for (const Ammo& a : other.cartridge) {
+//			cartridge.push_back(a);
+//		}
 	}
 	return *this;
 }
