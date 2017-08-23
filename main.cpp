@@ -2893,23 +2893,31 @@ void mSettings()
 
 void MainMenu()
 {
-	string Tips[200];
-	int TipsCount = 14;
-	Tips[0] = "lol";
-	Tips[1] = "kek";
-	Tips[2] = "azaza";
-	Tips[3] = "I fukd bugs";
-	Tips[4] = "seriously? Again?";
-	Tips[5] = "it's all about the.. Bugs";
-	Tips[6] = "I used to fuck bugs. Now I fukd them too, but it doesn't matter";
-	Tips[7] = "bugs, bugs, bugs...";
-	Tips[8] = "Tip of the day";
-	Tips[9] = "nice to meet you, lol";
-	Tips[10] = "now with fixed AI!";
-	Tips[11] = "guns suck.";
-	Tips[12] = "do not touch the walls";
-	Tips[13] = "maybe, some coffee?";
-	Tips[14] = "by TheyDidItForLulz && Yuri12358!";
+	string Tips[] = {
+		"lol",
+		"kek",
+		"azaza",
+		"I fukd bugs",
+		"seriously? Again?",
+		"it's all about the.. Bugs",
+		"I used to fuck bugs. Now I fukd them too, but it doesn't matter",
+		"bugs, bugs, bugs...",
+		"Tip of the day",
+		"nice to meet you, lol",
+		"now with fixed AI!",
+		"guns suck. except one of them, but i won't tell which",
+		"do not touch the walls",
+		"maybe, some coffee?",
+		"by TheyDidItForLulz && Yuri12358!",
+		"and what do you hope to find there?",
+		"Say Nya or Die!",
+		"Navalny 20!8",
+		"Without GMO. Probably",
+		"Cake is a lie",
+		"Hey, apple!",
+		"- Hey, Kira. - What? - ... - Fuuuck"
+	};
+	int TipsCount = sizeof(Tips) / sizeof(string);
 
 	int Switch = 1;
 	int tip = rand() % TipsCount;
@@ -2919,7 +2927,7 @@ void MainMenu()
 		{
 			ClearScreen();
 			move(0, 0);
-			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[/*rand() % TipsCount*/tip].c_str());
+			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[tip].c_str());
 
 			move(1, 0);
 			if(Switch == 1)
