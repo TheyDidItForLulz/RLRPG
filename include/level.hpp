@@ -10,6 +10,7 @@
 #define Height FIELD_ROWS												//
 
 extern int map[ FIELD_ROWS ][ FIELD_COLS ];											//
+extern bool seenUpdated[FIELD_ROWS][FIELD_COLS];
 
 #define FLOOR 1
 
