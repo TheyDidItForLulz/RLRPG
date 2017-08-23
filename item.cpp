@@ -1,4 +1,5 @@
 #include"include/item.hpp"
+#include<stdio.h>
 
 ////////////////////////////////
 // Item
@@ -207,9 +208,70 @@ Weapon::Weapon(int WeaponType)
 			break;
 	}
 	isStackable = false;
+/*	if(cartridgeSize)
+	{
+		cartridge.resize(cartridgeSize);
+	}
+	else
+	{
+		cartridge.clear();
+	}*/
 };
 
-Weapon::Weapon(){};
+Weapon::Weapon()
+{
+//	cartridge.clear();
+};
+
+Weapon::Weapon(const Weapon& other)
+{
+	symbol = other.symbol;
+	damage = other.damage;
+	weight = other.weight;
+	Ranged = other.Ranged;
+	range = other.range;
+	damageBonus = other.damageBonus;
+	cartridgeSize = other.cartridgeSize;
+	currentCS = other.currentCS;
+	if(Ranged)
+	{
+		for(int i = 0; i < cartridgeSize; i++)
+		{
+			cartridge[i] = other.cartridge[i];
+		}
+//		cartridge = other.cartridge;
+//		cartridge.clear();
+//		for (const Ammo& a : other.cartridge) {
+//			cartridge.push_back(a);
+//		}
+	}
+}
+
+Weapon& Weapon::operator=(const Weapon& other)
+{
+	symbol = other.symbol;
+	damage = other.damage;
+	weight = other.weight;
+	Ranged = other.Ranged;
+	range = other.range;
+	damageBonus = other.damageBonus;
+	cartridgeSize = other.cartridgeSize;
+	currentCS = other.currentCS;
+	if(Ranged)
+	{
+		for(int i = 0; i < cartridgeSize; i++)
+		{
+			cartridge[i] = other.cartridge[i];
+		}
+//		cartridge = other.cartridge;
+//		cartridge.clear();
+//		for (const Ammo& a : other.cartridge) {
+//			cartridge.push_back(a);
+//		}
+	}
+	return *this;
+}
+
 Weapon::~Weapon(){};
 
 ////////////////////////////////
@@ -319,18 +381,82 @@ InventoryItem::InventoryItem(Tools t)
 {
 	invTools = t;
 }
-InventoryItem::InventoryItem(InventoryItem& i){}
+//InventoryItem::InventoryItem(const InventoryItem& ii) = delete;
 InventoryItem::InventoryItem()
 {
 	invEmpty = EmptyItem();
 }
+
+//InventoryItem& InventoryItem::operator=(const InventoryItem& ii) = delete;
+
 InventoryItem::~InventoryItem(){}
 
 ////////////////////////////////
 // PossibleItem
-PossibleItem::PossibleItem(InventoryItem i, ItemType t): item(i), type(t)
-{}
+PossibleItem::PossibleItem(InventoryItem i, ItemType t): type(t)
+{
+	switch(type)
+	{
+		case ItemFood:
+			item.invFood = i.invFood;
+			break;
+		case ItemArmor:
+			item.invArmor = i.invArmor;
+			break;
+		case ItemEmpty:
+			item.invEmpty = i.invEmpty;
+			break;
+		case ItemWeapon:
+			item.invWeapon = i.invWeapon;
+			break;
+		case ItemAmmo:
+			item.invAmmo = i.invAmmo;
+			break;
+		case ItemScroll:
+			item.invScroll = i.invScroll;
+			break;
+		case ItemPotion:
+			item.invPotion = i.invPotion;
+			break;
+		case ItemTools:
+			item.invTools = i.invTools;
+	}
+}
 PossibleItem::PossibleItem(){type = ItemEmpty;}
+
+PossibleItem::~PossibleItem(){};
+
+PossibleItem::PossibleItem(const PossibleItem& other)
+{
+	type = other.type;
+	switch(type)
+	{
+		case ItemFood:
+			item.invFood = other.item.invFood;
+			break;
+		case ItemArmor:
+			item.invArmor = other.item.invArmor;
+			break;
+		case ItemEmpty:
+			item.invEmpty = other.item.invEmpty;
+			break;
+		case ItemWeapon:
+			item.invWeapon = other.item.invWeapon;
+			break;
+		case ItemAmmo:
+			item.invAmmo = other.item.invAmmo;
+			break;
+		case ItemScroll:
+			item.invScroll = other.item.invScroll;
+			break;
+		case ItemPotion:
+			item.invPotion = other.item.invPotion;
+			break;
+		case ItemTools:
+			item.invTools = other.item.invTools;
+	}
+}
+
 void PossibleItem::operator=(const Food& f)
 {
 	type = ItemFood;
@@ -370,6 +496,36 @@ void PossibleItem::operator=(const Tools& t)
 {
 	type = ItemTools;
 	item.invTools = t;
+}
+void PossibleItem::operator=(const PossibleItem& other)
+{
+	type = other.type;
+	switch(type)
+	{
+		case ItemFood:
+			item.invFood = other.item.invFood;
+			break;
+		case ItemArmor:
+			item.invArmor = other.item.invArmor;
+			break;
+		case ItemEmpty:
+			item.invEmpty = other.item.invEmpty;
+			break;
+		case ItemWeapon:
+			item.invWeapon = other.item.invWeapon;
+			break;
+		case ItemAmmo:
+			item.invAmmo = other.item.invAmmo;
+			break;
+		case ItemScroll:
+			item.invScroll = other.item.invScroll;
+			break;
+		case ItemPotion:
+			item.invPotion = other.item.invPotion;
+			break;
+		case ItemTools:
+			item.invTools = other.item.invTools;
+	}
 }
 Item& PossibleItem::GetItem()
 {

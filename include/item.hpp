@@ -2,6 +2,9 @@
 #define ITEM_HPP
 
 #include"level.hpp"
+#include<vector>
+
+using namespace std;
 
 #define TypesOfFood 2
 #define TypesOfArmor 2
@@ -87,7 +90,6 @@ public:
 
 	Armor();
 	~Armor();
-
 };
 
 class Ammo: public Item
@@ -117,8 +119,14 @@ public:
 	int currentCS;
 	
 	Ammo cartridge[MaxCartridgeVol];
+//	vector<Ammo> cartridge;
 
 	Weapon();
+	
+	Weapon(const Weapon&);
+
+	Weapon& operator=(const Weapon&);
+
 	~Weapon();
 };
 
@@ -180,8 +188,9 @@ union InventoryItem
 	InventoryItem(Scroll s);
 	InventoryItem(Potion p);
 	InventoryItem(Tools t);
-	InventoryItem(InventoryItem& i);
 	InventoryItem();
+	InventoryItem(const InventoryItem& i) = delete;
+	InventoryItem& operator=(const InventoryItem& ii) = delete;
 	~InventoryItem();
 };
 
@@ -199,7 +208,10 @@ struct PossibleItem
 	void operator=(const Scroll& s);
 	void operator=(const Potion& p);
 	void operator=(const Tools& t);
+	void operator=(const PossibleItem& other);
+	PossibleItem(const PossibleItem& other);
 	Item& GetItem();
+	~PossibleItem();
 };
 
 extern PossibleItem ItemsMap[FIELD_ROWS][FIELD_COLS][Depth];
