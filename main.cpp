@@ -292,9 +292,7 @@ Enemy differentEnemies[TypesOfEnemies];
 void Hero::ShowInventory(const char& inp)
 {	
 	PossibleItem list[MaxInvVol];
-
 	int len = 0;
-
 	switch(inp)
 	{	
 		case CONTROL_SHOWINVENTORY:
@@ -309,43 +307,27 @@ void Hero::ShowInventory(const char& inp)
 			}
 			
 			char hv[200] = "Here is your inventory.";
-
 			PrintList(list, len, hv, 1);
-				
 			char choise = getch();
-	
 			if(choise == '\033') return;
-
 			len = 0;
-
 			break;
 		}
-
 		case CONTROL_EAT:
 		{
-			
 			char hv[200] = "What do you want to eat?";
-
 			for(int i = 0; i < MaxInvVol; i++){
-			
 				if(inventory[i].type == ItemFood)
 				{
 					list[len] = inventory[i];
 					len++;
 				}
-	
 			}
-			
 			PrintList(list, len, hv, 1);
-
 			len = 0;
-
 			char choise = getch();
-
 			if(choise == '\033') return;
-			
 			int intch = choise - 'a';
-
 			if(inventory[intch].type == ItemFood)
 			{
 				int prob = rand() % Luck;
@@ -368,14 +350,11 @@ void Hero::ShowInventory(const char& inp)
 					inventory[intch].GetItem().count--;
 				}
 			}
-			
 			break;
 		}	
 		case CONTROL_WEAR:
 		{
-			
 			char hv[200] = "What do you want to wear?";
-			
 			for(int i = 0; i < MaxInvVol; i++)
 			{
 				if(inventory[i].type == ItemArmor)
@@ -386,13 +365,9 @@ void Hero::ShowInventory(const char& inp)
 			}
 			PrintList(list, len, hv, 1);
 			len = 0;
-
 			char choise = getch();
-
 			if(choise == '\033') return;
-
 			int intch = choise - 'a';
-
 			if(inventory[intch].type == ItemArmor)
 			{
 				sprintf(tmp, "Now you wearing %s. ", inventory[intch].GetItem().GetName());
@@ -405,15 +380,11 @@ void Hero::ShowInventory(const char& inp)
 				heroArmor = &inventory[intch];
 				inventory[intch].GetItem().attribute = 201;
 			}
-
 			break;
-
 		}
-
 		case CONTROL_DROP:
 		{
 			char hv[200] = "What do you want to drop?";
-
 			for(int i = 0; i < MaxInvVol; i++)
 			{
 				if(inventory[i].type != ItemEmpty)
@@ -425,23 +396,17 @@ void Hero::ShowInventory(const char& inp)
 
 			PrintList(list, len, hv, 1);
 			len = 0;
-
 			char choise = getch();
-
 			if(choise == '\033') return;
-			
 			int intch = choise - 'a';
-			
 			int num = FindEmptyItemUnderThisCell(posH, posL);
 			if(num == 101010)
 			{
 				message += "There is too much items";
 				return;
 			}
-			
 			if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
 			if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-			
 			if(inventory[intch].GetItem().isStackable && inventory[intch].GetItem().count > 1)
 			{
 				ClearRightPane();
@@ -524,11 +489,8 @@ void Hero::ShowInventory(const char& inp)
 			len = 0;
 			
 			char choise = getch();
-
 			if(choise == '\033') return;
-			
 			int intch = choise - 'a';
-	
 			if(inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools)
 			{
 				sprintf(tmp, "You wield %s.", inventory[intch].GetItem().GetName());
@@ -734,7 +696,6 @@ void Hero::ShowInventory(const char& inp)
 			ClearRightPane();
 			move(0, Length + 10);
 			printw("Here is your ammo.");
-	//		move(1, Length + 10);
 			int choise = 0;
 			int num = 0;
 			PossibleItem buffer;
@@ -852,8 +813,6 @@ void Hero::ShowInventory(const char& inp)
 					load_string += tmp;
 					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
 					{
-	//					sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invArmor.count);
-	//					load_string += tmp;
 						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
 						{
 							case 450:
@@ -898,10 +857,6 @@ void Hero::ShowInventory(const char& inp)
 								break;
 							}
 						}
-
-	//					sprintf(tmp, "|1: %i|", (int)found);
-	//					message += tmp;
-
 						if(!found)
 						{
 							for(int j = 0; j < BANDOLIER; j++)
@@ -917,10 +872,6 @@ void Hero::ShowInventory(const char& inp)
 								}
 							}
 						}
-
-	//					sprintf(tmp, "|2: %i|", (int)found);
-	//					message += tmp;
-
 						if(!found)
 						{
 							bool can_stack = false;
@@ -951,17 +902,10 @@ void Hero::ShowInventory(const char& inp)
 								}
 							}
 						}
-
-	//					sprintf(tmp, "|3: %i|", (int)found);
-	//					message += tmp;
-
 						if(!found)
 						{
 							message += "You can`t unload your weapon. Idk, why. ";
 						}
-
-	/*					sprintf(tmp, "! f:%i, cs:%i !", (int)found, heroWeapon->item.invWeapon.currentCS - 1);
-						message += tmp;*/
 					}
 				}
 				else
@@ -1756,9 +1700,6 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 
 	posH = v_y;
 	posL = v_x;
-
-	/* Lol, i finished this BFS for you, but im too lazy & busy to continue, so you must finish the AI by yourself */
-	/* Bitch bitch bitch, motherfuck'a, fuk yeah */
 }
 
 void UpdatePosition(PossibleUnit& unit)
@@ -1769,7 +1710,8 @@ void UpdatePosition(PossibleUnit& unit)
 	{
 		HeroVisible = false;
 	}
-	else if((SQR(unit.GetUnit().posH - hero.posH) + SQR(unit.GetUnit().posL - hero.posL) < SQR(unit.GetUnit().vision)) && unit.GetUnit().CanSeeCell(hero.posH, hero.posL))
+	else if((SQR(unit.GetUnit().posH - hero.posH) + SQR(unit.GetUnit().posL - hero.posL) < SQR(unit.GetUnit().vision)) 
+		&& unit.GetUnit().CanSeeCell(hero.posH, hero.posL))
 	{
 		HeroVisible = true;
 	}
@@ -1850,8 +1792,6 @@ void UpdatePosition(PossibleUnit& unit)
 			if( bfs(unit.unit.uEnemy.targetH, unit.unit.uEnemy.targetL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1 )
 			{
 				needRandDir = 1;
-				/*sprintf( tmp, " $$>yet another bfs error (%d;%d;%d)<$$ ", unit.GetUnit().symbol, unit.GetUnit().posH, unit.GetUnit().posL );
-				message += tmp;*/
 			}
 			else
 			{
@@ -1902,7 +1842,6 @@ void UpdatePosition(PossibleUnit& unit)
 		}
 		if( needRandDir )
 		{
-//			return;
 			vector<int> visionArrayH;
 			vector<int> visionArrayL;
 
@@ -2141,8 +2080,6 @@ void SpawnUnits()
 			UnitsMap[h][l] = differentEnemies[p];
 			UnitsMap[h][l].GetUnit().posH = h;
 			UnitsMap[h][l].GetUnit().posL = l;
-//			sprintf(tmp, ">%i<", UnitsMap[h][l].GetUnit().unitInventory[0].GetItem().symbol);
-//			message += tmp;
 		}
 		else i--;
 	}
@@ -2165,10 +2102,7 @@ void Draw(){
 	}
 	
 	for(int i = 0; i < Height; i++){
-		
 		for(int j = 0; j < Length; j++){
-			
-//			printw("% i ", map[i][j]);										// !DEBUG!
 			if(mapSaved[i][j] != 0)
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
@@ -2184,21 +2118,10 @@ void Draw(){
 							}
 							else
 							{
-								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								addch(' ');
 							}
 							break;
 						case 2:
-							/*
-							if(near)
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
-							}
-							else
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK));
-							}
-							*/
 							{
 								bool u = (i && mapSaved[i - 1][j] == 2);
 								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
@@ -2393,10 +2316,7 @@ void Draw(){
 	}
 	
 	for(int i = 0; i < Height; i++){
-		
 		for(int j = 0; j < Length; j++){
-			
-//			printw("% i ", map[i][j]);										// !DEBUG!
 			if(mapSaved[i][j] != 0)
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
@@ -2407,27 +2327,9 @@ void Draw(){
 						switch( mapSaved[i][j] )
 						{
 						case 1:
-							//if(near)
-							//{
 								addch(ACS_BULLET);
-							//}
-							//else
-							//{
-								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
-							//	addch(' ');
-							//}
 							break;
 						case 2:
-							/*
-							if(near)
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
-							}
-							else
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK));
-							}
-							*/
 							{
 								bool u = (i && mapSaved[i - 1][j] == 2);
 								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
@@ -2472,27 +2374,7 @@ void Draw(){
 									break;
 								}
 								break;
-							}/*
-							case 1:
-								if(seenUpdated[i][j])
-								{
-									addch('_');
-								}
-								else
-								{
-									addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
-								}
-								break;
-							case 2:
-								if(seenUpdated[i][j])
-								{
-									addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
-								}
-								else
-								{
-									addch('#' | COLOR_PAIR(WHITE_BLACK));
-								}
-								break;*/
+							}
 							case 100:
 								addch('%');
 								break;
@@ -2586,27 +2468,9 @@ void Draw(){
 					switch( mapSaved[i][j] )
 					{
 						case 1:
-							//if(near)
-							//{
-							//	addch('_');
-							//}
-							//else
-							//{
-								//addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								addch(' ');
-							//}
 							break;
 						case 2:
-							/*
-							if(near)
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
-							}
-							else
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK));
-							}
-							*/
 							{
 								bool u = (i && mapSaved[i - 1][j] == 2);
 								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
@@ -2651,27 +2515,7 @@ void Draw(){
 									break;
 								}
 								break;
-							}/*
-						case 1:
-							if(near)
-							{
-								addch('_');
 							}
-							else
-							{
-								addch('_' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
-							}
-							break;
-						case 2:
-							if(near)
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
-							}
-							else
-							{
-								addch('#' | COLOR_PAIR(WHITE_BLACK));
-							}
-							break;*/
 						case 100:
 							addch('%');
 							break;
@@ -2915,7 +2759,8 @@ void MainMenu()
 		"Without GMO. Probably",
 		"Cake is a lie",
 		"Hey, apple!",
-		"- Hey, Kira. - What? - ... - Fuuuck"
+		"- Hey, Kira. - What? - ... - Fuuuck",
+		"sudo rm -rf *"
 	};
 	int TipsCount = sizeof(Tips) / sizeof(string);
 
