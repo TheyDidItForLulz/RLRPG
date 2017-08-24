@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////////////////////////////////////// Symbols ///////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////// Symbols ////////////////////////////////////////////////////////////////
 /*
 																				'_'(Floor) == 1
 																				'#'(Wall) == 2
@@ -102,6 +102,7 @@
 #include<string.h>									//
 #include<vector>
 #include<queue>
+#include<assert.h>
 
 // !COMMENT! random potion effect, random events, modificators
 
@@ -985,156 +986,90 @@ void Hero::AttackEnemy(int& a1, int& a2)
 	}
 }
 
+void getProjectileDirectionsAndSymbol(char direction, int & dx, int & dy, char & sym) {
+	switch(direction) {
+	case CONTROL_UP:
+		dy = -1;
+		dx = 0;
+		sym = '|';
+		break;
+	case CONTROL_UPRIGHT:
+		dy = -1;
+		dx = 1;
+		sym = '/';
+		break;
+	case CONTROL_RIGHT:
+		dx = 1;
+		dy = 0;
+		sym = '-';
+		break;
+	case CONTROL_DOWNRIGHT:
+		dx = 1;
+		dy = 1;
+		sym = '\\';
+		break;
+	case CONTROL_DOWN:
+		dy = 1;
+		dx = 0;
+		sym = '|';
+		break;
+	case CONTROL_DOWNLEFT:
+		dy = 1;
+		dx = -1;
+		sym = '/';
+		break;
+	case CONTROL_LEFT:
+		dx = -1;
+		dy = 0;
+		sym = '-';
+		break;
+	case CONTROL_UPLEFT:
+		dx = -1;
+		dy = -1;
+		sym = '\\';
+	}
+}
+
 void Hero::ThrowAnimated(PossibleItem& item, char direction)
 {
 	int ThrowLength = 0;
-
-	switch(direction)
+	int dx = 0;
+	int dy = 0;
+	char sym;
+	getProjectileDirectionsAndSymbol(direction, dx, dy, sym);
+	for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)							// 12 is "strength"
 	{
-		case CONTROL_RIGHT:
+		int row = posH + dy * (i + 1);
+		int col = posL + dx * (i + 1);
+		if(map[row][col] == 2) break;
+		if(UnitsMap[row][col].type != UnitEmpty)
 		{
-			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)							// 12 is "strength"
+			UnitsMap[row][col].GetUnit().health -= item.GetItem().weight / 2;
+			if(UnitsMap[row][col].GetUnit().health <= 0)
 			{
-				if(map[posH][posL + i + 1] == 2) break;
-				if(UnitsMap[posH][posL + i + 1].type != UnitEmpty)
-				{
-					UnitsMap[posH][posL + i + 1].GetUnit().health -= item.GetItem().weight / 2;
-					if(UnitsMap[posH][posL + i + 1].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH][posL + i + 1]);
-						UnitsMap[posH][posL + i + 1].type = UnitEmpty;
-						xp += UnitsMap[posH][posL + i + 1].unit.uEnemy.xpIncreasing;
-					}
-					break;
-				}
-				move(posH, posL + i + 1);
-				addch('-');
-				refresh();
-				ThrowLength++;
-				Delay(DELAY);
-			}
-			int empty = FindEmptyItemUnderThisCell(posH, posL + ThrowLength);
-			if(empty == 101010)
-			{
-				int empty2 = FindEmptyItemUnderThisCell(posH, posL + ThrowLength - 1);
-				ItemsMap[posH][posL + ThrowLength - 1][empty2] = item;
-				item.type = ItemEmpty;
-			}
-			else
-			{
-				ItemsMap[posH][posL + ThrowLength][empty] = item;
-				item.type = ItemEmpty;
+				DropInventory(UnitsMap[row][col]);
+				UnitsMap[row][col].type = UnitEmpty;
+				xp += UnitsMap[row][col].unit.uEnemy.xpIncreasing;
 			}
 			break;
 		}
-		case CONTROL_LEFT:
-		{
-			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
-			{
-				if(map[posH][posL - i - 1] == 2) break;
-				if(UnitsMap[posH][posL - i - 1].type != UnitEmpty)
-				{
-					UnitsMap[posH][posL - i - 1].GetUnit().health -= item.GetItem().weight / 2;
-					if(UnitsMap[posH][posL - i - 1].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH][posL - i - 1]);
-						UnitsMap[posH][posL - i - 1].type = UnitEmpty;
-						xp += UnitsMap[posH][posL - i - 1].unit.uEnemy.xpIncreasing;
-					}
-					break;
-				}
-				move(posH, posL - i - 1);
-				addch('-');
-				refresh();
-				ThrowLength++;
-				Delay(DELAY);
-			}
-			int empty = FindEmptyItemUnderThisCell(posH, posL - ThrowLength);
-			if(empty == 101010)
-			{
-				int empty2 = FindEmptyItemUnderThisCell(posH, posL - ThrowLength + 1);
-				ItemsMap[posH][posL - ThrowLength + 1][empty2] = item;
-				item.type = ItemEmpty;
-			}
-			else
-			{
-				ItemsMap[posH][posL - ThrowLength][empty] = item;
-				item.type = ItemEmpty;
-			}
-			break;
-		}
-		case CONTROL_UP:
-		{
-			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
-			{
-				if(map[posH - i - 1][posL] == 2) break;
-				if(UnitsMap[posH - i - 1][posL].type != UnitEmpty)
-				{
-					UnitsMap[posH - i - 1][posL].GetUnit().health -= item.GetItem().weight / 2;
-					if(UnitsMap[posH - i - 1][posL].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH - i - 1][posL]);
-						UnitsMap[posH - i - 1][posL].type = UnitEmpty;
-						xp += UnitsMap[posH - i - 1][posL].unit.uEnemy.xpIncreasing;
-					}
-					break;
-				}
-				move(posH - i - 1, posL);
-				addch('|');
-				refresh();
-				ThrowLength++;
-				Delay(DELAY);
-			}
-			int empty = FindEmptyItemUnderThisCell(posH - ThrowLength, posL);
-			if(empty == 101010)
-			{
-				int empty2 = FindEmptyItemUnderThisCell(posH - ThrowLength + 1, posL);
-				ItemsMap[posH - ThrowLength + 1][posL][empty2] = item;
-				item.type = ItemEmpty;
-			}
-			else
-			{
-				ItemsMap[posH - ThrowLength][posL][empty] = item;
-				item.type = ItemEmpty;
-			}
-			break;
-		}
-		case CONTROL_DOWN:
-		{
-			for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)
-			{
-				if(map[posH + i + 1][posL] == 2) break;
-				if(UnitsMap[posH + i + 1][posL].type != UnitEmpty)
-				{
-					UnitsMap[posH + i + 1][posL].GetUnit().health -= item.GetItem().weight / 2;
-					if(UnitsMap[posH + i + 1][posL].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH + i + 1][posL]);
-						UnitsMap[posH + i + 1][posL].type = UnitEmpty;
-						xp += UnitsMap[posH + 1 + i][posL].unit.uEnemy.xpIncreasing;
-					}
-					break;
-				}
-				move(posH + i + 1, posL);
-				addch('|');
-				refresh();
-				ThrowLength++;
-				Delay(DELAY);
-			}
-			int empty = FindEmptyItemUnderThisCell(posH + ThrowLength, posL);
-			if(empty == 101010)
-			{
-				int empty2 = FindEmptyItemUnderThisCell(posH + ThrowLength - 1, posL);
-				ItemsMap[posH + ThrowLength - 1][posL][empty2] = item;
-				item.type = ItemEmpty;
-			}
-			else
-			{
-				ItemsMap[posH + ThrowLength][posL][empty] = item;
-				item.type = ItemEmpty;
-			}
-			break;
-		}
+		move(row, col);
+		addch(sym);
+		refresh();
+		ThrowLength++;
+		Delay(DELAY);
+	}
+	int empty = FindEmptyItemUnderThisCell(posH + dy * ThrowLength, posL + dx * ThrowLength);
+	if(empty == 101010)
+	{
+		int empty2 = FindEmptyItemUnderThisCell(posH + dy * (ThrowLength - 1), posL + dx * (ThrowLength - 1));
+		ItemsMap[posH + dy * (ThrowLength - 1)][posL + dx * (ThrowLength - 1)][empty2] = item;
+		item.type = ItemEmpty;
+	}
+	else
+	{
+		ItemsMap[posH + dy * ThrowLength][posL + dx * ThrowLength][empty] = item;
+		item.type = ItemEmpty;
 	}
 }
 
@@ -1166,29 +1101,36 @@ void Hero::Shoot()
 		Stop = true;
 		return;
 	}
+	int dx = 0;
+	int dy = 0;
+	char sym;
+	getProjectileDirectionsAndSymbol(choise, dx, dy, sym);
 	int bullet_power = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + hero.heroWeapon->item.invWeapon.damageBonus;
+	for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
+	{
+		int row = posH + dy * i;
+		int col = posL + dx * i; 
+		if(map[row][col] == 2) break;
+		if(UnitsMap[row][col].type != UnitEmpty)
+		{
+			UnitsMap[row][col].GetUnit().health -= bullet_power - i / 3;
+			if(UnitsMap[row][col].GetUnit().health <= 0)
+			{
+				DropInventory(UnitsMap[row][col]);
+				UnitsMap[row][col].type = UnitEmpty;
+				xp += UnitsMap[row][col].unit.uEnemy.xpIncreasing;
+			}
+		}
+		move(row, col);
+		addch(sym);
+		refresh();
+		Delay(DELAY / 3);
+	}
+/*
 	switch(choise)
 	{
 		case CONTROL_LEFT:
 		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH][posL - i] == 2) break;
-				if(UnitsMap[posH][posL - i].type != UnitEmpty)
-				{
-					UnitsMap[posH][posL - i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH][posL - i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH][posL - i]);
-						UnitsMap[posH][posL - i].type = UnitEmpty;
-						xp += UnitsMap[posH][posL - i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH, posL - i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
 			break;
 		}
 		case CONTROL_DOWN:
@@ -1345,7 +1287,7 @@ void Hero::Shoot()
 			}
 			break;
 		}
-	}
+	}*/
 	heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count = 0;
 	heroWeapon->item.invWeapon.currentCS--;
 }
