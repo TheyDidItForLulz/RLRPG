@@ -2,6 +2,7 @@
 #define UNIT_HPP
 
 #include"item.hpp"
+#include"controls.hpp"
 #include<stdlib.h>
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
@@ -29,10 +30,10 @@ public:
 	int symbol;
 	int vision;
 
-	const char* GetName();
-	bool LinearVisibilityCheck( double from_x, double from_y, double to_x, double to_y );
-	bool CanSeeCell( int h, int l );
-	void Delay(double s);	
+	const char* getName();
+	bool linearVisibilityCheck( double from_x, double from_y, double to_x, double to_y );
+	bool canSeeCell( int h, int l );
+	void delay(double s);	
 	~Unit();
 };
 
@@ -48,14 +49,14 @@ class Enemy: public Unit
 public:
 	Enemy(int eType);
 
-	int dir;
+	Direction dir;
 	int dist;
 	int movedOnTurn;
 	int xpIncreasing;
 	int targetH;
 	int targetL;
 
-	void Shoot();
+	void shoot();
 
 	Enemy();
 	~Enemy();
@@ -74,31 +75,31 @@ public:
 	bool isBurdened;
 	bool CanHeroMoveThroughWalls;
 	
-	void FindVisibleArray();
-	void AttackEnemy(int& a1, int& a2);
+	void findVisibleArray();
+	void attackEnemy(int& a1, int& a2);
 	void mHLogic(int& a1, int& a2);
 	bool isInventoryEmpty();
-	int FindEmptyInventoryCell();
-	int GetInventoryItemsWeight();
-	void PrintList(PossibleItem items[], int len, char msg[], int mode);
-	bool IsMapInInventory();
-	int FindItemsCountUnderThisCell(int h, int l);
-	int FindEmptyItemUnderThisCell(int h, int l);
-	int FindNotEmptyItemUnderThisCell(int h, int l);
-	int FindAmmoInInventory();
-	int FindScrollInInventory();
-	void PrintAmmoList(PossibleItem& pAmmo);										// Picked ammo
-	void PickUp();
+	int findEmptyInventoryCell();
+	int getInventoryItemsWeight();
+	void printList(PossibleItem items[], int len, char msg[], int mode);
+	bool isMapInInventory();
+	int findItemsCountUnderThisCell(int h, int l);
+	int findEmptyItemUnderThisCell(int h, int l);
+	int findNotEmptyItemUnderThisCell(int h, int l);
+	int findAmmoInInventory();
+	int findScrollInInventory();
+	void printAmmoList(PossibleItem& pAmmo);										// Picked ammo
+	void pickUp();
 	bool isFoodInInventory();
 	bool isArmorInInventory();
 	bool isWeaponOrToolsInInventory();
 	bool isPotionInInventory();
-	void ClearRightPane();
-	void Delay(double s);
-	void ThrowAnimated(PossibleItem& item, char direction);
-	void Shoot();
-	void ShowInventory(const char& inp);
-	void Eat();
+	void clearRightPane();
+	void delay(double s);
+	void throwAnimated(PossibleItem& item, Direction direction);
+	void shoot();
+	void showInventory(const char& inp);
+	void eat();
 	void moveHero(char& inp);
 };
 #endif // UNIT_HPP

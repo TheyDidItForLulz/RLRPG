@@ -56,9 +56,9 @@ public:
 	bool showMdf;
 	bool isStackable;
 
-	const char * GetMdf();
-	const char * GetAttribute();
-	const char * GetName();
+	const char * getMdf();
+	const char * getAttribute();
+	const char * getName();
 };
 
 class EmptyItem: public Item
@@ -144,14 +144,14 @@ class Potion: public Item
 {
 public:
 	Potion(int p);
-	const char * GetPotionName();
+	const char * getPotionName();
 	int effect;
 
 	Potion();
 	~Potion();
 };
 
-const char* GetPotionName(int sym);
+const char* getPotionName(int sym);
 
 class Tools: public Item
 {
@@ -210,7 +210,7 @@ struct PossibleItem
 	void operator=(const Tools& t);
 	void operator=(const PossibleItem& other);
 	PossibleItem(const PossibleItem& other);
-	Item& GetItem();
+	Item& getItem();
 	~PossibleItem();
 };
 

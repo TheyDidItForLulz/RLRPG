@@ -1,14 +1,19 @@
 #ifndef CONTROLS_HPP
 #define CONTROLS_HPP
 
-#define DIR_LEFT 0
-#define DIR_DOWN 1
-#define DIR_UP 2
-#define DIR_RIGHT 3
-#define DIR_UPLEFT 4
-#define DIR_UPRIGHT 5
-#define DIR_DOWNLEFT 6
-#define DIR_DOWNRIGHT 7
+#include<stdexcept>
+
+enum class Direction {
+    Left,
+    Down,
+    Up,
+    Right,
+    UpLeft,
+    UpRight,
+    DownLeft,
+    DownRight
+};
+
 #define CONTROL_UP 'k'
 #define CONTROL_DOWN 'j'
 #define CONTROL_LEFT 'h'
@@ -33,5 +38,19 @@
 #define CONTROL_READ 'r'
 #define CONTROL_OPENBANDOLIER 'a'
 #define CONTROL_RELOAD 'R'
+
+inline Direction getDirectionByControl(char control) {
+    switch (control) {
+        case CONTROL_UP: return Direction::Up;
+        case CONTROL_UPRIGHT: return Direction::UpRight;
+        case CONTROL_RIGHT: return Direction::Right;
+        case CONTROL_DOWNRIGHT: return Direction::DownRight;
+        case CONTROL_DOWN: return Direction::Down;
+        case CONTROL_DOWNLEFT: return Direction::DownLeft;
+        case CONTROL_LEFT: return Direction::DownLeft;
+        case CONTROL_UPLEFT: return Direction::UpLeft;
+        default: throw std::logic_error("No direction for the provided control");
+    }
+};
 
 #endif // CONTROLS_HPP

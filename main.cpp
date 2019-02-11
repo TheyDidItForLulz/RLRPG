@@ -127,19 +127,20 @@ using namespace std;
 #include"include/gen_map.hpp"
 #include"include/unit.hpp"
 #include"include/utils.hpp"
+#include"include/log.hpp"
 															
-int map[ FIELD_ROWS ][ FIELD_COLS ];											
+int map[FIELD_ROWS][FIELD_COLS];											
 bool seenUpdated[FIELD_ROWS][FIELD_COLS];										// <- visible array
 int active = 0;														
 int turns = 0; /*-1*/
 															
-void init_field( void )													
+void initField( void )													
 {															
 	for( int i = 0; i < FIELD_ROWS; ++i )										
 	{														
 		for( int j = 0; j < FIELD_COLS; ++j )									
 		{													
-			map[ i ][ j ] = 1;										
+			map[i][j] = 1;										
 		}													
 	}														
 }															//
@@ -148,7 +149,8 @@ void initialize( void )													//
 {															//
 	srand( time( 0 ) );												//
 	active = 1;													//
-	init_field();													//
+	initField();													//
+	initLog();
 }															//
 															//
 string message = "";
@@ -156,18 +158,18 @@ string bar = "";
 string weapon_bar = "";
 char tmp[100];
 
-void MoveUnit(int, int&, int&, int, int);
+void moveUnit(int, int&, int&, int, int);
 
 int inventoryVol = 0;
 
 int Luck;
 int INVISIBILITY = 0;
 
-int FindStackable(int h, int l, int sym)
+int findStackable(int h, int l, int sym)
 {
 	for(int i = 0; i < Depth; i++)
 	{
-		if(ItemsMap[h][l][i].type != ItemEmpty && ItemsMap[h][l][i].GetItem().symbol == sym) return i;
+		if(ItemsMap[h][l][i].type != ItemEmpty && ItemsMap[h][l][i].getItem().symbol == sym) return i;
 	}
 	return 101010;
 }
@@ -272,7 +274,7 @@ struct PossibleUnit
 				unit.uEnemy = p.unit.uEnemy;
 		}		
 	}
-	Unit& GetUnit()
+	Unit& getUnit()
 	{
 		switch(type)
 		{
@@ -290,7 +292,7 @@ PossibleUnit UnitsMap[FIELD_ROWS][FIELD_COLS];
 
 Enemy differentEnemies[TypesOfEnemies];
 
-void Hero::ShowInventory(const char& inp)
+void Hero::showInventory(const char& inp)
 {	
 	PossibleItem list[MaxInvVol];
 	int len = 0;
@@ -307,8 +309,8 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 			
-			char hv[200] = "Here is your inventory.";
-			PrintList(list, len, hv, 1);
+			char hv[] = "Here is your inventory.";
+			printList(list, len, hv, 1);
 			char choise = getch();
 			if(choise == '\033') return;
 			len = 0;
@@ -324,7 +326,7 @@ void Hero::ShowInventory(const char& inp)
 					len++;
 				}
 			}
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 			char choise = getch();
 			if(choise == '\033') return;
@@ -342,13 +344,13 @@ void Hero::ShowInventory(const char& inp)
 				{
 					hunger += inventory[intch].item.invFood.FoodHeal;
 				}
-				if(inventory[intch].GetItem().count == 1)
+				if(inventory[intch].getItem().count == 1)
 				{
 					inventory[intch].type = ItemEmpty;
 				}
 				else
 				{
-					inventory[intch].GetItem().count--;
+					inventory[intch].getItem().count--;
 				}
 			}
 			break;
@@ -364,22 +366,22 @@ void Hero::ShowInventory(const char& inp)
 					len++;
 				}
 			}
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 			char choise = getch();
 			if(choise == '\033') return;
 			int intch = choise - 'a';
 			if(inventory[intch].type == ItemArmor)
 			{
-				sprintf(tmp, "Now you wearing %s. ", inventory[intch].GetItem().GetName());
+				sprintf(tmp, "Now you wearing %s. ", inventory[intch].getItem().getName());
 				message += tmp;
 
 				if(heroArmor->type != ItemEmpty)
 				{
-					heroArmor->GetItem().attribute = 100;
+					heroArmor->getItem().attribute = 100;
 				}
 				heroArmor = &inventory[intch];
-				inventory[intch].GetItem().attribute = 201;
+				inventory[intch].getItem().attribute = 201;
 			}
 			break;
 		}
@@ -395,59 +397,59 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 			char choise = getch();
 			if(choise == '\033') return;
 			int intch = choise - 'a';
-			int num = FindEmptyItemUnderThisCell(posH, posL);
+			int num = findEmptyItemUnderThisCell(posH, posL);
 			if(num == 101010)
 			{
 				message += "There is too much items";
 				return;
 			}
-			if(choise == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
-			if(choise == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-			if(inventory[intch].GetItem().isStackable && inventory[intch].GetItem().count > 1)
+			if(choise == heroArmor->getItem().inventorySymbol) showInventory(CONTROL_TAKEOFF);
+			if(choise == heroWeapon->getItem().inventorySymbol) showInventory(CONTROL_UNEQUIP);
+			if(inventory[intch].getItem().isStackable && inventory[intch].getItem().count > 1)
 			{
-				ClearRightPane();
+				clearRightPane();
 				move(0, Length + 10);
 				printw("How much items you want to drop?[1-9]");
 				int drop_count = getch() - '0';
-				if(drop_count > inventory[intch].GetItem().count) drop_count = inventory[intch].GetItem().count;
+				if(drop_count > inventory[intch].getItem().count) drop_count = inventory[intch].getItem().count;
 				if(drop_count < 1) drop_count = 1;
-				int dep = FindStackable(posH, posL, inventory[intch].GetItem().symbol);
+				int dep = findStackable(posH, posL, inventory[intch].getItem().symbol);
 				if(dep == 101010)
 				{		
 					ItemsMap[posH][posL][num] = inventory[intch];
-					ItemsMap[posH][posL][num].GetItem().count = drop_count;
-					inventory[intch].GetItem().count -= drop_count;
-					if(inventory[intch].GetItem().count < 1)
+					ItemsMap[posH][posL][num].getItem().count = drop_count;
+					inventory[intch].getItem().count -= drop_count;
+					if(inventory[intch].getItem().count < 1)
 					{
 						inventory[intch].type = ItemEmpty;
 					}
 				}
 				else
 				{			
-					ItemsMap[posH][posL][dep].GetItem().count += drop_count;
-					inventory[intch].GetItem().count -= drop_count;
-					if(inventory[intch].GetItem().count < 1)
+					ItemsMap[posH][posL][dep].getItem().count += drop_count;
+					inventory[intch].getItem().count -= drop_count;
+					if(inventory[intch].getItem().count < 1)
 					{
 						inventory[intch].type = ItemEmpty;
 					}
 				}
 			}
-			else if(inventory[intch].GetItem().isStackable && inventory[intch].GetItem().count == 1)
+			else if(inventory[intch].getItem().isStackable && inventory[intch].getItem().count == 1)
 			{
-				int dep = FindStackable(posH, posL, inventory[intch].GetItem().symbol);
+				int dep = findStackable(posH, posL, inventory[intch].getItem().symbol);
 				if(dep == 101010)
 				{		
 					ItemsMap[posH][posL][num] = inventory[intch];
 				}
 				else
 				{			
-					ItemsMap[posH][posL][dep].GetItem().count++;
-					inventory[intch].GetItem().count--;
+					ItemsMap[posH][posL][dep].getItem().count++;
+					inventory[intch].getItem().count--;
 				}
 				inventory[intch].type = ItemEmpty;
 			}
@@ -457,7 +459,7 @@ void Hero::ShowInventory(const char& inp)
 				inventory[intch].type = ItemEmpty;
 			}
 
-			if(GetInventoryItemsWeight() <= MaxInvItemsWeight && isBurdened)
+			if(getInventoryItemsWeight() <= MaxInvItemsWeight && isBurdened)
 			{
 				message += "You are burdened no more. ";
 				isBurdened = false;
@@ -468,7 +470,7 @@ void Hero::ShowInventory(const char& inp)
 		case CONTROL_TAKEOFF:
 		{
 			
-			heroArmor->GetItem().attribute = 100;
+			heroArmor->getItem().attribute = 100;
 			heroArmor = &inventory[EMPTY_SLOT];
 			break;
 		
@@ -486,7 +488,7 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 			
 			char choise = getch();
@@ -494,15 +496,15 @@ void Hero::ShowInventory(const char& inp)
 			int intch = choise - 'a';
 			if(inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools)
 			{
-				sprintf(tmp, "You wield %s.", inventory[intch].GetItem().GetName());
+				sprintf(tmp, "You wield %s.", inventory[intch].getItem().getName());
 				message += tmp;
 
 				if(heroWeapon->type != ItemEmpty)
 				{
-					heroWeapon->GetItem().attribute = 100;
+					heroWeapon->getItem().attribute = 100;
 				}
 				heroWeapon = &inventory[intch];
-				inventory[intch].GetItem().attribute = 301;
+				inventory[intch].getItem().attribute = 301;
 			}
 	
 			break;
@@ -510,7 +512,7 @@ void Hero::ShowInventory(const char& inp)
 		}
 		case CONTROL_UNEQUIP:
 		{
-			heroWeapon->GetItem().attribute = 100;
+			heroWeapon->getItem().attribute = 100;
 			heroWeapon = &inventory[EMPTY_SLOT];
 			break;
 		}
@@ -527,7 +529,7 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 
 			char choise = getch();
@@ -536,13 +538,13 @@ void Hero::ShowInventory(const char& inp)
 
 			if(inventory[intch].type != ItemEmpty)
 			{
-				ClearRightPane();
+				clearRightPane();
 				move(0, Length + 10);
 				printw("In what direction?");
 				char secondChoise = getch();
-				if(inventory[intch].GetItem().inventorySymbol == heroArmor->GetItem().inventorySymbol) ShowInventory(CONTROL_TAKEOFF);
-				if(inventory[intch].GetItem().inventorySymbol == heroWeapon->GetItem().inventorySymbol) ShowInventory(CONTROL_UNEQUIP);
-				ThrowAnimated(inventory[intch], secondChoise);
+				if(inventory[intch].getItem().inventorySymbol == heroArmor->getItem().inventorySymbol) showInventory(CONTROL_TAKEOFF);
+				if(inventory[intch].getItem().inventorySymbol == heroWeapon->getItem().inventorySymbol) showInventory(CONTROL_UNEQUIP);
+				throwAnimated(inventory[intch], getDirectionByControl(secondChoise));
 			}
 			break;
 		}
@@ -559,7 +561,7 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 
 			char choise = getch();
@@ -598,7 +600,7 @@ void Hero::ShowInventory(const char& inp)
 								UnitsMap[posH][posL].type = UnitEmpty;
 								posH = h;
 								posL = l;
-								FindVisibleArray();
+								findVisibleArray();
 							}
 							else i--;
 						}
@@ -619,13 +621,13 @@ void Hero::ShowInventory(const char& inp)
 					}
 				}
 				discoveredPotions[inventory[intch].item.invPotion.symbol - 600] = true;
-				if( inventory[intch].GetItem().count == 1 )
+				if( inventory[intch].getItem().count == 1 )
 				{
 					inventory[intch].type = ItemEmpty;
 				}
 				else
 				{
-					--inventory[intch].GetItem().count;
+					--inventory[intch].getItem().count;
 				}
 			}
 			break;
@@ -643,7 +645,7 @@ void Hero::ShowInventory(const char& inp)
 				}
 			}
 
-			PrintList(list, len, hv, 1);
+			printList(list, len, hv, 1);
 			len = 0;
 
 			char choise = getch();
@@ -661,7 +663,7 @@ void Hero::ShowInventory(const char& inp)
 					}
 					case 2:
 					{
-						ClearRightPane();
+						clearRightPane();
 						move(0, Length + 10);
 						printw("What do you want to identify?");
 						char in = getch();
@@ -670,20 +672,20 @@ void Hero::ShowInventory(const char& inp)
 						{
 							if(inventory[intin].type != ItemPotion)
 							{
-								inventory[intin].GetItem().showMdf = true;
+								inventory[intin].getItem().showMdf = true;
 							}
 							else if(inventory[intin].type == ItemPotion)
 							{
-								discoveredPotions[inventory[intin].GetItem().symbol - 600] = true;
+								discoveredPotions[inventory[intin].getItem().symbol - 600] = true;
 							}	
 						
-							if( inventory[intch].GetItem().count == 1 )
+							if( inventory[intch].getItem().count == 1 )
 							{
 								inventory[intch].type = ItemEmpty;
 							}
 							else
 							{
-								--inventory[intch].GetItem().count;
+								--inventory[intch].getItem().count;
 							}
 						}
 						break;
@@ -694,7 +696,7 @@ void Hero::ShowInventory(const char& inp)
 		}
 		case CONTROL_OPENBANDOLIER:
 		{
-			ClearRightPane();
+			clearRightPane();
 			move(0, Length + 10);
 			printw("Here is your ammo.");
 			int choise = 0;
@@ -710,7 +712,7 @@ void Hero::ShowInventory(const char& inp)
 					num += 2;
 					if(inventory[AMMO_SLOT + i].type == ItemAmmo)
 					{
-						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+						switch(inventory[AMMO_SLOT + i].getItem().symbol)
 						{
 							case 450:
 								if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
@@ -776,7 +778,7 @@ void Hero::ShowInventory(const char& inp)
 		}
 		case CONTROL_RELOAD:
 		{
-			ClearRightPane();
+			clearRightPane();
 			move(0, Length + 10);
 			printw("Now you can load your weapon");
 			while(1)
@@ -814,7 +816,7 @@ void Hero::ShowInventory(const char& inp)
 					load_string += tmp;
 					if(inventory[AMMO_SLOT + i].type != ItemEmpty)
 					{
-						switch(inventory[AMMO_SLOT + i].GetItem().symbol)
+						switch(inventory[AMMO_SLOT + i].getItem().symbol)
 						{
 							case 450:
 								load_string += " steel bullets ";
@@ -848,7 +850,7 @@ void Hero::ShowInventory(const char& inp)
 						for(int j = 0; j < BANDOLIER; j++)
 						{
 							if(inventory[AMMO_SLOT + j].type == ItemAmmo && 
-									inventory[AMMO_SLOT + j].GetItem().symbol == 
+									inventory[AMMO_SLOT + j].getItem().symbol == 
 									heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
 							{
 								heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
@@ -880,7 +882,7 @@ void Hero::ShowInventory(const char& inp)
 							{
 								if(ItemsMap[posH][posL][j].type == 
 										ItemAmmo && 
-										ItemsMap[posH][posL][j].GetItem().symbol == 
+										ItemsMap[posH][posL][j].getItem().symbol == 
 										heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol)
 								{
 									ItemsMap[posH][posL][j].item.invAmmo.count++;
@@ -892,7 +894,7 @@ void Hero::ShowInventory(const char& inp)
 							}
 							if(!can_stack)
 							{
-								int empty = FindEmptyItemUnderThisCell(posH, posL);
+								int empty = findEmptyItemUnderThisCell(posH, posL);
 								if(empty != 101010)
 								{
 										ItemsMap[posH][posL][empty].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
@@ -932,122 +934,122 @@ void Hero::ShowInventory(const char& inp)
 	}
 }
 
-void DropInventory(PossibleUnit& unit)
+void dropInventory(PossibleUnit& unit)
 {
-	int h = unit.GetUnit().posH;
-	int l =	unit.GetUnit().posL;
+	int h = unit.getUnit().posH;
+	int l =	unit.getUnit().posL;
 	for(int i = 0; i < UNITINVENTORY; i++)										/* Here are some changes, that we need to test */
 	{
-		if(unit.GetUnit().unitInventory[i].type != ItemEmpty)
+		if(unit.getUnit().unitInventory[i].type != ItemEmpty)
 		{
-			if(unit.GetUnit().unitInventory[i].GetItem().isStackable)
+			if(unit.getUnit().unitInventory[i].getItem().isStackable)
 			{
-				int dep = FindStackable(unit.GetUnit().posH, unit.GetUnit().posL, unit.GetUnit().unitInventory[i].GetItem().symbol);
+				int dep = findStackable(unit.getUnit().posH, unit.getUnit().posL, unit.getUnit().unitInventory[i].getItem().symbol);
 				if(dep == 101010)
 				{
-					int empty = hero.FindEmptyItemUnderThisCell(h, l);
+					int empty = hero.findEmptyItemUnderThisCell(h, l);
 					if(empty != 101010)
 					{
-						ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+						ItemsMap[h][l][empty] = unit.getUnit().unitInventory[i];
 					}
 				}
 				else
 				{
-					ItemsMap[unit.GetUnit().posH][unit.GetUnit().posL][dep].GetItem().count += unit.GetUnit().unitInventory[i].GetItem().count;
+					ItemsMap[unit.getUnit().posH][unit.getUnit().posL][dep].getItem().count += unit.getUnit().unitInventory[i].getItem().count;
 				}
 			}
 			else
 			{
-				int empty = hero.FindEmptyItemUnderThisCell(h, l);
+				int empty = hero.findEmptyItemUnderThisCell(h, l);
 				if(empty != 101010)
 				{
-					ItemsMap[h][l][empty] = unit.GetUnit().unitInventory[i];
+					ItemsMap[h][l][empty] = unit.getUnit().unitInventory[i];
 				}
 			}
 		}
 	}
 }
 
-void Hero::AttackEnemy(int& a1, int& a2)
+void Hero::attackEnemy(int& a1, int& a2)
 {
 	if(heroWeapon->type == ItemWeapon)
 	{
-		UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invWeapon.damage;
+		UnitsMap[posH + a1][posL + a2].getUnit().health -= heroWeapon->item.invWeapon.damage;
 	}
 	else if(heroWeapon->type == ItemTools)
 	{
-		UnitsMap[posH + a1][posL + a2].GetUnit().health -= heroWeapon->item.invTools.damage;
+		UnitsMap[posH + a1][posL + a2].getUnit().health -= heroWeapon->item.invTools.damage;
 	}
-	if(UnitsMap[posH + a1][posL + a2].GetUnit().health <= 0)
+	if(UnitsMap[posH + a1][posL + a2].getUnit().health <= 0)
 	{
-		DropInventory(UnitsMap[posH + a1][posL + a2]);
+		dropInventory(UnitsMap[posH + a1][posL + a2]);
 		UnitsMap[posH + a1][posL + a2].type = UnitEmpty;
 		xp += UnitsMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
 	}
 }
 
-void getProjectileDirectionsAndSymbol(char direction, int & dx, int & dy, char & sym) {
+void getProjectileDirectionsAndSymbol(Direction direction, int & dx, int & dy, char & sym) {
 	switch(direction) {
-	case CONTROL_UP:
+    case Direction::Up:
 		dy = -1;
 		dx = 0;
 		sym = '|';
 		break;
-	case CONTROL_UPRIGHT:
+    case Direction::UpRight:
 		dy = -1;
 		dx = 1;
 		sym = '/';
 		break;
-	case CONTROL_RIGHT:
+    case Direction::Right:
 		dx = 1;
 		dy = 0;
 		sym = '-';
 		break;
-	case CONTROL_DOWNRIGHT:
+    case Direction::DownRight:
 		dx = 1;
 		dy = 1;
 		sym = '\\';
 		break;
-	case CONTROL_DOWN:
+    case Direction::Down:
 		dy = 1;
 		dx = 0;
 		sym = '|';
 		break;
-	case CONTROL_DOWNLEFT:
+    case Direction::DownLeft:
 		dy = 1;
 		dx = -1;
 		sym = '/';
 		break;
-	case CONTROL_LEFT:
+    case Direction::Left:
 		dx = -1;
 		dy = 0;
 		sym = '-';
 		break;
-	case CONTROL_UPLEFT:
+    case Direction::UpLeft:
 		dx = -1;
 		dy = -1;
 		sym = '\\';
 	}
 }
 
-void Hero::ThrowAnimated(PossibleItem& item, char direction)
+void Hero::throwAnimated(PossibleItem& item, Direction direction)
 {
 	int ThrowLength = 0;
 	int dx = 0;
 	int dy = 0;
 	char sym;
 	getProjectileDirectionsAndSymbol(direction, dx, dy, sym);
-	for(int i = 0; i < 12 - item.GetItem().weight / 3; i++)							// 12 is "strength"
+	for(int i = 0; i < 12 - item.getItem().weight / 3; i++)							// 12 is "strength"
 	{
 		int row = posH + dy * (i + 1);
 		int col = posL + dx * (i + 1);
 		if(map[row][col] == 2) break;
 		if(UnitsMap[row][col].type != UnitEmpty)
 		{
-			UnitsMap[row][col].GetUnit().health -= item.GetItem().weight / 2;
-			if(UnitsMap[row][col].GetUnit().health <= 0)
+			UnitsMap[row][col].getUnit().health -= item.getItem().weight / 2;
+			if(UnitsMap[row][col].getUnit().health <= 0)
 			{
-				DropInventory(UnitsMap[row][col]);
+				dropInventory(UnitsMap[row][col]);
 				UnitsMap[row][col].type = UnitEmpty;
 				xp += UnitsMap[row][col].unit.uEnemy.xpIncreasing;
 			}
@@ -1057,12 +1059,12 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 		addch(sym);
 		refresh();
 		ThrowLength++;
-		Delay(DELAY);
+		delay(DELAY);
 	}
-	int empty = FindEmptyItemUnderThisCell(posH + dy * ThrowLength, posL + dx * ThrowLength);
+	int empty = findEmptyItemUnderThisCell(posH + dy * ThrowLength, posL + dx * ThrowLength);
 	if(empty == 101010)
 	{
-		int empty2 = FindEmptyItemUnderThisCell(posH + dy * (ThrowLength - 1), posL + dx * (ThrowLength - 1));
+		int empty2 = findEmptyItemUnderThisCell(posH + dy * (ThrowLength - 1), posL + dx * (ThrowLength - 1));
 		ItemsMap[posH + dy * (ThrowLength - 1)][posL + dx * (ThrowLength - 1)][empty2] = item;
 		item.type = ItemEmpty;
 	}
@@ -1073,7 +1075,7 @@ void Hero::ThrowAnimated(PossibleItem& item, char direction)
 	}
 }
 
-void Hero::Shoot()
+void Hero::shoot()
 {
 	if(heroWeapon->item.invWeapon.Ranged == false)
 	{
@@ -1104,7 +1106,7 @@ void Hero::Shoot()
 	int dx = 0;
 	int dy = 0;
 	char sym;
-	getProjectileDirectionsAndSymbol(choise, dx, dy, sym);
+	getProjectileDirectionsAndSymbol(getDirectionByControl(choise), dx, dy, sym);
 	int bullet_power = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + hero.heroWeapon->item.invWeapon.damageBonus;
 	for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
 	{
@@ -1113,10 +1115,10 @@ void Hero::Shoot()
 		if(map[row][col] == 2) break;
 		if(UnitsMap[row][col].type != UnitEmpty)
 		{
-			UnitsMap[row][col].GetUnit().health -= bullet_power - i / 3;
-			if(UnitsMap[row][col].GetUnit().health <= 0)
+			UnitsMap[row][col].getUnit().health -= bullet_power - i / 3;
+			if(UnitsMap[row][col].getUnit().health <= 0)
 			{
-				DropInventory(UnitsMap[row][col]);
+				dropInventory(UnitsMap[row][col]);
 				UnitsMap[row][col].type = UnitEmpty;
 				xp += UnitsMap[row][col].unit.uEnemy.xpIncreasing;
 			}
@@ -1124,170 +1126,8 @@ void Hero::Shoot()
 		move(row, col);
 		addch(sym);
 		refresh();
-		Delay(DELAY / 3);
+		delay(DELAY / 3);
 	}
-/*
-	switch(choise)
-	{
-		case CONTROL_LEFT:
-		{
-			break;
-		}
-		case CONTROL_DOWN:
-		{	
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH + i][posL] == 2) break;
-				if(UnitsMap[posH + i][posL].type != UnitEmpty)
-				{
-					UnitsMap[posH + i][posL].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH + i][posL].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH + i][posL]);
-						UnitsMap[posH + i][posL].type = UnitEmpty;
-						xp += UnitsMap[posH + i][posL].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH + i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_UP:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH - i][posL] == 2) break;
-				if(UnitsMap[posH - i][posL].type != UnitEmpty)
-				{
-					UnitsMap[posH - i][posL].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH - i][posL].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH - i][posL]);
-						UnitsMap[posH - i][posL].type = UnitEmpty;
-						xp += UnitsMap[posH - i][posL].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH - i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_RIGHT:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH][posL + i] == 2) break;
-				if(UnitsMap[posH][posL + i].type != UnitEmpty)
-				{
-					UnitsMap[posH][posL + i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH][posL + i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH][posL + i]);
-						UnitsMap[posH][posL + i].type = UnitEmpty;
-						xp += UnitsMap[posH][posL + i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH, posL + i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_UPLEFT:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH - i][posL - i] == 2) break;
-				if(UnitsMap[posH - i][posL - i].type != UnitEmpty)
-				{
-					UnitsMap[posH - i][posL - i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH - i][posL - i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH - i][posL - i]);
-						UnitsMap[posH - i][posL - i].type = UnitEmpty;
-						xp += UnitsMap[posH - i][posL - i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH - i, posL - i);
-				addch('\\');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_UPRIGHT:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH - i][posL + i] == 2) break;
-				if(UnitsMap[posH - i][posL + i].type != UnitEmpty)
-				{
-					UnitsMap[posH - i][posL + i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH - i][posL + i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH - i][posL + i]);
-						UnitsMap[posH - i][posL + i].type = UnitEmpty;
-						xp += UnitsMap[posH - i][posL + i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH - i, posL + i);
-				addch('/');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_DOWNLEFT:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH + i][posL - i] == 2) break;
-				if(UnitsMap[posH + i][posL - i].type != UnitEmpty)
-				{
-					UnitsMap[posH + i][posL - i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH + i][posL - i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH + i][posL - i]);
-						UnitsMap[posH + i][posL - i].type = UnitEmpty;
-						xp += UnitsMap[posH + i][posL - i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH + i, posL - i);
-				addch('/');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case CONTROL_DOWNRIGHT:
-		{
-			for(int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++)
-			{
-				if(map[posH + i][posL + i] == 2) break;
-				if(UnitsMap[posH + i][posL + i].type != UnitEmpty)
-				{
-					UnitsMap[posH + i][posL + i].GetUnit().health -= bullet_power - i / 3;
-					if(UnitsMap[posH + i][posL + i].GetUnit().health <= 0)
-					{
-						DropInventory(UnitsMap[posH + i][posL + i]);
-						UnitsMap[posH + i][posL + i].type = UnitEmpty;
-						xp += UnitsMap[posH + i][posL + i].unit.uEnemy.xpIncreasing;
-					}
-				}
-				move(posH + i, posL + i);
-				addch('\\');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-	}*/
 	heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count = 0;
 	heroWeapon->item.invWeapon.currentCS--;
 }
@@ -1307,7 +1147,7 @@ void Hero::mHLogic(int& a1, int& a2)
 		}
 		else if(UnitsMap[posH + a1][posL + a2].type == UnitEnemy)
 		{
-			AttackEnemy(a1, a2);
+			attackEnemy(a1, a2);
 		}
 	}
 	else if(map[posH + a1][posL + a2] == 2)
@@ -1325,10 +1165,10 @@ void Hero::mHLogic(int& a1, int& a2)
 					heroWeapon->item.invTools.uses--;
 					if(heroWeapon->item.invTools.uses <= 0)
 					{
-						sprintf(tmp, "Your %s is broken. ", heroWeapon->GetItem().GetName());
+						sprintf(tmp, "Your %s is broken. ", heroWeapon->getItem().getName());
 						message += tmp;
 						heroWeapon->type = ItemEmpty;
-						FindVisibleArray();
+						findVisibleArray();
 					}
 					return;
 				}
@@ -1337,159 +1177,39 @@ void Hero::mHLogic(int& a1, int& a2)
 		message += "The wall is the way. ";
 		Stop = true;
 	}
-	FindVisibleArray();
+	findVisibleArray();
 }
 
-void Enemy::Shoot()
+void Enemy::shoot()
 {
-	if(posH == hero.posH && posL < hero.posL) dir = DIR_RIGHT;
-	else if(posH == hero.posH && posL > hero.posL) dir = DIR_LEFT;
-	else if(posL == hero.posL && posH > hero.posH) dir = DIR_UP;
-	else if(posL == hero.posL && posH < hero.posH) dir = DIR_DOWN;
-	else if(posL > hero.posL && posH > hero.posH) dir = DIR_UPLEFT;
-	else if(posL > hero.posL && posH < hero.posH) dir = DIR_DOWNLEFT;
-	else if(posL < hero.posL && posH < hero.posH) dir = DIR_DOWNRIGHT;
-	else if(posL < hero.posL && posH > hero.posH) dir = DIR_UPRIGHT;
-
-	switch(dir)
+	if(posH == hero.posH && posL < hero.posL) dir = Direction::Right;
+	else if(posH == hero.posH && posL > hero.posL) dir = Direction::Left;
+	else if(posL == hero.posL && posH > hero.posH) dir = Direction::Up;
+	else if(posL == hero.posL && posH < hero.posH) dir = Direction::Down;
+	else if(posL > hero.posL && posH > hero.posH) dir = Direction::UpLeft;
+	else if(posL > hero.posL && posH < hero.posH) dir = Direction::DownLeft;
+	else if(posL < hero.posL && posH < hero.posH) dir = Direction::DownRight;
+	else if(posL < hero.posL && posH > hero.posH) dir = Direction::UpRight;
+	int dx;
+	int dy;
+	char sym;
+	getProjectileDirectionsAndSymbol(dir, dx, dy, sym);
+	for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
 	{
-		case DIR_LEFT:
+		int row = posH + dy * i;
+		int col = posL + dx * i;
+		if(map[row][col] == 2) break;
+		if(UnitsMap[row][col].type == UnitHero)
 		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH][posL - i] == 2) break;
-				if(UnitsMap[posH][posL - i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH, posL - i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
+			hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 			break;
 		}
-		case DIR_DOWN:
-		{	
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH + i][posL] == 2) break;
-				if(UnitsMap[posH + i][posL].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH + i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_UP:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH - i][posL] == 2) break;
-				if(UnitsMap[posH - i][posL].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH - i, posL);
-				addch('|');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_RIGHT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH][posL + i] == 2) break;
-				if(UnitsMap[posH][posL + i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH, posL + i);
-				addch('-');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_UPLEFT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH - i][posL - i] == 2) break;
-				if(UnitsMap[posH - i][posL - i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH - i, posL - i);
-				addch('\\');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_UPRIGHT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH - i][posL + i] == 2) break;
-				if(UnitsMap[posH - i][posL + i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH - i, posL + i);
-				addch('/');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_DOWNLEFT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH + i][posL - i] == 2) break;
-				if(UnitsMap[posH + i][posL - i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH + i, posL - i);
-				addch('/');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
-		case DIR_DOWNRIGHT:
-		{
-			for(int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++)
-			{
-				if(map[posH + i][posL + i] == 2) break;
-				if(UnitsMap[posH + i][posL + i].type == UnitHero)
-				{
-					hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
-					break;
-				}
-				move(posH + i, posL + i);
-				addch('\\');
-				refresh();
-				Delay(DELAY / 3);
-			}
-			break;
-		}
+		move(row, col);
+		addch(sym);
+		refresh();
+		delay(DELAY / 3);
 	}
+
 	unitAmmo->item.invAmmo.count--;
 	if(unitAmmo->item.invAmmo.count <= 0)
 	{
@@ -1510,7 +1230,7 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 		int v_x = x.front();
 		int v_y = y.front();
 		if(v_y == targetH && v_x == targetL) break;
-		if( used[ v_y ][ v_x ] > depth )
+		if(used[v_y][v_x] > depth )
 		{
 			return -1;
 		}
@@ -1644,7 +1364,7 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL)
 	posL = v_x;
 }
 
-void UpdatePosition(PossibleUnit& unit)
+void updatePosition(PossibleUnit& unit)
 {
 	bool HeroVisible = false;
 
@@ -1652,8 +1372,8 @@ void UpdatePosition(PossibleUnit& unit)
 	{
 		HeroVisible = false;
 	}
-	else if((SQR(unit.GetUnit().posH - hero.posH) + SQR(unit.GetUnit().posL - hero.posL) < SQR(unit.GetUnit().vision)) 
-		&& unit.GetUnit().CanSeeCell(hero.posH, hero.posL))
+	else if((SQR(unit.getUnit().posH - hero.posH) + SQR(unit.getUnit().posL - hero.posL) < SQR(unit.getUnit().vision)) 
+		&& unit.getUnit().canSeeCell(hero.posH, hero.posL))
 	{
 		HeroVisible = true;
 	}
@@ -1662,21 +1382,21 @@ void UpdatePosition(PossibleUnit& unit)
 
 	if(HeroVisible)
 	{
-		if((unit.GetUnit().posH == hero.posH || 
-				unit.GetUnit().posL == hero.posL || 
-				ABS(hero.posH - unit.GetUnit().posH) == ABS(hero.posL - unit.GetUnit().posL)) && 
-				unit.GetUnit().unitWeapon->item.invWeapon.Ranged == true &&
-				unit.GetUnit().unitWeapon->item.invWeapon.range + unit.GetUnit().unitAmmo->item.invAmmo.range >= 
-				ABS(hero.posH - unit.GetUnit().posH) + ABS(hero.posL - unit.GetUnit().posL))
+		if((unit.getUnit().posH == hero.posH || 
+				unit.getUnit().posL == hero.posL || 
+				ABS(hero.posH - unit.getUnit().posH) == ABS(hero.posL - unit.getUnit().posL)) && 
+				unit.getUnit().unitWeapon->item.invWeapon.Ranged == true &&
+				unit.getUnit().unitWeapon->item.invWeapon.range + unit.getUnit().unitAmmo->item.invAmmo.range >= 
+				ABS(hero.posH - unit.getUnit().posH) + ABS(hero.posL - unit.getUnit().posL))
 		{
-			unit.unit.uEnemy.Shoot();
+			unit.unit.uEnemy.shoot();
 		}
 		else
 		{
 			unit.unit.uEnemy.targetH = hero.posH;
 			unit.unit.uEnemy.targetL = hero.posL;
 
-			if( bfs(hero.posH, hero.posL, unit.GetUnit().posH, unit.GetUnit().posL, pH, pL) == -1 )
+			if( bfs(hero.posH, hero.posL, unit.getUnit().posH, unit.getUnit().posL, pH, pL) == -1 )
 			{
 				HeroVisible = false;
 			}
@@ -1688,37 +1408,37 @@ void UpdatePosition(PossibleUnit& unit)
 				}
 				else if(UnitsMap[pH][pL].type == UnitHero)
 				{
-					if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+					if(unit.getUnit().unitWeapon->type == ItemWeapon)
 					{
 						if(hero.heroArmor->item.invArmor.mdf != 2)
 						{
-							hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							hero.health -= unit.getUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 						}
 						else
 						{
-							unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+							unit.getUnit().health -= unit.getUnit().unitWeapon->item.invWeapon.damage;
 						}
 					}
-					else if(unit.GetUnit().unitWeapon->type == ItemTools)
+					else if(unit.getUnit().unitWeapon->type == ItemTools)
 					{
 						if(hero.heroArmor->item.invArmor.mdf != 2)
 						{
-							hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+							hero.health -= unit.getUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 						}
 						else
 						{
-							unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+							unit.getUnit().health -= unit.getUnit().unitWeapon->item.invTools.damage;
 						}
 					}
-					if(unit.GetUnit().health <= 0)
+					if(unit.getUnit().health <= 0)
 					{
 						unit.type = UnitEmpty;
 					}
 				}
 				else
 				{
-					unit.GetUnit().posH = pH;
-					unit.GetUnit().posL = pL;
+					unit.getUnit().posH = pH;
+					unit.getUnit().posL = pL;
 					UnitsMap[pH][pL] = unit;
 					unit.type = UnitEmpty;
 				}
@@ -1728,7 +1448,7 @@ void UpdatePosition(PossibleUnit& unit)
 	if( !HeroVisible )
 	{
 		bool needRandDir = 0;
-		if(unit.unit.uEnemy.targetH != -1 && (unit.unit.uEnemy.targetH != unit.GetUnit().posH || unit.unit.uEnemy.targetL != unit.GetUnit().posL))
+		if(unit.unit.uEnemy.targetH != -1 && (unit.unit.uEnemy.targetH != unit.getUnit().posH || unit.unit.uEnemy.targetL != unit.getUnit().posL))
 		{
 
 			if( bfs(unit.unit.uEnemy.targetH, unit.unit.uEnemy.targetL, unit.unit.uEnemy.posH, unit.unit.uEnemy.posL, pH, pL) == -1 )
@@ -1741,37 +1461,37 @@ void UpdatePosition(PossibleUnit& unit)
 				{
 					if(UnitsMap[pH][pL].type == UnitHero)
 					{
-						if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+						if(unit.getUnit().unitWeapon->type == ItemWeapon)
 						{
 							if(hero.heroArmor->item.invArmor.mdf != 2)
 							{
-								hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+								hero.health -= unit.getUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 							}
 							else
 							{
-								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+								unit.getUnit().health -= unit.getUnit().unitWeapon->item.invWeapon.damage;
 							}
 						}
-						else if(unit.GetUnit().unitWeapon->type == ItemTools)
+						else if(unit.getUnit().unitWeapon->type == ItemTools)
 						{
 							if(hero.heroArmor->item.invArmor.mdf != 2)
 							{
-								hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+								hero.health -= unit.getUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 							}
 							else
 							{
-								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+								unit.getUnit().health -= unit.getUnit().unitWeapon->item.invTools.damage;
 							}
 						}
-						if(unit.GetUnit().health <= 0)
+						if(unit.getUnit().health <= 0)
 						{
 							unit.type = UnitEmpty;
 						}
 					}
 					else
 					{
-						unit.GetUnit().posH = pH;
-						unit.GetUnit().posL = pL;
+						unit.getUnit().posH = pH;
+						unit.getUnit().posL = pL;
 						UnitsMap[pH][pL] = unit;
 						unit.type = UnitEmpty;
 					}
@@ -1787,7 +1507,7 @@ void UpdatePosition(PossibleUnit& unit)
 			vector<int> visionArrayH;
 			vector<int> visionArrayL;
 
-			int psH = unit.GetUnit().posH, psL = unit.GetUnit().posL, vis = unit.GetUnit().vision;
+			int psH = unit.getUnit().posH, psL = unit.getUnit().posL, vis = unit.getUnit().vision;
 
 			for(int i = MAX(psH - vis, 0); i < MIN(Height, psH + vis); i++)
 			{
@@ -1795,7 +1515,7 @@ void UpdatePosition(PossibleUnit& unit)
 				{
 					if((i != psH || j != psL )
 					&& SQR(psH - i) + SQR(psL - j) < SQR(vis) && map[i][j] != 2 
-					&& UnitsMap[i][j].type == UnitEmpty && unit.GetUnit().CanSeeCell(i, j))
+					&& UnitsMap[i][j].type == UnitEmpty && unit.getUnit().canSeeCell(i, j))
 					{
 						visionArrayH.push_back(i);
 						visionArrayL.push_back(j);
@@ -1819,37 +1539,37 @@ void UpdatePosition(PossibleUnit& unit)
 				{
 					if(UnitsMap[pH][pL].type == UnitHero)
 					{
-						if(unit.GetUnit().unitWeapon->type == ItemWeapon)
+						if(unit.getUnit().unitWeapon->type == ItemWeapon)
 						{
 							if(hero.heroArmor->item.invArmor.mdf != 2)
 							{
-								hero.health -= unit.GetUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+								hero.health -= unit.getUnit().unitWeapon->item.invWeapon.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 							}
 							else
 							{
-								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invWeapon.damage;
+								unit.getUnit().health -= unit.getUnit().unitWeapon->item.invWeapon.damage;
 							}
 						}
-						else if(unit.GetUnit().unitWeapon->type == ItemTools)
+						else if(unit.getUnit().unitWeapon->type == ItemTools)
 						{
 							if(hero.heroArmor->item.invArmor.mdf != 2)
 							{
-								hero.health -= unit.GetUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
+								hero.health -= unit.getUnit().unitWeapon->item.invTools.damage * ( ( 100 - hero.heroArmor->item.invArmor.defence ) / 100.0);
 							}
 							else
 							{
-								unit.GetUnit().health -= unit.GetUnit().unitWeapon->item.invTools.damage;
+								unit.getUnit().health -= unit.getUnit().unitWeapon->item.invTools.damage;
 							}
 						}
-						if(unit.GetUnit().health <= 0)
+						if(unit.getUnit().health <= 0)
 						{
 							unit.type = UnitEmpty;
 						}
 					}
 					else
 					{
-						unit.GetUnit().posH = pH;
-						unit.GetUnit().posL = pL;
+						unit.getUnit().posH = pH;
+						unit.getUnit().posL = pL;
 						UnitsMap[pH][pL] = unit;
 						unit.type = UnitEmpty;
 					}
@@ -1861,7 +1581,7 @@ void UpdatePosition(PossibleUnit& unit)
 	}
 }
 
-void UpdateAI()
+void updateAI()
 {
 	for(int i = 0; i < Height; i++)
 	{
@@ -1870,21 +1590,21 @@ void UpdateAI()
 			if(UnitsMap[i][j].type == UnitEnemy && UnitsMap[i][j].unit.uEnemy.movedOnTurn != turns)
 			{
 #				ifdef DEBUG
-				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].GetUnit().health);
+				sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].getUnit().health);
 				message += tmp;
 #				endif
 				if(MODE == 2 && turns % 200 == 0)
 				{
-					UnitsMap[i][j].GetUnit().health++;
+					UnitsMap[i][j].getUnit().health++;
 				}
 				UnitsMap[i][j].unit.uEnemy.movedOnTurn = turns;
-				UpdatePosition(UnitsMap[i][j]);
+				updatePosition(UnitsMap[i][j]);
 			}
 		}
 	}
 }
 
-void SetItems()
+void setItems()
 {
 
 	for(int i = 0; i < FOODCOUNT; i++)
@@ -1897,8 +1617,8 @@ void SetItems()
 			int p = rand() % TypesOfFood;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentFood[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 		}
 		else i--;
 	}
@@ -1913,8 +1633,8 @@ void SetItems()
 			int p = rand() % TypesOfArmor;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentArmor[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 			if(rand() % 500 / Luck == 0)ItemsMap[h][l][d].item.invArmor.mdf = 2;
 		}
 		else i--;
@@ -1930,8 +1650,8 @@ void SetItems()
 			int p = rand() % TypesOfWeapon;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentWeapon[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 		}
 		else i--;
 	}
@@ -1946,8 +1666,8 @@ void SetItems()
 			int p = rand() % TypesOfAmmo;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentAmmo[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 			ItemsMap[h][l][d].item.invAmmo.count = (rand() % Luck) / 2 + 1;
 		}
 		else i--;
@@ -1963,8 +1683,8 @@ void SetItems()
 			int p = rand() % TypesOfScroll;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentScroll[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 		}
 	}
 	for(int i = 0; i < POTIONCOUNT; i++)
@@ -1977,8 +1697,8 @@ void SetItems()
 			int p = rand() % TypesOfPotion;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentPotion[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 		}
 	}
 	for(int i = 0; i < TOOLSCOUNT; i++)
@@ -1991,13 +1711,13 @@ void SetItems()
 			int p = rand() % TypesOfTools;
 			int d = rand() % Depth;
 			ItemsMap[h][l][d] = differentTools[p];
-			ItemsMap[h][l][d].GetItem().posH = h;
-			ItemsMap[h][l][d].GetItem().posL = l;
+			ItemsMap[h][l][d].getItem().posH = h;
+			ItemsMap[h][l][d].getItem().posL = l;
 		}
 	}
 }
 
-void SpawnUnits()
+void spawnUnits()
 {
 	for(int i = 0; i < 1; i++)
 	{
@@ -2020,8 +1740,8 @@ void SpawnUnits()
 		{
 			int p = rand() % TypesOfEnemies;
 			UnitsMap[h][l] = differentEnemies[p];
-			UnitsMap[h][l].GetUnit().posH = h;
-			UnitsMap[h][l].GetUnit().posL = l;
+			UnitsMap[h][l].getUnit().posH = h;
+			UnitsMap[h][l].getUnit().posL = l;
 		}
 		else i--;
 	}
@@ -2029,7 +1749,7 @@ void SpawnUnits()
 
 #ifdef DEBUG
 
-void Draw(){
+void draw(){
 	
 	move(0, 0);
 
@@ -2049,7 +1769,7 @@ void Draw(){
 			{
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
 				
-/* Here */			if(hero.FindItemsCountUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			if(hero.findItemsCountUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					switch(mapSaved[i][j])
 					{
@@ -2111,10 +1831,10 @@ void Draw(){
 							}
 					}
 				}
-/* Here */			else if(hero.FindItemsCountUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.findItemsCountUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
-					int MeetedItem = hero.FindNotEmptyItemUnderThisCell(i, j);
-					switch(ItemsMap[i][j][MeetedItem].GetItem().symbol){
+					int MeetedItem = hero.findNotEmptyItemUnderThisCell(i, j);
+					switch(ItemsMap[i][j][MeetedItem].getItem().symbol){
 
 						case 100:
 							addch('%');
@@ -2178,7 +1898,7 @@ void Draw(){
 							break;
 					}
 				}
-/* Here */			else if(hero.FindItemsCountUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
+/* Here */			else if(hero.findItemsCountUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty)
 				{
 					addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
 				}
@@ -2188,7 +1908,7 @@ void Draw(){
 				}
 /* Here */			else if(UnitsMap[i][j].type == UnitEnemy)
 				{
-/* Here */				switch(UnitsMap[i][j].GetUnit().symbol)
+/* Here */				switch(UnitsMap[i][j].getUnit().symbol)
 					{
 						case 201:
 							addch('@' | COLOR_PAIR(YELLOW_BLACK));
@@ -2217,13 +1937,13 @@ void Draw(){
 
 #else
 
-void Draw(){
+void draw(){
 	
 	move(0, 0);
 
 	static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
 
-	if(MODE == 2 && !hero.IsMapInInventory())
+	if(MODE == 2 && !hero.isMapInInventory())
 	{
 		for(int i = 0; i < FIELD_ROWS; i++)
 		{
@@ -2240,14 +1960,14 @@ void Draw(){
 		{
 			if(seenUpdated[i][j])
 			{
-				int itemsOnCell = hero.FindItemsCountUnderThisCell(i, j);
+				int itemsOnCell = hero.findItemsCountUnderThisCell(i, j);
 				if( itemsOnCell == 0 )
 				{
 					mapSaved[i][j] = map[i][j];
 				}
 				else if( itemsOnCell == 1 )
 				{
-					mapSaved[i][j] = ItemsMap[i][j][hero.FindNotEmptyItemUnderThisCell( i, j )].GetItem().symbol;
+					mapSaved[i][j] = ItemsMap[i][j][hero.findNotEmptyItemUnderThisCell( i, j )].getItem().symbol;
 				}
 				else
 				{
@@ -2390,7 +2110,7 @@ void Draw(){
 						}
 						else if(UnitsMap[i][j].type == UnitEnemy && seenUpdated[i][j])
 						{
-							switch(UnitsMap[i][j].GetUnit().symbol)
+							switch(UnitsMap[i][j].getUnit().symbol)
 							{
 								case 201:
 									addch('@' | COLOR_PAIR(YELLOW_BLACK));
@@ -2539,7 +2259,7 @@ void Draw(){
 
 #endif
 
-void ClearScreen()
+void clearScreen()
 {
 	for(int i = 0; i < 50; i++)
 	{
@@ -2584,7 +2304,7 @@ void mSettingsMode()
 				if(SwitchMode > 1) SwitchMode--;
 				break;
 			case '\033':
-				ClearScreen();
+				clearScreen();
 				return;
 				break;
 			case CONTROL_CONFIRM:
@@ -2599,13 +2319,13 @@ void mSettingsMode()
 				}
 				break;
 		}
-		ClearScreen();
+		clearScreen();
 	}
 }
 
 void mSettingsMap()
 {
-	ClearScreen();
+	clearScreen();
 	move(0, 0);
 	printw("Do you want to load map from file?");
 	char inpChar = getch();
@@ -2613,13 +2333,13 @@ void mSettingsMap()
 	{
 		GenerateMap = false;
 	}
-	ClearScreen();
+	clearScreen();
 }
 
 void mSettings()
 {
 	int SwitchSettings = 1;
-	ClearScreen();
+	clearScreen();
 	while(1)
 	{
 		move(0, 0);
@@ -2669,7 +2389,7 @@ void mSettings()
 			case '\033':
 			{
 				MenuCondition = 0;
-				ClearScreen();
+				clearScreen();
 				return;
 				break;
 			}
@@ -2677,7 +2397,7 @@ void mSettings()
 	}
 }
 
-void MainMenu()
+void mainMenu()
 {
 	string Tips[] = {
 		"lol",
@@ -2712,7 +2432,7 @@ void MainMenu()
 	{
 		if(MenuCondition == 0)
 		{
-			ClearScreen();
+			clearScreen();
 			move(0, 0);
 			printw("Welcome to RLRPG /*Tip of the day: %s*/", Tips[tip].c_str());
 
@@ -2794,7 +2514,7 @@ void MainMenu()
 	}
 }
 
-void ReadMap()
+void readMap()
 {
 	FILE* file = fopen("map.me", "r");
 	for(int i = 0; i < FIELD_ROWS; i++)
@@ -2809,7 +2529,7 @@ void ReadMap()
 
 int LEVELUP = hero.level * hero.level + 4/* * hero.level + 8*/;
 
-void GetXP()
+void getXP()
 {
 	if(hero.xp > LEVELUP)
 	{
@@ -2823,7 +2543,7 @@ void GetXP()
 	}
 }
 
-void SetRandomPotionEffects()
+void setRandomPotionEffects()
 {
 	for(int i = 0; i < TypesOfPotion; i++)
 	{
@@ -2857,7 +2577,7 @@ int main()
 
 	initialize();
 	
-	MainMenu();
+	mainMenu();
 	if(EXIT)
 	{ 	
 		endwin();
@@ -2870,7 +2590,7 @@ int main()
 	}
 	else
 	{
-		ReadMap();
+		readMap();
 	}
 
 	hero.health = DEFAULT_HERO_HEALTH;
@@ -2891,11 +2611,11 @@ int main()
 	//inventory[0].item = LeatherChestplate;
 	//inventory[0].type = ItemArmor;
 	inventory[0] = LeatherChestplate;
-	inventory[0].GetItem().inventorySymbol = 'a';
+	inventory[0].getItem().inventorySymbol = 'a';
 	inventoryVol++;
 	hero.heroArmor = &inventory[0];
-	hero.heroArmor->GetItem().attribute = 201;
-	if(rand() % (500 / Luck) == 0)hero.heroArmor->GetItem().mdf = 2;
+	hero.heroArmor->getItem().attribute = 201;
+	if(rand() % (500 / Luck) == 0)hero.heroArmor->getItem().mdf = 2;
 	
 	Weapon CopperShortsword(0);
 	Weapon BronzeSpear(1);
@@ -2934,7 +2654,7 @@ int main()
 	differentPotion[3] = lol;
 	differentPotion[4] = kek;
 	
-	SetRandomPotionEffects();
+	setRandomPotionEffects();
 
 	Enemy Barbarian(0);
 	Enemy Zombie(1);
@@ -2945,15 +2665,15 @@ int main()
 
 	hero.heroWeapon = &inventory[EMPTY_SLOT];
 
-	SetItems();
+	setItems();
 
-	SpawnUnits();
+	spawnUnits();
 
-	hero.FindVisibleArray();
+	hero.findVisibleArray();
 
 	int TurnsCounter = 0;
 	
-	Draw();
+	draw();
 			
 	move(Height, 0);
 	sprintf(tmp, "HP: %i ", hero.health);
@@ -2988,7 +2708,7 @@ int main()
 	if(hero.heroWeapon->type != ItemEmpty)
 	{
 		weapon_bar = "";
-		weapon_bar += hero.heroWeapon->GetItem().GetName();
+		weapon_bar += hero.heroWeapon->getItem().getName();
 		if(hero.heroWeapon->item.invWeapon.Ranged)
 		{
 			weapon_bar += "[";
@@ -3081,11 +2801,11 @@ int main()
 		
 			if(hero.isBurdened) hero.hunger--;
 
-			UpdateAI();
+			updateAI();
 			
 			++turns;
 
-			Draw();
+			draw();
 			
 			move(Height, 0);									
 			sprintf(tmp, "HP: %i ", hero.health);								
@@ -3126,7 +2846,7 @@ int main()
 			if(hero.heroWeapon->type != ItemEmpty)
 			{
 				weapon_bar = "";
-				weapon_bar += hero.heroWeapon->GetItem().GetName();
+				weapon_bar += hero.heroWeapon->getItem().getName();
 				if(hero.heroWeapon->item.invWeapon.Ranged)
 				{
 					weapon_bar += "[";
@@ -3166,13 +2886,13 @@ int main()
 				Stop = true;
 			}	
 	
-			GetXP();
+			getXP();
 
 			move(hero.posH, hero.posL);
 		}
 		else
 		{
-			Draw();
+			draw();
 
 			move(Height, 0);										//
 			sprintf(tmp, "HP: %i ", hero.health);								//
@@ -3218,6 +2938,7 @@ int main()
 	}
 		
 	refresh();
+	stopLog();
 	endwin();
 
 	return 0;

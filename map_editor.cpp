@@ -47,7 +47,7 @@ public:
 
 Builder builder(1);
 
-void Draw()
+void draw()
 {
 	move(0, 0);
 	for(int i = 0; i < FIELD_ROWS; i++)
@@ -190,7 +190,7 @@ int main()
 
 	move(0, 0);
 
-	Draw();
+	draw();
 	
 	bar += "Tool: ";
 	if(tool == 1)
@@ -221,7 +221,7 @@ int main()
 		{
 			break;
 		}
-		Draw();
+		draw();
 	
 		bar += "Tool: ";
 		if(tool == 1)

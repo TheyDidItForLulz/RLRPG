@@ -5,7 +5,7 @@
 // Item
 Item::Item(): mdf(1), showMdf(false), attribute(100), count(1){};
 
-const char* Item::GetMdf()
+const char* Item::getMdf()
 {
 	switch(mdf)
 	{
@@ -16,7 +16,7 @@ const char* Item::GetMdf()
 	}
 }
 
-const char* Item::GetAttribute()
+const char* Item::getAttribute()
 {
 	switch(attribute)
 	{
@@ -28,7 +28,7 @@ const char* Item::GetAttribute()
 			return "wielded";
 	}
 }
-const char* Item::GetName()
+const char* Item::getName()
 {
 	switch(symbol)
 	{
@@ -65,7 +65,7 @@ const char* Item::GetName()
 		case 602:
 		case 603:
 		case 604:
-			return GetPotionName(symbol);
+			return getPotionName(symbol);
 		case 700:
 			return "pickaxe";
 	}
@@ -527,7 +527,7 @@ void PossibleItem::operator=(const PossibleItem& other)
 			item.invTools = other.item.invTools;
 	}
 }
-Item& PossibleItem::GetItem()
+Item& PossibleItem::getItem()
 {
 	switch(type)
 	{
@@ -570,7 +570,7 @@ Tools differentTools[TypesOfTools];
 
 bool discoveredPotions[TypesOfPotion] = {};
 
-const char* GetPotionName(int sym)
+const char* getPotionName(int sym)
 {
 	sym -= 600;
 	
