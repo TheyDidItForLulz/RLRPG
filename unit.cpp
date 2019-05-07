@@ -7,10 +7,13 @@
 #include"include/controls.hpp"
 #include"include/globals.hpp"
 #include"include/log.hpp"
+#include<termlib/termlib.hpp>
 
 int VISION = 16;
 int MaxInvItemsWeight = 25;								
 int DEFAULT_HERO_HEALTH = 15;
+
+extern TerminalRenderer termRend;
 
 Unit::Unit(): inventoryVol(0){};
 
@@ -332,29 +335,39 @@ void Hero::printAmmoList(PossibleItem& pAmmo)										// Picked ammo
 		{
 			move(1, Length + 12 + num);
 			num += 2;
+            char symbol = '-';
+            TextStyle style{ TerminalColor{} };
 			if(inventory[AMMO_SLOT + i].type == ItemAmmo)
 			{
 				switch(inventory[AMMO_SLOT + i].getItem().symbol)
 				{
 					case 450:
-						if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
-						else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+						//if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
+						//else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
+                        symbol = ',';
+                        style = TextStyle{ TextStyle::Bold, Color::Black };
 						break;
 					case 451:
-						if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
-						else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+						//if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
+						//else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
+                        symbol = ',';
+                        style = TextStyle{ TextStyle::Bold, Color::Red };
 						break;
 					default:
-						if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-						else addch('-' | COLOR_PAIR(WHITE_BLACK));
+						//if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+						//else addch('-' | COLOR_PAIR(WHITE_BLACK));
 						break;
 				}
 			}
 			else
 			{
-				if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-				else addch('-' | COLOR_PAIR(WHITE_BLACK));
+				//if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
+				//else addch('-' | COLOR_PAIR(WHITE_BLACK));
 			}
+            if (choise == i) {
+                style += TextStyle::Underlined;
+            }
+            termRend.put(symbol, style);
 		}
 		switch(getch())
 		{
