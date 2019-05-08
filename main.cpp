@@ -1955,7 +1955,7 @@ void draw(){
 
 #endif
 
-void printMenu(const std::vector<std::string> & items, int active) {
+void printMenu(const std::vector<std::string_view> & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
     std::vector<TextStyle> itemStyles(items.size());
     itemStyles[active - 1] = activeItemStyle;
@@ -1966,7 +1966,48 @@ void printMenu(const std::vector<std::string> & items, int active) {
     }
 }
 
+std::optional<std::string> processMenu(std::string_view title, const std::vector<std::string_view> & items, bool canExit = true) {
+    int selected = 1;
+    int itemsCount = items.size();
+    while (true) {
+        termRend
+            .clear()
+            .setCursorPosition(Vec2i{})
+            .put(title);
+
+        printMenu(items, selected);
+
+        char input = termRead.readChar();
+        switch (input) {
+			case CONTROL_DOWN:
+                selected = std::min(selected + 1, itemsCount);
+				break;
+			case CONTROL_UP:
+                selected = std::max(selected - 1, 1);
+				break;
+			case '\033':
+                if (canExit) {
+                    termRend.clear();
+                    return {};
+                }
+                break;
+			case CONTROL_CONFIRM:
+                return std::string{ items[selected - 1] };
+        }
+    }
+}
+
 void mSettingsMode() {
+    auto result = processMenu("Choose mode", {
+            "Normal",
+            "Hard"});
+
+    if (result == "Normal") {
+        MODE = 1;
+    } else if (result == "Hard") {
+        MODE = 2;
+    }
+    /*
 	int SwitchMode = 1;
 	while (true) {
         termRend
@@ -2001,7 +2042,7 @@ void mSettingsMode() {
 				break;
 		}
         termRend.clear();
-	}
+	}*/
 }
 
 void mSettingsMap() {
@@ -2017,7 +2058,20 @@ void mSettingsMap() {
 }
 
 void mSettings() {
-	int SwitchSettings = 1;
+    while (true) {
+        auto result = processMenu("Settings", {
+                "Mode",
+                "Maps"});
+
+        if (result == "Mode") {
+            mSettingsMode();
+        } else if (result == "Maps") {
+            mSettingsMap();
+        } else {
+            return;
+        }
+    }
+    /*int SwitchSettings = 1;
     termRend.clear();
 	while (true) {
         termRend
@@ -2056,11 +2110,11 @@ void mSettings() {
 				break;
 			}
 		}
-	}
+	}*/
 }
 
 void mainMenu() {
-    std::vector<string> tips = {
+    std::vector<std::string_view> tips = {
 		"lol",
 		"kek",
 		"azaza",
@@ -2082,16 +2136,32 @@ void mainMenu() {
 		"- Hey, Kira. - What? - ... - Fuuuck",
 	};
 
+    while (true) {
+        auto tip = tips[rand() % tips.size()];
+        auto result = processMenu("Welcome to RLRPG /* Tip of the day: {} */"_format(tip), {
+            "Start game",
+            "Settings",
+            "Exit"
+        }, false);
 
+        if (result == "Start game") {
+            return;
+        } else if (result == "Settings") {
+            mSettings();
+        } else if (result == "Exit") {
+            EXIT = true;
+            return;
+        }
+    }
+    /*
 	int Switch = 1;
 	int tip = rand() % tips.size();
-	while (1)
-	{
+	while (true) {
 		if (MenuCondition == 0) {
             termRend
                 .clear()
                 .setCursorPosition(Vec2i{})
-                .put("Welcome to RLRPG /* Tip of the day: {} */"_format(tips[tip]));
+                .put("Welcome to RLRPG / * Tip of the day: {} * /"_format(tips[tip]));
 
             printMenu({ "Start game", "Settings", "About", "Help", "Exit" },
                     Switch);
@@ -2126,7 +2196,7 @@ void mainMenu() {
 		} else if (MenuCondition == 1) {
 			return;
 		}
-	}
+	}*/
 }
 
 void readMap() {
@@ -2312,26 +2382,27 @@ int main() {
 		message = "";
 		bar = "";
 	
+        bool died = false;
+
 		if (hero.hunger < 1) {
 			message += "You died from starvation. Press any key to exit. ";
-            termRend
-                .setCursorPosition(Vec2i{ 0, Height + 2 })
-                .put(fmt::sprintf("%- 190s", message))
-                .display();
-            termRead.readChar();
-			return 0;
+            died = true;
 		}
 
 		if (hero.health < 1) {
-			hero.health = 0;
 			message += "You died. Press any key to exit. ";
+            died = true;
+		}
+
+        if (died) {
+			hero.health = 0;
             termRend
                 .setCursorPosition(Vec2i{ 0, Height + 2 })
                 .put(fmt::sprintf("%- 190s", message))
                 .display();
             termRead.readChar();
 			return 0;
-		}
+        }
 
         termRend.setCursorPosition(Vec2i{ hero.posL, hero.posH });
 
