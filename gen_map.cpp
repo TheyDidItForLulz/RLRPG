@@ -1,4 +1,5 @@
 #include<stdlib.h>
+#include<algorithm>
 #include"include/level.hpp"
 #include"include/utils.hpp"
 
@@ -70,10 +71,10 @@ void maze_next( Pair* start, Pair* prev, Pair* curr )
 
 void clear_room( int r1, int c1, int r2, int c2 )
 {
-	int minr = MIN( r1, r2 );
-	int maxr = MAX( r1, r2 );
-	int minc = MIN( c1, c2 );
-	int maxc = MAX( c1, c2 );
+	int minr = std::min( r1, r2 );
+	int maxr = std::max( r1, r2 );
+	int minc = std::min( c1, c2 );
+	int maxc = std::max( c1, c2 );
 	for( int i = minr; i <= maxr; ++i )
 	{
 		for( int j = minc; j <= maxc; ++j )
@@ -95,7 +96,7 @@ void generate_rooms( void )
 			c1 = ( rand() % COLS ) * 2 + 1;
 			c2 = ( rand() % COLS ) * 2 + 1;
 		}
-		while( ABS( r1 - r2 ) < 3 || ABS( r1 - r2 ) > 4 || ABS( c1 - c2 ) < 11 || ABS( c1 - c2 ) > 12 );
+		while( std::abs( r1 - r2 ) < 3 || std::abs( r1 - r2 ) > 4 || std::abs( c1 - c2 ) < 11 || std::abs( c1 - c2 ) > 12 );
 		clear_room( r1, c1, r2, c2 );
 	}
 }

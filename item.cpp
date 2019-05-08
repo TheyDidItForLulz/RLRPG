@@ -1,74 +1,51 @@
 #include"include/item.hpp"
-#include<stdio.h>
+#include<stdexcept>
 
 ////////////////////////////////
 // Item
 Item::Item(): mdf(1), showMdf(false), attribute(100), count(1){};
 
-const char* Item::getMdf()
-{
-	switch(mdf)
-	{
-		case 1:
-			return "nothing";
-		case 2:
-			return "thorns";
+std::string Item::getMdf() {
+	switch (mdf) {
+		case 1: return "nothing";
+		case 2: return "thorns";
 	}
+    throw std::logic_error("Unknown modifier id");
 }
 
-const char* Item::getAttribute()
-{
-	switch(attribute)
-	{
-		case 100:
-			return "nothing";
-		case 201:
-			return "being worn";
-		case 301:
-			return "wielded";
+std::string Item::getAttribute() {
+	switch (attribute) {
+		case 100: return "nothing";
+		case 201: return "being worn";
+		case 301: return "wielded";
 	}
+    throw std::logic_error("Unknown attribute id");
 }
-const char* Item::getName()
-{
-	switch(symbol)
-	{
-		case 100:
-			return "an egg";
-		case 101:
-			return "an apple";
-		case 300:
-			return "a chain chestplate";
-		case 301:
-			return "a leather chestplate";
-		case 400:
-			return "a copper shortsword";
-		case 401:
-			return "a bronze spear";
-		case 402:
-			return "a musket";
-		case 403:
-			return "a stick";
-		case 404:
-			return "a shotgun";
-		case 405:
-			return "a pistol";
-		case 450:
-			return "a steel bullets";
-		case 451:
-			return "a shotgun shells";
-		case 500:
-			return "a map";
-		case 501:
-			return "an identify scroll";
+
+std::string Item::getName() {
+	switch (symbol) {
+		case 100: return "an egg";
+		case 101: return "an apple";
+		case 300: return "a chain chestplate";
+		case 301: return "a leather chestplate";
+		case 400: return "a copper shortsword";
+		case 401: return "a bronze spear";
+		case 402: return "a musket";
+		case 403: return "a stick";
+		case 404: return "a shotgun";
+		case 405: return "a pistol";
+		case 450: return "a steel bullets";
+		case 451: return "a shotgun shells";
+		case 500: return "a map";
+		case 501: return "an identify scroll";
 		case 600:
 		case 601:
 		case 602:
 		case 603:
-		case 604:
-			return getPotionName(symbol);
-		case 700:
-			return "pickaxe";
+		case 604: return getPotionName(symbol);
+		case 700: return "pickaxe";
 	}
+    throw std::logic_error("Unknown item id");
 }
 Item::~Item(){};
 
@@ -81,7 +58,7 @@ EmptyItem::~EmptyItem(){};
 // Food
 Food::Food(int FoodType)
 {
-	switch(FoodType)
+	switch (FoodType)
 	{
 		case 0:
 			symbol = 100;
@@ -104,7 +81,7 @@ Food::~Food(){};
 // Armor
 Armor::Armor(int ArmorType)
 {
-	switch(ArmorType)
+	switch (ArmorType)
 	{
 		case 0:
 			symbol = 300;
@@ -130,7 +107,7 @@ Armor::~Armor(){};
 // Ammo
 Ammo::Ammo(int AmmoType)
 {
-	switch(AmmoType)
+	switch (AmmoType)
 	{
 		case 0:
 			symbol = 450;
@@ -159,7 +136,7 @@ Weapon::Weapon(int WeaponType)
 {
 	cartridgeSize = 0;
 	currentCS = 0;
-	switch(WeaponType)
+	switch (WeaponType)
 	{
 		case 0:
 			symbol = 400;
@@ -208,7 +185,7 @@ Weapon::Weapon(int WeaponType)
 			break;
 	}
 	isStackable = false;
-/*	if(cartridgeSize)
+/*	if (cartridgeSize)
 	{
 		cartridge.resize(cartridgeSize);
 	}
@@ -233,9 +210,9 @@ Weapon::Weapon(const Weapon& other)
 	damageBonus = other.damageBonus;
 	cartridgeSize = other.cartridgeSize;
 	currentCS = other.currentCS;
-	if(Ranged)
+	if (Ranged)
 	{
-		for(int i = 0; i < cartridgeSize; i++)
+		for (int i = 0; i < cartridgeSize; i++)
 		{
 			cartridge[i] = other.cartridge[i];
 		}
@@ -257,9 +234,9 @@ Weapon& Weapon::operator=(const Weapon& other)
 	damageBonus = other.damageBonus;
 	cartridgeSize = other.cartridgeSize;
 	currentCS = other.currentCS;
-	if(Ranged)
+	if (Ranged)
 	{
-		for(int i = 0; i < cartridgeSize; i++)
+		for (int i = 0; i < cartridgeSize; i++)
 		{
 			cartridge[i] = other.cartridge[i];
 		}
@@ -278,7 +255,7 @@ Weapon::~Weapon(){};
 // Scroll
 Scroll::Scroll(int s)
 {
-	switch(s)
+	switch (s)
 	{
 		case 0:
 			symbol = 500;
@@ -300,7 +277,7 @@ Scroll::~Scroll(){}
 // Potion
 Potion::Potion(int p)
 {
-	switch(p)
+	switch (p)
 	{
 		case 0:
 			symbol = 600;
@@ -330,7 +307,7 @@ Potion::~Potion(){}
 // Tools
 Tools::Tools(int t)
 {
-	switch(t)
+	switch (t)
 	{
 		case 0:
 			symbol = 700;
@@ -395,7 +372,7 @@ InventoryItem::~InventoryItem(){}
 // PossibleItem
 PossibleItem::PossibleItem(InventoryItem i, ItemType t): type(t)
 {
-	switch(type)
+	switch (type)
 	{
 		case ItemFood:
 			item.invFood = i.invFood;
@@ -429,7 +406,7 @@ PossibleItem::~PossibleItem(){};
 PossibleItem::PossibleItem(const PossibleItem& other)
 {
 	type = other.type;
-	switch(type)
+	switch (type)
 	{
 		case ItemFood:
 			item.invFood = other.item.invFood;
@@ -500,7 +477,7 @@ void PossibleItem::operator=(const Tools& t)
 void PossibleItem::operator=(const PossibleItem& other)
 {
 	type = other.type;
-	switch(type)
+	switch (type)
 	{
 		case ItemFood:
 			item.invFood = other.item.invFood;
@@ -527,85 +504,61 @@ void PossibleItem::operator=(const PossibleItem& other)
 			item.invTools = other.item.invTools;
 	}
 }
-Item& PossibleItem::getItem()
-{
-	switch(type)
-	{
-		case ItemFood:
-			return item.invFood;
-		case ItemArmor:
-			return item.invArmor;
-		case ItemEmpty:
-			return item.invEmpty;
-		case ItemWeapon:
-			return item.invWeapon;
-		case ItemAmmo:
-			return item.invAmmo;
-		case ItemScroll:
-			return item.invScroll;
-		case ItemPotion:
-			return item.invPotion;
-		case ItemTools:
-			return item.invTools;
+
+Item& PossibleItem::getItem() {
+	switch (type) {
+		case ItemFood: return item.invFood;
+		case ItemArmor: return item.invArmor;
+		case ItemEmpty: return item.invEmpty;
+		case ItemWeapon: return item.invWeapon;
+		case ItemAmmo: return item.invAmmo;
+		case ItemScroll: return item.invScroll;
+		case ItemPotion: return item.invPotion;
+		case ItemTools: return item.invTools;
 	}
+    throw std::logic_error("Unknown item type");
 }
 
-PossibleItem ItemsMap[FIELD_ROWS][FIELD_COLS][Depth];
+PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
 
-PossibleItem inventory[TrueMaxInvVol];
+PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
-Food differentFood[TypesOfFood];
+Food differentFood[TYPES_OF_FOOD];
 
-Armor differentArmor[TypesOfArmor];
+Armor differentArmor[TYPES_OF_ARMOR];
 
-Weapon differentWeapon[TypesOfWeapon];
+Weapon differentWeapon[TYPES_OF_WEAPONS];
 
-Ammo differentAmmo[TypesOfAmmo];
+Ammo differentAmmo[TYPES_OF_AMMO];
 
-Scroll differentScroll[TypesOfScroll];
+Scroll differentScroll[TYPES_OF_SCROLLS];
 
-Potion differentPotion[TypesOfPotion];
+Potion differentPotion[TYPES_OF_POTIONS];
 
-Tools differentTools[TypesOfTools];
+Tools differentTools[TYPES_OF_TOOLS];
 
-bool discoveredPotions[TypesOfPotion] = {};
+bool discoveredPotions[TYPES_OF_POTIONS] = {};
 
-const char* getPotionName(int sym)
-{
+std::string getPotionName(int sym) {
 	sym -= 600;
 	
-	if(discoveredPotions[sym])
-	{
-		switch(differentPotion[sym].effect)
-		{
-			case 1:
-				return "a potion of healing";
-			case 2:
-				return "a potion of invisibility";
-			case 3:
-				return "a potion of teleport";
-			case 4:
-				return "a potion of... Water?";
-			case 5:
-				return "a potion of blindness";
+	if (discoveredPotions[sym]) {
+		switch (differentPotion[sym].effect) {
+			case 1: return "a potion of healing";
+			case 2: return "a potion of invisibility";
+			case 3: return "a potion of teleport";
+			case 4: return "a potion of... Water?";
+			case 5: return "a potion of blindness";
+		}
+	} else {
+		switch (sym) {
+			case 0: return "blue potion";
+			case 1: return "green potion";
+			case 2: return "dark potion";
+			case 3: return "magenta potion";
+			case 4: return "yellow potion";
 		}
 	}
-	else
-	{
-		switch(sym)
-		{
-			case 0:
-				return "blue potion";
-			case 1:
-				return "green potion";
-			case 2:
-				return "dark potion";
-			case 3:
-				return "magenta potion";
-			case 4:
-				return "yellow potion";
-		}
-	}
+    throw std::logic_error("Unknown potion id");
 }
-
 

@@ -3,16 +3,18 @@
 
 #include"level.hpp"
 #include<vector>
+#include<string>
 
 using namespace std;
 
-#define TypesOfFood 2
-#define TypesOfArmor 2
-#define TypesOfWeapon 6
-#define TypesOfAmmo 2
-#define TypesOfScroll 2
-#define TypesOfPotion 5
-#define TypesOfTools 1
+const int TYPES_OF_FOOD = 2;
+const int TYPES_OF_ARMOR = 2;
+const int TYPES_OF_WEAPONS = 6;
+const int TYPES_OF_AMMO = 2;
+const int TYPES_OF_SCROLLS = 2;
+const int TYPES_OF_POTIONS = 5;
+const int TYPES_OF_TOOLS = 1;
+
 #define FOODCOUNT 10
 #define ARMORCOUNT 4
 #define WEAPONCOUNT 25	/* JUST FOR !DEBUG!!*/
@@ -20,14 +22,13 @@ using namespace std;
 #define SCROLLCOUNT 15 /* JUST FOR !DEBUG!!*/
 #define POTIONCOUNT 25 /* IT TOO */
 #define TOOLSCOUNT 5 /* AND IT */
-#define BANDOLIER TypesOfAmmo
-#define MaxInvVol 53
-#define TrueMaxInvVol 54+BANDOLIER
-#define Depth 11
-#define MaxCartridgeVol 10
+#define BANDOLIER TYPES_OF_AMMO
+#define MAX_USABLE_INV_SIZE 53
+#define MAX_TOTAL_INV_SIZE 54+BANDOLIER
+#define FIELD_DEPTH 11
+#define MAX_CARTRIDGE_SIZE 10
 
-enum ItemType
-{
+enum ItemType {
 	ItemFood,
 	ItemArmor,
 	ItemEmpty,
@@ -56,9 +57,9 @@ public:
 	bool showMdf;
 	bool isStackable;
 
-	const char * getMdf();
-	const char * getAttribute();
-	const char * getName();
+    std::string getMdf();
+    std::string getAttribute();
+    std::string getName();
 };
 
 class EmptyItem: public Item
@@ -118,7 +119,7 @@ public:
 	int cartridgeSize;
 	int currentCS;
 	
-	Ammo cartridge[MaxCartridgeVol];
+	Ammo cartridge[MAX_CARTRIDGE_SIZE];
 //	vector<Ammo> cartridge;
 
 	Weapon();
@@ -144,14 +145,14 @@ class Potion: public Item
 {
 public:
 	Potion(int p);
-	const char * getPotionName();
+    std::string getPotionName();
 	int effect;
 
 	Potion();
 	~Potion();
 };
 
-const char* getPotionName(int sym);
+std::string getPotionName(int sym);
 
 class Tools: public Item
 {
@@ -214,24 +215,24 @@ struct PossibleItem
 	~PossibleItem();
 };
 
-extern PossibleItem ItemsMap[FIELD_ROWS][FIELD_COLS][Depth];
-extern PossibleItem inventory[TrueMaxInvVol];
+extern PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
+extern PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
-extern Food differentFood[TypesOfFood];
+extern Food differentFood[TYPES_OF_FOOD];
 
-extern Armor differentArmor[TypesOfArmor];
+extern Armor differentArmor[TYPES_OF_ARMOR];
 
-extern Weapon differentWeapon[TypesOfWeapon];
+extern Weapon differentWeapon[TYPES_OF_WEAPONS];
 
-extern Ammo differentAmmo[TypesOfAmmo];
+extern Ammo differentAmmo[TYPES_OF_AMMO];
 
-extern Scroll differentScroll[TypesOfScroll];
+extern Scroll differentScroll[TYPES_OF_SCROLLS];
 
-extern Potion differentPotion[TypesOfPotion];
+extern Potion differentPotion[TYPES_OF_POTIONS];
 
-extern Tools differentTools[TypesOfTools];
+extern Tools differentTools[TYPES_OF_TOOLS];
 
-extern bool discoveredPotions[TypesOfPotion];
+extern bool discoveredPotions[TYPES_OF_POTIONS];
 
 #endif // ITEM_HPP
 

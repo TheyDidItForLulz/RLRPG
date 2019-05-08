@@ -2,10 +2,12 @@
 #define GLOBALS_HPP
 
 #include<string>
+#include<termlib/termlib.hpp>
 
 extern std::string message;
-extern char tmp[100];
-extern bool Stop;
+extern bool g_stop;
+extern TerminalRenderer termRend;
+extern TerminalReader termRead;
 
 #endif // GLOBALS_HPP
 

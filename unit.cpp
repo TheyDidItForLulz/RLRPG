@@ -1,5 +1,6 @@
-#include<time.h>
-#include<ncurses.h>
+#include<ctime>
+#include<thread>
+
 #include"include/unit.hpp"
 #include"include/utils.hpp"
 #include"include/level.hpp"
@@ -9,18 +10,20 @@
 #include"include/log.hpp"
 #include<termlib/termlib.hpp>
 
-int VISION = 16;
-int MaxInvItemsWeight = 25;								
+#include<fmt/core.h>
+#include<fmt/printf.h>
+
+using namespace fmt::literals;
+
+int g_vision = 16;
+int g_maxBurden = 25;								
 int DEFAULT_HERO_HEALTH = 15;
 
 extern TerminalRenderer termRend;
+extern TerminalReader termRead;
 
-Unit::Unit(): inventoryVol(0){};
-
-const char* Unit::getName()
-{
-	switch(symbol)
-	{
+std::string Unit::getName() {
+	switch (symbol) {
 		case 200:
 			return "Hero";
 		case 201:
@@ -30,34 +33,26 @@ const char* Unit::getName()
 	}
 }
 
-bool Unit::linearVisibilityCheck( double from_x, double from_y, double to_x, double to_y )
-{
-	double dx = to_x - from_x;
-	double dy = to_y - from_y;
-	if( ABS( dx ) > ABS( dy ) )
-	{
+bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double toY) {
+	double dx = toX - fromX;
+	double dy = toY - fromY;
+	if (std::abs(dx) > std::abs(dy)) {
 		double k = dy / dx;
-		int s = SGN( dx );
-		for( int i = 0; i * s < dx * s; i += s )
-		{
-			int x = from_x + i;
-			int y = from_y + i * k;
-			if( map[y][x] == 2 )
-			{
+		int s = sgn(dx);
+		for (int i = 0; i * s < dx * s; i += s) {
+			int x = fromX + i;
+			int y = fromY + i * k;
+			if (map[y][x] == 2) {
 				return false;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		double k = dx / dy;
-		int s = SGN( dy );
-		for( int i = 0; i * s < dy * s; i += s )
-		{
-			int x = from_x + i * k;
-			int y = from_y + i;
-			if( map[y][x] == 2 )
-			{
+		int s = sgn(dy);
+		for (int i = 0; i * s < dy * s; i += s) {
+			int x = fromX + i * k;
+			int y = fromY + i;
+			if (map[y][x] == 2) {
 				return false;
 			}
 		}
@@ -65,34 +60,18 @@ bool Unit::linearVisibilityCheck( double from_x, double from_y, double to_x, dou
 	return true;
 }
 
-bool Unit::canSeeCell( int h, int l )
-{
+bool Unit::canSeeCell(int h, int l) {
 	double offset = 1. / VISION_PRECISION;
 	return
-	linearVisibilityCheck( posL + .5, posH + .5, l + offset, h + offset ) ||
-	linearVisibilityCheck( posL + .5, posH + .5, l + offset, h + 1 - offset ) ||
-	linearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + offset ) ||
-	linearVisibilityCheck( posL + .5, posH + .5, l + 1 - offset, h + 1 - offset );
+        linearVisibilityCheck(posL + .5, posH + .5, l + offset, h + offset) ||
+        linearVisibilityCheck(posL + .5, posH + .5, l + offset, h + 1 - offset) ||
+        linearVisibilityCheck(posL + .5, posH + .5, l + 1 - offset, h + offset) ||
+        linearVisibilityCheck(posL + .5, posH + .5, l + 1 - offset, h + 1 - offset);
 }
 
-void Unit::delay(double s)
-{
-	clock_t clocksNow = clock();
-	while(double(clock() - clocksNow) / CLOCKS_PER_SEC < s);
-}	
-
-Unit::~Unit(){};
-
-EmptyUnit::EmptyUnit(){}
-
-EmptyUnit::~EmptyUnit(){}
-
-Enemy::Enemy(int eType): movedOnTurn( 0 ) /*-1*/
-{
-	switch(eType)
-	{
-		case 0:
-		{
+Enemy::Enemy(int eType) {
+	switch (eType) {
+		case 0: {
 			health = 7;
 			unitInventory[0] = differentFood[0];
 			unitInventory[1] = differentWeapon[0];
@@ -103,8 +82,7 @@ Enemy::Enemy(int eType): movedOnTurn( 0 ) /*-1*/
 			xpIncreasing = 3;
 			break;
 		}
-		case 1:
-		{
+		case 1: {
 			health = 10;
 			unitInventory[0] = differentWeapon[3];
 			unitWeapon = &unitInventory[0];
@@ -114,8 +92,7 @@ Enemy::Enemy(int eType): movedOnTurn( 0 ) /*-1*/
 			xpIncreasing = 2;
 			break;
 		}
-		case 2:
-		{
+		case 2: {
 			health = 5;
 			unitInventory[0] = differentWeapon[5];
 			unitInventory[1] = differentAmmo[0];
@@ -134,117 +111,111 @@ Enemy::Enemy(int eType): movedOnTurn( 0 ) /*-1*/
 	targetL = -1;
 }
 
-Enemy::Enemy(){}
-
-Enemy::~Enemy(){}
-
-Hero::Hero(): isBurdened(false), CanHeroMoveThroughWalls(false), xp(0), level(1) {}
-
-void Hero::findVisibleArray()
-{
-	for(int i = 0; i < FIELD_ROWS; i++)
-	{
-		for(int j = 0; j < FIELD_COLS; j++)
-		{
+void Hero::checkVisibleCells() {
+	for (int i = 0; i < FIELD_ROWS; i++) {
+		for (int j = 0; j < FIELD_COLS; j++) {
 			seenUpdated[i][j] = 0;
-			if( SQR( posH - i ) + SQR( posL - j ) < SQR( VISION ) )
-			{
-				seenUpdated[i][j] = canSeeCell( i, j );
+			if (sqr(posH - i) + sqr(posL - j) < sqr(g_vision)) {
+				seenUpdated[i][j] = canSeeCell(i, j);
 			}
 		}
 	}
 }
 
-bool Hero::isInventoryEmpty()
-{
-	for(int i = 0; i < MaxInvVol; i++)
-	{
-		if(inventory[i].type != ItemEmpty) return false;
+bool Hero::isInventoryEmpty() {
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+		if (inventory[i].type != ItemEmpty)
+            return false;
 	}
 	return true;
 }
 
-int Hero::findEmptyInventoryCell()
-{
-	for(int i = 0; i < MaxInvVol; i++)
-	{
-		if(inventory[i].type == ItemEmpty) return i;
+int Hero::findEmptyInventoryCell() {
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+		if (inventory[i].type == ItemEmpty)
+            return i;
 	}
 	return 101010;											// Magic constant, means "Inventory is full".
 }	
 
-int Hero::getInventoryItemsWeight()
-{
+int Hero::getInventoryItemsWeight() {
 	int toReturn = 0;
-	for(int i = 0; i < MaxInvVol; i++)
-	{
-		if(inventory[i].type != ItemEmpty)
-		{
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+		if (inventory[i].type != ItemEmpty) {
 			toReturn += inventory[i].getItem().weight;
 		}
-	
 	}
 	return toReturn;
 }
 
-void Hero::printList(PossibleItem items[], int len, char msg[], int mode)
-{
+void Hero::printList(PossibleItem items[], int len, std::string_view msg, int mode) {
 	int num = 0;
 
-	move(num, Length + 10);
-	printw("%s", msg);	
+    termRend
+        .setCursorPosition(Vec2i{ FIELD_COLS + 10, num })
+        .put(msg);
+
 	num ++;
-	switch(mode)
-	{
-		case 1:
-		{
-			for(int i = 0; i < len; i++)
-			{
-				move(num, Length + 10);
-				if(items[i].getItem().showMdf == true && items[i].getItem().count == 1)
-				{
-					if( items[i].getItem().attribute == 100 )
-					{
-						printw("[%c] %s {%s}. ", items[i].getItem().inventorySymbol, items[i].getItem().getName(), items[i].getItem().getMdf());
+	switch (mode) {
+		case 1: {
+			for (int i = 0; i < len; i++) {
+                termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
+				if (items[i].getItem().showMdf == true && items[i].getItem().count == 1) {
+					if (items[i].getItem().attribute == 100) {
+                        termRend.put("[{}] {} {{{}}}. "_format(
+                                items[i].getItem().inventorySymbol,
+                                items[i].getItem().getName(),
+                                items[i].getItem().getMdf()));
+					} else {
+                        termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                                items[i].getItem().inventorySymbol,
+                                items[i].getItem().getName(),
+                                items[i].getItem().getAttribute(),
+                                items[i].getItem().getMdf()));
 					}
-					else
-					{
-						printw("[%c] %s (%s) {%s}. ", items[i].getItem().inventorySymbol, items[i].getItem().getName(), items[i].getItem().getAttribute(), items[i].getItem().getMdf());
+				} else if (items[i].getItem().count > 1) {
+					if (items[i].getItem().attribute == 100) {
+                        termRend.put("[{}] {} {{{}}}. "_format(
+                                items[i].getItem().inventorySymbol,
+                                items[i].getItem().getName(),
+                                items[i].getItem().count));
+					} else {
+                        termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                                items[i].getItem().inventorySymbol,
+                                items[i].getItem().getName(),
+                                items[i].getItem().getAttribute(),
+                                items[i].getItem().count));
 					}
-				}
-				else if(items[i].getItem().count > 1)
-				{
-					if( items[i].getItem().attribute == 100 )
-					{
-						printw("[%c] %s {%i}. ", items[i].getItem().inventorySymbol, items[i].getItem().getName(), items[i].getItem().count);
-					}
-					else
-					{
-						printw("[%c] %s (%s) {%i}. ", items[i].getItem().inventorySymbol, items[i].getItem().getName(), items[i].getItem().getAttribute(), items[i].getItem().count);
-					}
-				}
-				else if( items[i].getItem().attribute == 100 )
-				{
-					printw("[%c] %s. ", items[i].getItem().inventorySymbol, items[i].getItem().getName());
-				}
-				else
-				{
-					printw("[%c] %s (%s). ", items[i].getItem().inventorySymbol, items[i].getItem().getName(), items[i].getItem().getAttribute());
+				} else if (items[i].getItem().attribute == 100) {
+                    termRend.put("[{}] {}. "_format(
+                            items[i].getItem().inventorySymbol,
+                            items[i].getItem().getName()));
+				} else {
+                    termRend.put("[{}] {} ({}). "_format(
+                            items[i].getItem().inventorySymbol,
+                            items[i].getItem().getName(),
+                            items[i].getItem().getAttribute()));
 				}
 				num ++;
 			}
 			break;
 		}
-		case 2:
-		{
-			for(int i = 0; i < len; i++)
+		case 2: {
+			for (int i = 0; i < len; i++)
 			{
-				move(num, Length + 10);
-				if(items[i].getItem().showMdf == true)
-				{
-					printw("[%c] %s (%s) {%s}. ", i + 'a', items[i].getItem().getName(), items[i].getItem().getAttribute(), items[i].getItem().getMdf());
-				}
-				else printw("[%c] %s (%s). ", i + 'a', items[i].getItem().getName(), items[i].getItem().getAttribute());
+                termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
+				if (items[i].getItem().showMdf == true) {
+                    termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                            i + 'a',
+                            items[i].getItem().getName(),
+                            items[i].getItem().getAttribute(),
+                            items[i].getItem().getMdf()));
+				} else {
+                    termRend.put("[{}] {} ({}). "_format(
+                            i + 'a',
+                            items[i].getItem().getName(),
+                            items[i].getItem().getAttribute()));
+                }
 				num ++;
 			}
 			break;
@@ -253,146 +224,114 @@ void Hero::printList(PossibleItem items[], int len, char msg[], int mode)
 	}
 }
 
-bool Hero::isMapInInventory()
-{
-	for(int i = 0; i < MaxInvVol; i++)
-	{
-		if(inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == 500) return true;
+bool Hero::isMapInInventory() {
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+		if (inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == 500)
+            return true;
 	}
 	return false;
 }
 
-int Hero::findItemsCountUnderThisCell(int h, int l)
-{
+int Hero::findItemsCountUnderThisCell(int h, int l) {
 	int result = 0;
-	for(int i = 0; i < Depth; i++)
-	{
-		if(ItemsMap[h][l][i].type != ItemEmpty)
-		{
+	for (int i = 0; i < FIELD_DEPTH; i++) {
+		if (itemsMap[h][l][i].type != ItemEmpty) {
 			result++;
 		}
 	}
 	return result;
 }
 
-int Hero::findEmptyItemUnderThisCell(int h, int l)
-{
-	for(int i = 0; i < Depth; i++)
-	{
-		if(ItemsMap[h][l][i].type == ItemEmpty)
-		{
+int Hero::findEmptyItemUnderThisCell(int h, int l) {
+	for (int i = 0; i < FIELD_DEPTH; i++) {
+		if (itemsMap[h][l][i].type == ItemEmpty) {
 			return i;
 		}
 	}
 	return 101010;											// Magic constant. Means, that something went wrong.
 }
 
-int Hero::findNotEmptyItemUnderThisCell(int h, int l)
-{
-	for(int i = 0; i < Depth; i++)
-	{
-		if(ItemsMap[h][l][i].type != ItemEmpty)
-		{
+int Hero::findNotEmptyItemUnderThisCell(int h, int l) {
+	for (int i = 0; i < FIELD_DEPTH; i++) {
+		if (itemsMap[h][l][i].type != ItemEmpty) {
 			return i;
 		}
 	}
 	return 101010;
 }
 
-int Hero::findAmmoInInventory()
-{
-	for(int i = 0; i < BANDOLIER; i++)
-	{
-		if(inventory[AMMO_SLOT + i].type == ItemAmmo) return i;
+int Hero::findAmmoInInventory() {
+	for (int i = 0; i < BANDOLIER; i++) {
+		if (inventory[AMMO_SLOT + i].type == ItemAmmo) {
+            return i;
+        }
 	}
 	return 101010;
 }
 
-int Hero::findScrollInInventory()
-{
-	for(int i = 0; i < MaxInvVol; i++)
-	{
-		if(inventory[i].type == ItemScroll)
-		{
+int Hero::findScrollInInventory() {
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+		if (inventory[i].type == ItemScroll) {
 			return i;
 		}
 	}
 	return 101010;
 }
 
-void Hero::printAmmoList(PossibleItem& pAmmo)										// Picked ammo
-{
+void Hero::printAmmoList(PossibleItem& pAmmo) {										// Picked ammo
 	clearRightPane();
-	move(0, Length + 10);
-	printw("In what slot do vou want to pull your ammo?");
-//		move(1, Length + 10);
-	int choise = 0;
+    termRend
+        .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+        .put("In what slot do vou want to pull your ammo?");
+	int choice = 0;
 	int num = 0;
-	while(1)
-	{
+	while (1) {
 		num = 0;
-		for(int i = 0; i < BANDOLIER; i++)
-		{
-			move(1, Length + 12 + num);
+		for (int i = 0; i < BANDOLIER; i++) {
+            termRend.setCursorPosition(Vec2i{ FIELD_COLS + num + 12, 1 });
 			num += 2;
             char symbol = '-';
             TextStyle style{ TerminalColor{} };
-			if(inventory[AMMO_SLOT + i].type == ItemAmmo)
-			{
-				switch(inventory[AMMO_SLOT + i].getItem().symbol)
-				{
+			if (inventory[AMMO_SLOT + i].type == ItemAmmo) {
+				switch (inventory[AMMO_SLOT + i].getItem().symbol) {
 					case 450:
-						//if(choise == i) addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
-						//else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                         symbol = ',';
                         style = TextStyle{ TextStyle::Bold, Color::Black };
 						break;
 					case 451:
-						//if(choise == i) addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
-						//else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
                         symbol = ',';
                         style = TextStyle{ TextStyle::Bold, Color::Red };
 						break;
 					default:
-						//if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-						//else addch('-' | COLOR_PAIR(WHITE_BLACK));
 						break;
 				}
 			}
-			else
-			{
-				//if(choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-				//else addch('-' | COLOR_PAIR(WHITE_BLACK));
-			}
-            if (choise == i) {
+            if (choice == i) {
                 style += TextStyle::Underlined;
             }
             termRend.put(symbol, style);
 		}
-		switch(getch())
-		{
+        char input = termRead.readChar();
+		switch (input) {
 			case CONTROL_LEFT:
-				if(choise > 0) choise--;
+				if (choice > 0)
+                    choice--;
 				break;
 			case CONTROL_RIGHT:
-				if(choise < BANDOLIER - 1) choise++;
+				if (choice < BANDOLIER - 1)
+                    choice++;
 				break;
 			case CONTROL_CONFIRM:
-				if(inventory[AMMO_SLOT + choise].item.invAmmo.symbol != pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choise].type == ItemAmmo)
-				{
+				if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol != pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
 					PossibleItem buffer;
 					buffer = pAmmo;
-					pAmmo = inventory[AMMO_SLOT + choise];
-					inventory[AMMO_SLOT + choise] = buffer;
-				}
-				else if(inventory[AMMO_SLOT + choise].item.invAmmo.symbol == pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choise].type == ItemAmmo)
-				{
-					inventory[AMMO_SLOT + choise].item.invAmmo.count += pAmmo.item.invAmmo.count;
+					pAmmo = inventory[AMMO_SLOT + choice];
+					inventory[AMMO_SLOT + choice] = buffer;
+				} else if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol == pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
+					inventory[AMMO_SLOT + choice].item.invAmmo.count += pAmmo.item.invAmmo.count;
 					pAmmo.type = ItemEmpty;
-				}
-				else if(inventory[AMMO_SLOT + choise].type == ItemEmpty)
-				{
-					inventory[AMMO_SLOT + choise] = pAmmo;
+				} else if (inventory[AMMO_SLOT + choice].type == ItemEmpty) {
+					inventory[AMMO_SLOT + choice] = pAmmo;
 					pAmmo.type = ItemEmpty;
 				}
 				return;
@@ -404,51 +343,48 @@ void Hero::printAmmoList(PossibleItem& pAmmo)										// Picked ammo
 	}
 }
 
-void Hero::pickUp()
-{
-	if(findItemsCountUnderThisCell(posH, posL) == 0)
-	{
+void Hero::pickUp() {
+	if (findItemsCountUnderThisCell(posH, posL) == 0) {
 		message += "There is nothing here to pick up. ";
-		Stop = true;
+		g_stop = true;
 		return;
 	}
-	else if(findItemsCountUnderThisCell(posH, posL) == 1)
+	else if (findItemsCountUnderThisCell(posH, posL) == 1)
 	{
 		int num = findNotEmptyItemUnderThisCell(posH, posL);
 
-		sprintf(tmp, "You picked up %s. ", ItemsMap[posH][posL][num].getItem().getName());
-		message += tmp;
+        message += "You picked up {}. "_format(itemsMap[posH][posL][num].getItem().getName());
 
-		if(ItemsMap[posH][posL][num].type == ItemAmmo)
+		if (itemsMap[posH][posL][num].type == ItemAmmo)
 		{
-			printAmmoList(ItemsMap[posH][posL][num]);
+			printAmmoList(itemsMap[posH][posL][num]);
 			return;
 		}
 
 		bool couldStack = false;
 
-		if( ItemsMap[posH][posL][num].getItem().isStackable )
+		if (itemsMap[posH][posL][num].getItem().isStackable)
 		{
-			for( int i = 0; i < MaxInvVol; ++i )
+			for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
 			{
-				if( inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == ItemsMap[posH][posL][num].getItem().symbol )
+				if (inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == itemsMap[posH][posL][num].getItem().symbol)
 				{
 					couldStack = true;
-					inventory[i].getItem().count += ItemsMap[posH][posL][num].getItem().count;
-					ItemsMap[posH][posL][num].type = ItemEmpty;
+					inventory[i].getItem().count += itemsMap[posH][posL][num].getItem().count;
+					itemsMap[posH][posL][num].type = ItemEmpty;
 				}
 			}
 		}
 
-		if( !couldStack )
+		if (!couldStack)
 		{
 			int eic = findEmptyInventoryCell();
-			if(eic != 101010)
+			if (eic != 101010)
 			{
-				inventory[eic] = ItemsMap[posH][posL][num];
+				inventory[eic] = itemsMap[posH][posL][num];
 				inventory[eic].getItem().inventorySymbol = eic + 'a';
 				log("Item index: '%c'\n", inventory[eic].getItem().inventorySymbol);
-				ItemsMap[posH][posL][num].type = ItemEmpty;
+				itemsMap[posH][posL][num].type = ItemEmpty;
 				inventoryVol++;
 			}
 			else
@@ -457,7 +393,7 @@ void Hero::pickUp()
 			}
 		}
 
-		if(getInventoryItemsWeight() > MaxInvItemsWeight && !isBurdened)
+		if (getInventoryItemsWeight() > g_maxBurden && !isBurdened)
 		{
 			message += "You're burdened. ";
 			isBurdened = true;
@@ -466,73 +402,70 @@ void Hero::pickUp()
 		return;
 	}
 	
-	PossibleItem list[Depth];
-	char hv[200] = "What do you want to pick up? ";
+	PossibleItem list[FIELD_DEPTH];
 	int len = 0;
 
-	for(int i = 0; i < Depth; i++)
-	{	
-		if(ItemsMap[posH][posL][i].type != ItemEmpty)
-		{
-			list[len] = ItemsMap[posH][posL][i];
+	for (int i = 0; i < FIELD_DEPTH; i++) {	
+		if (itemsMap[posH][posL][i].type != ItemEmpty) {
+			list[len] = itemsMap[posH][posL][i];
 			len++;
 		}
 	}
 
-	printList(list, len, hv, 2);
+	printList(list, len, "What do you want to pick up? ", 2);
 	len = 0;
 
-	char choise = getch();
+	char choice = termRead.readChar();
 
-	if(choise == '\033') return;
+	if (choice == '\033')
+        return;
 
-	int intch = choise - 'a';
+	int intch = choice - 'a';
 	
-	int helpfulArray[Depth], hACounter = 0;
+	int helpfulArray[FIELD_DEPTH], hACounter = 0;
 
-	for(int i = 0; i < Depth; i++)
+	for (int i = 0; i < FIELD_DEPTH; i++)
 	{
-		if(ItemsMap[posH][posL][i].type != ItemEmpty)
+		if (itemsMap[posH][posL][i].type != ItemEmpty)
 		{
 			helpfulArray[hACounter] = i;
 			hACounter++;
 		}
 	}
 
-	if(ItemsMap[posH][posL][helpfulArray[intch]].type != ItemEmpty)
+	if (itemsMap[posH][posL][helpfulArray[intch]].type != ItemEmpty)
 	{
-		sprintf(tmp, "You picked up %s. ", ItemsMap[posH][posL][helpfulArray[intch]].getItem().getName());
-		message += tmp;
+        message += "You picked up %s. "_format(itemsMap[posH][posL][helpfulArray[intch]].getItem().getName());
 		
-		if(ItemsMap[posH][posL][helpfulArray[intch]].type == ItemAmmo)
+		if (itemsMap[posH][posL][helpfulArray[intch]].type == ItemAmmo)
 		{
-			printAmmoList(ItemsMap[posH][posL][helpfulArray[intch]]);
+			printAmmoList(itemsMap[posH][posL][helpfulArray[intch]]);
 			return;
 		}
 
 		bool couldStack = false;
 
-		if( ItemsMap[posH][posL][helpfulArray[intch]].getItem().isStackable )
+		if (itemsMap[posH][posL][helpfulArray[intch]].getItem().isStackable)
 		{
-			for( int i = 0; i < MaxInvVol; ++i )
+			for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
 			{
-				if( inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == ItemsMap[posH][posL][helpfulArray[intch]].getItem().symbol )
+				if (inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == itemsMap[posH][posL][helpfulArray[intch]].getItem().symbol)
 				{
 					couldStack = true;
-					inventory[i].getItem().count += ItemsMap[posH][posL][helpfulArray[intch]].getItem().count;
-					ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
+					inventory[i].getItem().count += itemsMap[posH][posL][helpfulArray[intch]].getItem().count;
+					itemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
 				}
 			}
 		}
 
-		if( !couldStack )
+		if (!couldStack)
 		{
 			int eic = findEmptyInventoryCell();
-			if(eic != 101010)
+			if (eic != 101010)
 			{
-				inventory[eic] = ItemsMap[posH][posL][helpfulArray[intch]];
+				inventory[eic] = itemsMap[posH][posL][helpfulArray[intch]];
 				inventory[eic].getItem().inventorySymbol = eic + 'a';
-				ItemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
+				itemsMap[posH][posL][helpfulArray[intch]].type = ItemEmpty;
 				inventoryVol++;
 			}
 			else
@@ -542,7 +475,7 @@ void Hero::pickUp()
 		}
 	}
 
-	if(getInventoryItemsWeight() > MaxInvItemsWeight && !isBurdened)
+	if (getInventoryItemsWeight() > g_maxBurden && !isBurdened)
 	{
 		message += "You're burdened. ";
 		isBurdened = true;
@@ -551,72 +484,66 @@ void Hero::pickUp()
 
 bool Hero::isFoodInInventory()
 {
-	for(int i = 0; i < MaxInvVol; i++)
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++)
 	{
-		if(inventory[i].type == ItemFood) return true;
+		if (inventory[i].type == ItemFood) return true;
 	}
 	return false;
 }
 
 bool Hero::isArmorInInventory()
 {
-	for(int i = 0; i < MaxInvVol; i++)
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++)
 	{
-		if(inventory[i].type == ItemArmor) return true;
+		if (inventory[i].type == ItemArmor) return true;
 	}
 	return false;
 }
 
 bool Hero::isWeaponOrToolsInInventory()
 {
-	for(int i = 0; i < MaxInvVol; i++)
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++)
 	{
-		if(inventory[i].type == ItemWeapon || inventory[i].type == ItemTools) return true;
+		if (inventory[i].type == ItemWeapon || inventory[i].type == ItemTools) return true;
 	}
 	return false;
 }
 
 bool Hero::isPotionInInventory()
 {
-	for(int i = 0; i < MaxInvVol; i++)
+	for (int i = 0; i < MAX_USABLE_INV_SIZE; i++)
 	{
-		if(inventory[i].type == ItemPotion) return true;
+		if (inventory[i].type == ItemPotion) return true;
 	}
 	return false;
 }
 
 void Hero::clearRightPane()
 {
-	for(int i = 0; i < 100; i++)
+	for (int i = 0; i < 100; i++)
 	{
-		for(int j = 0; j < 50; j++)
+		for (int j = 0; j < 50; j++)
 		{
-			move(i, Length + 10 + j);
-			addch(' ');
+            termRend
+                .setCursorPosition(Vec2i{ FIELD_COLS + j + 10, i })
+                .put(' ');
 		}
 	}
 }
 
-void Hero::delay(double s)
-{
-	clock_t clocksNow = clock();
-	while(double(clock() - clocksNow) / CLOCKS_PER_SEC < s);
-}
-
-void Hero::eat()
-{
-	if(isFoodInInventory())
-	{
+void Hero::eat() {
+	if (isFoodInInventory()) {
 		showInventory(CONTROL_EAT);
-	}
-	else message += "You don't have anything to eat. ";
+	} else {
+        message += "You don't have anything to eat. ";
+    }
 }
 
-void Hero::moveHero(char& inp)
+void Hero::moveHero(char inp)
 {
 	int a1 = 0, a2 = 0;
 	
-	switch(inp){
+	switch (inp) {
 		
 		case CONTROL_UP:
 		{
@@ -682,7 +609,7 @@ void Hero::moveHero(char& inp)
 		}
 		case CONTROL_SHOWINVENTORY:
 		{
-			if(isInventoryEmpty() == false)
+			if (isInventoryEmpty() == false)
 			{
 				showInventory(CONTROL_SHOWINVENTORY);
 			}
@@ -690,55 +617,55 @@ void Hero::moveHero(char& inp)
 			{
 				message += "Your inventory is empty. ";
 			}
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;				
 		}
 		case CONTROL_WEAR:
 		{
 
-			if(isArmorInInventory() == true)
+			if (isArmorInInventory() == true)
 			{
 				showInventory(CONTROL_WEAR);
 			}
 			else message += "You don't have anything to wear. ";
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 
 		}
 		case CONTROL_WIELD:
 		{
-			if(isWeaponOrToolsInInventory() == true)
+			if (isWeaponOrToolsInInventory() == true)
 			{
 				showInventory(CONTROL_WIELD);
 			}
 			else message += "You don't have anything to wield. ";
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case CONTROL_TAKEOFF:
 		{
 			showInventory(CONTROL_TAKEOFF);
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case CONTROL_UNEQUIP:
 		{
 			showInventory(CONTROL_UNEQUIP);
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case CONTROL_DROP:
 		{
-			if(isInventoryEmpty() == false)
+			if (isInventoryEmpty() == false)
 			{
 				showInventory(CONTROL_DROP);
 			}
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;		
 		}
 		case CONTROL_THROW:
 		{
-			if(isInventoryEmpty() == false)
+			if (isInventoryEmpty() == false)
 			{
 				showInventory(CONTROL_THROW);
 			}
@@ -751,62 +678,62 @@ void Hero::moveHero(char& inp)
 		}
 		case CONTROL_DRINK:
 		{
-			if(isPotionInInventory() == true)
+			if (isPotionInInventory() == true)
 			{
 				showInventory(CONTROL_DRINK);
 			}
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case CONTROL_OPENBANDOLIER:
 		{
-			if(findAmmoInInventory() != 101010)
+			if (findAmmoInInventory() != 101010)
 			{
 				showInventory(CONTROL_OPENBANDOLIER);
 			}
 			else message += "Your bandolier is empty. ";
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case CONTROL_RELOAD:
 		{
-			if(!heroWeapon->item.invWeapon.Ranged)
+			if (!heroWeapon->item.invWeapon.Ranged)
 			{
 				message += "You have no ranged weapon in hands. ";
-				Stop = true;
+				g_stop = true;
 			}
-			else if(findAmmoInInventory() != 101010)
+			else if (findAmmoInInventory() != 101010)
 			{
 				showInventory(CONTROL_RELOAD);
 			}
 			else
 			{
 				message += "You have no bullets to reload. ";
-				Stop = true;
+				g_stop = true;
 			}
 			break;
 		}
 		case CONTROL_READ:
 		{
-			if(findScrollInInventory() != 101010)
+			if (findScrollInInventory() != 101010)
 			{
 				showInventory(CONTROL_READ);
 			}
 			else message += "You don't have anything to read. ";
-/*->*/				Stop = true;
+/*->*/				g_stop = true;
 			break;
 		}
 		case '\\':
 		{
-			char hv = getch();
+			char hv = termRead.readChar();
 			
-			if(hv == 'h')
+			if (hv == 'h')
 			{
-				if(getch() == 'e')
+				if (termRead.readChar() == 'e')
 				{
-					if(getch() == 'a')
+					if (termRead.readChar() == 'a')
 					{
-						if(getch() == 'l')
+						if (termRead.readChar() == 'l')
 						{
 							hunger = 3000;
 							health = DEFAULT_HERO_HEALTH * 100;
@@ -815,44 +742,44 @@ void Hero::moveHero(char& inp)
 				}
 			}
 		
-			if(hv == 'w')
+			if (hv == 'w')
 			{
-				if(getch() == 'a')
+				if (termRead.readChar() == 'a')
 				{
-					if(getch() == 'l')
+					if (termRead.readChar() == 'l')
 					{
-						if(getch() == 'l')
+						if (termRead.readChar() == 'l')
 						{
-							if(getch() == 's')
+							if (termRead.readChar() == 's')
 							{
-								CanHeroMoveThroughWalls = true;
+								canMoveThroughWalls = true;
 							}
 						}
 					}
 				}
 			}
-			else if(hv == 'd')
+			else if (hv == 'd')
 			{
-				if(getch() == 's')
+				if (termRead.readChar() == 's')
 				{
-					if(getch() == 'c')
+					if (termRead.readChar() == 'c')
 					{
-						CanHeroMoveThroughWalls = false;
+						canMoveThroughWalls = false;
 					}
 				}
 				else
 				{
-					ItemsMap[1][1][0] = differentFood[0];
+					itemsMap[1][1][0] = differentFood[0];
 				}
 
 			}
-			else if(hv == 'k')
+			else if (hv == 'k')
 			{
-				if(getch() == 'i')
+				if (termRead.readChar() == 'i')
 				{
-					if(getch() == 'l')
+					if (termRead.readChar() == 'l')
 					{
-						if(getch() == 'l')
+						if (termRead.readChar() == 'l')
 						{
 							health -= (DEFAULT_HERO_HEALTH * 2) / 3;
 							message += "Ouch! ";
@@ -863,4 +790,57 @@ void Hero::moveHero(char& inp)
 			break;
 		}
 	}
+}
+
+PossibleUnit::PossibleUnit(UnitedUnits u, UnitType t): type(t) {
+    switch (type) {
+        case UnitEmpty:
+            unit.uEmpty = u.uEmpty;
+            break;
+        case UnitHero:
+            unit.uHero = u.uHero;
+            break;
+        case UnitEnemy:
+            unit.uEnemy = u.uEnemy;
+    }
+}
+
+PossibleUnit::PossibleUnit(const PossibleUnit& p) {
+    type = p.type;
+    switch (type) {
+        case UnitEmpty:
+            unit.uEmpty = p.unit.uEmpty;
+            break;
+        case UnitHero:
+            unit.uHero = p.unit.uHero;
+            break;
+        case UnitEnemy:
+            unit.uEnemy = p.unit.uEnemy;
+    }
+}
+
+PossibleUnit& PossibleUnit::operator=(const PossibleUnit& p) {
+    type = p.type;
+    switch (type) {
+        case UnitEmpty:
+            unit.uEmpty = p.unit.uEmpty;
+            break;
+        case UnitHero:
+            unit.uHero = p.unit.uHero;
+            break;
+        case UnitEnemy:
+            unit.uEnemy = p.unit.uEnemy;
+    }        
+    return *this;
+}
+
+Unit& PossibleUnit::getUnit() {
+    switch (type) {
+        case UnitEmpty:
+            return unit.uEmpty;
+        case UnitHero:
+            return unit.uHero;
+        case UnitEnemy:
+            return unit.uEnemy;
+    }        
 }

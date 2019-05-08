@@ -3,6 +3,7 @@
 
 #include"item.hpp"
 #include"controls.hpp"
+#include"utils.hpp"
 #include<stdlib.h>
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
@@ -11,77 +12,82 @@
 #define UNITINVENTORY 4
 #define AMMO_SLOT 53
 
-extern int VISION;
-extern int MaxInvItemsWeight;
+extern int g_vision;
+extern int g_maxBurden;
 extern int DEFAULT_HERO_HEALTH;
 
-class Unit
-{
+class Unit {
 public:
-	Unit();
-	int health;
+	Unit() {}
+	~Unit() {}
+
 	PossibleItem unitInventory[UNITINVENTORY];
-	int inventoryVol;
+
 	PossibleItem* unitWeapon;
 	PossibleItem* unitArmor;
 	PossibleItem* unitAmmo;
+
+	int health;
+	int inventoryVol = 0;
 	int posH;
 	int posL;
 	int symbol;
 	int vision;
 
-	const char* getName();
-	bool linearVisibilityCheck( double from_x, double from_y, double to_x, double to_y );
-	bool canSeeCell( int h, int l );
-	void delay(double s);	
-	~Unit();
+    std::string getName();
+	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY);
+	bool canSeeCell(int h, int l);
 };
 
-class EmptyUnit: public Unit
-{
+class EmptyUnit: public Unit {
 public:
-	EmptyUnit();
-	~EmptyUnit();
+	EmptyUnit() {}
+	~EmptyUnit() {}
 };
 
-class Enemy: public Unit
-{
+class Enemy: public Unit {
 public:
 	Enemy(int eType);
 
 	Direction dir;
 	int dist;
-	int movedOnTurn;
+	int movedOnTurn = 0;
 	int xpIncreasing;
 	int targetH;
 	int targetL;
 
 	void shoot();
 
-	Enemy();
-	~Enemy();
+	Enemy() {}
+	~Enemy() {}
 };
 
-class Hero: public Unit
-{
+class Hero: public Unit {
 public:
-	Hero();
+    static const int MAX_LUCK = 20;
 
-	int hunger;
-	int xp;
-	int level;
 	PossibleItem* heroArmor;
 	PossibleItem* heroWeapon;
-	bool isBurdened;
-	bool CanHeroMoveThroughWalls;
+
+	int hunger = 900;
+	int xp = 0;
+	int level = 1;
+    int turnsBlind = 0;
+    int turnsInvisible = 0;
+    int luck = avg(std::rand() % MAX_LUCK, std::rand() % MAX_LUCK);
+
+	bool isBurdened = false;
+	bool canMoveThroughWalls = false;
+
+	Hero() {}
 	
-	void findVisibleArray();
+	void checkVisibleCells();
 	void attackEnemy(int& a1, int& a2);
 	void mHLogic(int& a1, int& a2);
 	bool isInventoryEmpty();
 	int findEmptyInventoryCell();
 	int getInventoryItemsWeight();
-	void printList(PossibleItem items[], int len, char msg[], int mode);
+	void printList(PossibleItem items[], int len, std::string_view msg, int mode);
 	bool isMapInInventory();
 	int findItemsCountUnderThisCell(int h, int l);
 	int findEmptyItemUnderThisCell(int h, int l);
@@ -95,11 +101,77 @@ public:
 	bool isWeaponOrToolsInInventory();
 	bool isPotionInInventory();
 	void clearRightPane();
-	void delay(double s);
 	void throwAnimated(PossibleItem& item, Direction direction);
 	void shoot();
-	void showInventory(const char& inp);
+	void showInventory(char inp);
 	void eat();
-	void moveHero(char& inp);
+	void moveHero(char inp);
 };
+
+const int TYPES_OF_ENEMIES = 3;
+enum UnitType {
+    UnitEmpty,
+    UnitHero,
+    UnitEnemy
+};
+
+union UnitedUnits {
+    EmptyUnit uEmpty;
+    Hero uHero;
+    Enemy uEnemy;
+
+    UnitedUnits(EmptyUnit e) {
+        uEmpty = e;
+    }
+
+    UnitedUnits(Hero h) {
+        uHero = h;
+    }
+
+    UnitedUnits(Enemy en) {
+        uEnemy = en;
+    }
+
+    UnitedUnits(const UnitedUnits& u) = delete;
+    UnitedUnits& operator=(const UnitedUnits& u) = delete;
+
+    UnitedUnits() {
+        uEmpty = EmptyUnit();
+    }
+
+    ~UnitedUnits(){}
+};
+
+struct PossibleUnit {
+    UnitedUnits unit;
+    UnitType type;
+
+    PossibleUnit(UnitedUnits u, UnitType t);
+
+    PossibleUnit() {
+        type = UnitEmpty;
+    }
+
+    void operator=(const Hero& h) {
+        type = UnitHero;
+        unit.uHero = h;
+    }
+
+    void operator=(const EmptyUnit& e) {
+        type = UnitEmpty;
+        unit.uEmpty = e;
+    }
+
+    void operator=(const Enemy& en) {
+        type = UnitEnemy;
+        unit.uEnemy = en;
+    }
+
+    PossibleUnit(const PossibleUnit& p);
+
+    PossibleUnit& operator=(const PossibleUnit& p);
+
+    Unit& getUnit();
+};
+
 #endif // UNIT_HPP
