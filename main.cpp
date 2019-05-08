@@ -360,8 +360,6 @@ void Hero::showInventory(const char& inp) {
                 return;
 			int intch = choise - 'a';
 			if (inventory[intch].type == ItemArmor) {
-				//sprintf(tmp, "Now you wearing %s. ", inventory[intch].getItem().getName());
-				//message += tmp;
                 message += "Now you wearing {}. "_format(inventory[intch].getItem().getName());
 
 				if (heroArmor->type != ItemEmpty) {
@@ -398,8 +396,6 @@ void Hero::showInventory(const char& inp) {
                 showInventory(CONTROL_UNEQUIP);
 			if (inventory[intch].getItem().isStackable && inventory[intch].getItem().count > 1) {
 				clearRightPane();
-				//move(0, Length + 10);
-				//printw("How much items you want to drop?[1-9]");
                 termRend
                     .setCursorPosition(Vec2i{ Length + 10 })
                     .put("How much items do you want to drop? [1-9]");
@@ -469,8 +465,6 @@ void Hero::showInventory(const char& inp) {
                 return;
 			int intch = choise - 'a';
 			if (inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools) {
-				//sprintf(tmp, "You wield %s.", inventory[intch].getItem().getName());
-				//message += tmp;
                 message += "You wield {}. "_format(inventory[intch].getItem().getName());
 
 				if (heroWeapon->type != ItemEmpty) {
@@ -507,8 +501,6 @@ void Hero::showInventory(const char& inp) {
 
 			if (inventory[intch].type != ItemEmpty) {
 				clearRightPane();
-				//move(0, Length + 10);
-				//printw("In what direction?");
                 termRend
                     .setCursorPosition(Vec2i{ Length + 10, 0 })
                     .put("In what direction?");
@@ -616,8 +608,6 @@ void Hero::showInventory(const char& inp) {
 					}
 					case 2: {
 						clearRightPane();
-						//move(0, Length + 10);
-						//printw("What do you want to identify?");
                         termRend
                             .setCursorPosition(Vec2i{ Length + 10 })
                             .put("What do you want to identify?");
@@ -645,8 +635,6 @@ void Hero::showInventory(const char& inp) {
 		}
 		case CONTROL_OPENBANDOLIER: {
 			clearRightPane();
-			//move(0, Length + 10);
-			//printw("Here is your ammo.");
             termRend
                 .setCursorPosition(Vec2i{ Length + 10 })
                 .put("Here is your ammo.");
@@ -657,7 +645,6 @@ void Hero::showInventory(const char& inp) {
 			while (true) {
 				num = 0;
 				for (int i = 0; i < BANDOLIER; i++) {
-					//move(1, Length + 12 + num);
 					num += 2;
 
                     TextStyle style = TextStyle{ TerminalColor{} };
@@ -668,23 +655,12 @@ void Hero::showInventory(const char& inp) {
 							case 450:
                                 style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black } };
                                 symbol = ',';
-								//if (choise == i) //addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT | UL);
-								//else addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
 								break;
 							case 451:
                                 style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Red } };
                                 symbol = ',';
-								//if (choise == i)// addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT | UL);
-								//else addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
-								break;
-							default:
-								//if (choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-								//else addch('-' | COLOR_PAIR(WHITE_BLACK));
 								break;
 						}
-					//} else {
-						//if (choise == i) addch('-' | COLOR_PAIR(WHITE_BLACK) | UL);
-						//else addch('-' | COLOR_PAIR(WHITE_BLACK));
 					}
                     if (choise == i)
                         style += TextStyle::Underlined;
@@ -693,7 +669,6 @@ void Hero::showInventory(const char& inp) {
                         .setCursorPosition(Vec2i{ Length + num + 12, 1 })
                         .put(symbol, style);
 				}
-				//switch (getch()) {
                 char input = termRead.readChar();
                 switch (input) {
 					case CONTROL_LEFT: {
@@ -732,8 +707,6 @@ void Hero::showInventory(const char& inp) {
 		}
 		case CONTROL_RELOAD: {
 			clearRightPane();
-			//move(0, Length + 10);
-			//printw("Now you can load your weapon");
             termRend
                 .setCursorPosition(Vec2i{ Length + 10 })
                 .put("Now you can load your weapon");
@@ -744,22 +717,17 @@ void Hero::showInventory(const char& inp) {
 					if (heroWeapon->item.invWeapon.cartridge[i].count == 1) {
 						switch (heroWeapon->item.invWeapon.cartridge[i].symbol) {
 							case 450:
-								//addch('i' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                                 style = TextStyle{ TextStyle::Bold, Color::Black };
 								break;
 							case 451:
                                 style = TextStyle{ TextStyle::Bold, Color::Red };
-								//addch('i' | COLOR_PAIR(RED_BLACK) | LIGHT);
 								break;
 							default:
-								//addch('?');
                                 symbol = '?';
 						}
 					} else {
-						//addch('_');
                         symbol = '_';
 					}
-					//move(1, 10 + Length + i);
                     termRend
                         .setCursorPosition(Vec2i{ Length + i + 10, 1 })
                         .put(symbol, style);
@@ -769,8 +737,6 @@ void Hero::showInventory(const char& inp) {
 				
 				for (int i = 0; i < BANDOLIER; i++) {
 					int ac = inventory[AMMO_SLOT + i].item.invArmor.count;
-					//sprintf(tmp, "[%i|", i + 1);
-					//loadString += tmp;
                     loadString += "[{}|"_format(i + 1);
 					if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
 						switch (inventory[AMMO_SLOT + i].getItem().symbol) {
@@ -790,8 +756,6 @@ void Hero::showInventory(const char& inp) {
 				
 				loadString += "   [u] - unload ";
 				
-                //move(2, 10 + Length);
-				//printw("%s", loadString.c_str());
                 termRend
                     .setCursorPosition(Vec2i{ Length + 10, 2 })
                     .put(loadString);
@@ -984,9 +948,6 @@ void Hero::throwAnimated(PossibleItem& item, Direction direction) {
 			}
 			break;
 		}
-		//move(row, col);
-		//addch(sym);
-		//refresh();
         termRend
             .setCursorPosition(Vec2i{ col, row })
             .put(sym)
@@ -1015,8 +976,6 @@ void Hero::shoot() {
 		Stop = true;
 		return;
 	}
-	//move(0, Length + 10);
-	//printw("In what direction? ");
     termRend
         .setCursorPosition(Vec2i{ Length + 10, 0 })
         .put("In what direction? ");
@@ -1054,9 +1013,6 @@ void Hero::shoot() {
 				xp += UnitsMap[row][col].unit.uEnemy.xpIncreasing;
 			}
 		}
-		//move(row, col);
-		//addch(sym);
-		//refresh();
         termRend
             .setCursorPosition(Vec2i{ col, row })
             .put(sym)
@@ -1082,8 +1038,6 @@ void Hero::mHLogic(int& a1, int& a2) {
 	} else if (map[posH + a1][posL + a2] == 2) {
 		if (heroWeapon->type == ItemTools) {
 			if (heroWeapon->item.invTools.possibility == 1) {
-				//move(0, Length + 10);
-				//printw("Do you want to dig this wall (y or n)? ");
                 termRend
                     .setCursorPosition(Vec2i{ Length + 10, 0 })
                     .put("Do you want to dig this wall? [yn]");
@@ -1093,8 +1047,6 @@ void Hero::mHLogic(int& a1, int& a2) {
 					map[posH + a1][posL + a2] = 1;
 					heroWeapon->item.invTools.uses--;
 					if (heroWeapon->item.invTools.uses <= 0) {
-						//sprintf(tmp, "Your %s is broken. ", heroWeapon->getItem().getName());
-						//message += tmp;
                         message += "Your {} is broken. "_format(heroWeapon->getItem().getName());
 						heroWeapon->type = ItemEmpty;
 						findVisibleArray();
@@ -1141,9 +1093,6 @@ void Enemy::shoot() {
 			hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - hero.heroArmor->item.invArmor.defence) / 100.0);
 			break;
 		}
-		//move(row, col);
-		//addch(sym);
-		//refresh();
         termRend
             .setCursorPosition(Vec2i{ col, row })
             .put(sym)
@@ -1236,42 +1185,42 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
 		return -1;
 	}
 	int v_y = targetH, v_x = targetL;
-	while (used[v_y][v_x] != 2 ) {
+	while (used[v_y][v_x] != 2) {
 		if (MODE == 2) {
-			if (v_y && v_x && used[ v_y - 1 ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ]) {
+			if (v_y && v_x && used[v_y - 1][v_x - 1] + 1 == used[v_y][v_x]) {
 				--v_y;
 				--v_x;
 				continue;
 			}
-			if (v_y && v_x < Length - 1 && used[ v_y - 1 ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ]) {
+			if (v_y && v_x < Length - 1 && used[v_y - 1][v_x + 1] + 1 == used[v_y][v_x]) {
 				--v_y;
 				++v_x;
 				continue;
 			}
-			if (v_y < Height - 1 && v_x && used[ v_y + 1 ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ]) {
+			if (v_y < Height - 1 && v_x && used[v_y + 1][v_x - 1] + 1 == used[v_y][v_x]) {
 				++v_y;
 				--v_x;
 				continue;
 			}
-			if (v_y < Height - 1 && v_x < Length - 1 && used[ v_y + 1 ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ]) {
+			if (v_y < Height - 1 && v_x < Length - 1 && used[v_y + 1][v_x + 1] + 1 == used[v_y][v_x]) {
 				++v_y;
 				++v_x;
 				continue;
 			}
 		}
-		if (v_y && used[ v_y - 1 ][ v_x ] + 1 == used[ v_y ][ v_x ]) {
+		if (v_y && used[v_y - 1][v_x] + 1 == used[v_y][v_x]) {
 			--v_y;
 			continue;
 		}
-		if (v_x && used[ v_y ][ v_x - 1 ] + 1 == used[ v_y ][ v_x ]) {
+		if (v_x && used[v_y][v_x - 1] + 1 == used[v_y][v_x]) {
 			--v_x;
 			continue;
 		}
-		if (v_y < Height - 1 && used[ v_y + 1 ][ v_x ] + 1 == used[ v_y ][ v_x ]) {
+		if (v_y < Height - 1 && used[v_y + 1][v_x] + 1 == used[v_y][v_x]) {
 			++v_y;
 			continue;
 		}
-		if (v_x < Length - 1 && used[ v_y ][ v_x + 1 ] + 1 == used[ v_y ][ v_x ]) {
+		if (v_x < Length - 1 && used[v_y][v_x + 1] + 1 == used[v_y][v_x]) {
 			++v_x;
 			continue;
 		}
@@ -1436,8 +1385,6 @@ void updateAI() {
 		for (int j = 0; j < Length; j++) {
 			if (UnitsMap[i][j].type == UnitEnemy && UnitsMap[i][j].unit.uEnemy.movedOnTurn != turns) {
 #				ifdef DEBUG
-				//sprintf(tmp, "{%i|%i|%i|%i}", i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].getUnit().health);
-				//message += tmp;
                 message += "{{{}|{}|{}|{}}}"_format(i, j, UnitsMap[i][j].unit.uEnemy.symbol, UnitsMap[i][j].getUnit().health);
 #				endif
 				if (MODE == 2 && turns % 200 == 0) {
@@ -1583,8 +1530,6 @@ void spawnUnits() {
 #ifdef DEBUG
 
 void draw() {
-	
-	//move(0, 0);
     termRend.setCursorPosition(Vec2i{});
 
 	static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
@@ -1601,215 +1546,140 @@ void draw() {
             TextStyle style{ TerminalColor{} };
 			if (mapSaved[i][j] != 0) {
 				bool near = abs(i - hero.posH) <= 1 && abs(j - hero.posL) <= 1;
-/* Here */			
                 if (hero.findItemsCountUnderThisCell(i, j) == 0 && UnitsMap[i][j].type == UnitEmpty) {
 					switch (mapSaved[i][j]) {
 						case 1:
 							if (seenUpdated[i][j]) {
-								//addch(ACS_BULLET);
                                 symbol = '.';
-							} else {
-								//addch(' ');
 							}
 							break;
-						case 2: {
-								//bool u = (i && mapSaved[i - 1][j] == 2);
-								//bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
-								//bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
-								//bool l = (j && mapSaved[i][j - 1] == 2);
-								//int count = u + r + d + l;
-								//int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT * seenUpdated[i][j]);
-                                if (seenUpdated[i][j])
-                                    style += TextStyle::Bold;
-                                symbol = '#';
-                                /*
-								switch (count) {
-								case 0:
-								case 4:
-									addch(ACS_PLUS | attrib);
-									break;
-								case 1:
-									if (u || d)
-										addch(ACS_VLINE | attrib);
-									else
-										addch(ACS_HLINE | attrib);
-									break;
-								case 2:
-									if (u && r)
-										addch(ACS_LLCORNER | attrib);
-									else if (u && d)
-										addch(ACS_VLINE | attrib);
-									else if (u && l)
-										addch(ACS_LRCORNER | attrib);
-									else if (r && d)
-										addch(ACS_ULCORNER | attrib);
-									else if (r && l)
-										addch(ACS_HLINE | attrib);
-									else
-										addch(ACS_URCORNER | attrib);
-									break;
-								case 3:
-									if (!u)
-										addch(ACS_TTEE | attrib);
-									else if (!r)
-										addch(ACS_RTEE | attrib);
-									else if (!d)
-										addch(ACS_BTEE | attrib);
-									else
-										addch(ACS_LTEE | attrib);
-									break;
-								}*/
-								break;
-							}
+						case 2:
+                            if (seenUpdated[i][j])
+                                style += TextStyle::Bold;
+                            symbol = '#';
+                            break;
 					}
 				} else if (hero.findItemsCountUnderThisCell(i, j) == 1 && UnitsMap[i][j].type == UnitEmpty) { /* HERE */
 					int MeetedItem = hero.findNotEmptyItemUnderThisCell(i, j);
 					switch (ItemsMap[i][j][MeetedItem].getItem().symbol) {
 						case 100:
-							//addch('%');
                             symbol = '%';
 							break;
 						case 101:
-							//addch('%' | COLOR_PAIR(RED_BLACK));
                             symbol = '%';
                             style += Color::Red;
 							break;
 						case 300:
-							//addch('&' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '&';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 301:
-							//addch('&' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '&';
                             style += Color::Yellow;
 							break;
 						case 400:
-							//addch('/' | COLOR_PAIR(RED_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Red;
                             style += TextStyle::Bold;
 							break;
 						case 401:
-							//addch('/' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '/';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 402:
-							//addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
                             symbol = '/';
                             style += TextStyle::Bold;
 							break;
 						case 403:
-							//addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 404:
-							//addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 405:
-							//addch('/' | COLOR_PAIR(WHITE_BLACK));
                             symbol = '/';
 							break;
 						case 450:
-							//addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
                             symbol = ',';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 451:
-							//addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
                             symbol = ',';
                             style += Color::Red;
                             style += TextStyle::Bold;
 							break;
 						case 500:
-							//addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '~';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 501:
-							//addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '~';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 600:
-							//addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Blue;
                             style += TextStyle::Bold;
 							break;
 						case 601:
-							//addch('!' | COLOR_PAIR(GREEN_BLACK));
                             symbol = '!';
                             style += Color::Green;
 							break;
 						case 602:
-							//addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 603:
-							//addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Magenta;
                             style += TextStyle::Bold;
 							break;
 						case 604:
-							//addch('!' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '!';
                             style += Color::Yellow;
 							break;
 						case 700:
-							//addch('\\' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '\\';
                             style += Color::Yellow;
 							break;
 					}
 				} else if (hero.findItemsCountUnderThisCell(i, j) > 1 && UnitsMap[i][j].type == UnitEmpty) { /* Here */
-					//addch('^' | COLOR_PAIR(BLACK_WHITE) | LIGHT);
                     symbol = '^';
                     style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black, Color::White } };
 				}
                 if (UnitsMap[i][j].type == UnitHero) { /* Here */
-					//addch('@' | COLOR_PAIR(GREEN_BLACK));
                     symbol = '@';
                     style += Color::Green;
 				} else if (UnitsMap[i][j].type == UnitEnemy) { /* Here */
                     symbol = '@';
                     switch (UnitsMap[i][j].getUnit().symbol) { /* Here */
 						case 201:
-							//addch('@' | COLOR_PAIR(YELLOW_BLACK));
                             style += Color::Yellow;
 							break;
 						case 202:
-							//addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
                             style = TextStyle{ TextStyle::Bold, Color::Green };
 							break;
 						case 203:
-							//addch('@' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             style = TextStyle{ TextStyle::Bold, Color::Black };
 							break;
 					}
 				}
 			} else {
-				//addch(' ');	
                 symbol = ' ';
 			}
             termRend.put(symbol, style);
 		}
 		
-		//printw("\n");
         termRend.put('\n');
 		
 	}
@@ -1857,186 +1727,118 @@ void draw(){
 				if (seenUpdated[i][j]) {
 					if (UnitsMap[i][j].type == UnitEmpty) {
 						switch (mapSaved[i][j]) {
-						case 1:
-								//addch(ACS_BULLET);
-                            symbol = '.';
-							break;
-						case 2: {
+                            case 1:
+                                symbol = '.';
+                                break;
+                            case 2:
                                 style += TextStyle::Bold;
                                 symbol = '#';
-								/*bool u = (i && mapSaved[i - 1][j] == 2);
-								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
-								bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
-								bool l = (j && mapSaved[i][j - 1] == 2);
-								int count = u + r + d + l;
-								//int attrib = COLOR_PAIR(WHITE_BLACK) | (LIGHT);
-								switch (count) {
-								case 0:
-								case 4:
-									addch(ACS_PLUS | attrib);
-									break;
-								case 1:
-									if (u || d)
-										addch(ACS_VLINE | attrib);
-									else
-										addch(ACS_HLINE | attrib);
-									break;
-								case 2:
-									if (u && r)
-										addch(ACS_LLCORNER | attrib);
-									else if (u && d)
-										addch(ACS_VLINE | attrib);
-									else if (u && l)
-										addch(ACS_LRCORNER | attrib);
-									else if (r && d)
-										addch(ACS_ULCORNER | attrib);
-									else if (r && l)
-										addch(ACS_HLINE | attrib);
-									else
-										addch(ACS_URCORNER | attrib);
-									break;
-								case 3:
-									if (!u)
-										addch(ACS_TTEE | attrib);
-									else if (!r)
-										addch(ACS_RTEE | attrib);
-									else if (!d)
-										addch(ACS_BTEE | attrib);
-									else
-										addch(ACS_LTEE | attrib);
-									break;
-								}*/
 								break;
-							}
                             case 100:
-                                //addch('%');
                                 symbol = '%';
                                 break;
                             case 101:
-                                //addch('%' | COLOR_PAIR(RED_BLACK));
                                 symbol = '%';
                                 style += Color::Red;
                                 break;
                             case 300:
-                                //addch('&' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                                 symbol = '&';
                                 style += Color::Black;
                                 style += TextStyle::Bold;
                                 break;
                             case 301:
-                                //addch('&' | COLOR_PAIR(YELLOW_BLACK));
                                 symbol = '&';
                                 style += Color::Yellow;
                                 break;
                             case 400:
-                                //addch('/' | COLOR_PAIR(RED_BLACK) | LIGHT);
                                 symbol = '/';
                                 style += Color::Red;
                                 style += TextStyle::Bold;
                                 break;
                             case 401:
-                                //addch('/' | COLOR_PAIR(YELLOW_BLACK));
                                 symbol = '/';
                                 style += Color::Yellow;
                                 style += TextStyle::Bold;
                                 break;
                             case 402:
-                                //addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
                                 symbol = '/';
                                 style += TextStyle::Bold;
                                 break;
                             case 403:
-                                //addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                                 symbol = '/';
                                 style += Color::Yellow;
                                 style += TextStyle::Bold;
                                 break;
                             case 404:
-                                //addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                                 symbol = '/';
                                 style += Color::Black;
                                 style += TextStyle::Bold;
                                 break;
                             case 405:
-                                //addch('/' | COLOR_PAIR(WHITE_BLACK));
                                 symbol = '/';
                                 break;
                             case 450:
-                                //addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
                                 symbol = ',';
                                 style += Color::Black;
                                 style += TextStyle::Bold;
                                 break;
                             case 451:
-                                //addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
                                 symbol = ',';
                                 style += Color::Red;
                                 style += TextStyle::Bold;
                                 break;
                             case 500:
-                                //addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                                 symbol = '~';
                                 style += Color::Yellow;
                                 style += TextStyle::Bold;
                                 break;
                             case 501:
-                                //addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                                 symbol = '~';
                                 style += Color::Yellow;
                                 style += TextStyle::Bold;
                                 break;
                             case 600:
-                                //addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
                                 symbol = '!';
                                 style += Color::Blue;
                                 style += TextStyle::Bold;
                                 break;
                             case 601:
-                                //addch('!' | COLOR_PAIR(GREEN_BLACK));
                                 symbol = '!';
                                 style += Color::Green;
                                 break;
                             case 602:
-                                //addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                                 symbol = '!';
                                 style += Color::Black;
                                 style += TextStyle::Bold;
                                 break;
                             case 603:
-                                //addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
                                 symbol = '!';
                                 style += Color::Magenta;
                                 style += TextStyle::Bold;
                                 break;
                             case 604:
-                                //addch('!' | COLOR_PAIR(YELLOW_BLACK));
                                 symbol = '!';
                                 style += Color::Yellow;
                                 break;
                             case 700:
-                                //addch('\\' | COLOR_PAIR(YELLOW_BLACK));
                                 symbol = '\\';
                                 style += Color::Yellow;
                                 break;
 						}
 					} else {
 						if (UnitsMap[i][j].type == UnitHero) {
-							//addch('@' | COLOR_PAIR(GREEN_BLACK));
                             symbol = '@';
                             style += Color::Green;
 						} else if (UnitsMap[i][j].type == UnitEnemy && seenUpdated[i][j]) {
                             symbol = '@';
 							switch (UnitsMap[i][j].getUnit().symbol) {
 								case 201:
-									//addch('@' | COLOR_PAIR(YELLOW_BLACK));
                                     style += Color::Yellow;
 									break;
 								case 202:
-									//addch('@' | COLOR_PAIR(GREEN_BLACK) | LIGHT);
                                     style = TextStyle{ TextStyle::Bold, Color::Green };
 									break;
 								case 203:
-									//addch('@' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                                     style = TextStyle{ TextStyle::Bold, Color::Black };
 									break;							
 							}
@@ -2045,189 +1847,113 @@ void draw(){
 				} else {
 					switch (mapSaved[i][j]) {
 						case 1:
-								//addch(' ');
-                                symbol = ' ';
+                            symbol = ' ';
 							break;
-						case 2: {
-                                symbol = '#';
-                                /*
-								bool u = (i && mapSaved[i - 1][j] == 2);
-								bool r = (j < Length - 1 && mapSaved[i][j + 1] == 2);
-								bool d = (i < Height - 1 && mapSaved[i + 1][j] == 2);
-								bool l = (j && mapSaved[i][j - 1] == 2);
-								int count = u + r + d + l;
-								int attrib = COLOR_PAIR(WHITE_BLACK)/ * | (LIGHT * near)* /;
-								switch (count) {
-								case 0:
-								case 4:
-									addch(ACS_PLUS | attrib);
-									break;
-								case 1:
-									if (u || d)
-										addch(ACS_VLINE | attrib);
-									else
-										addch(ACS_HLINE | attrib);
-									break;
-								case 2:
-									if (u && r)
-										addch(ACS_LLCORNER | attrib);
-									else if (u && d)
-										addch(ACS_VLINE | attrib);
-									else if (u && l)
-										addch(ACS_LRCORNER | attrib);
-									else if (r && d)
-										addch(ACS_ULCORNER | attrib);
-									else if (r && l)
-										addch(ACS_HLINE | attrib);
-									else
-										addch(ACS_URCORNER | attrib);
-									break;
-								case 3:
-									if (!u)
-										addch(ACS_TTEE | attrib);
-									else if (!r)
-										addch(ACS_RTEE | attrib);
-									else if (!d)
-										addch(ACS_BTEE | attrib);
-									else
-										addch(ACS_LTEE | attrib);
-									break;
-								}*/
-								break;
-							}
+						case 2:
+                            symbol = '#';
+                            break;
 						case 100:
-							//addch('%');
                             symbol = '%';
 							break;
 						case 101:
-							//addch('%' | COLOR_PAIR(RED_BLACK));
                             symbol = '%';
                             style += Color::Red;
 							break;
 						case 300:
-							//addch('&' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '&';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 301:
-							//addch('&' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '&';
                             style += Color::Yellow;
 							break;
 						case 400:
-							//addch('/' | COLOR_PAIR(RED_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Red;
                             style += TextStyle::Bold;
 							break;
 						case 401:
-							//addch('/' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '/';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 402:
-							//addch('/' | COLOR_PAIR(WHITE_BLACK) | LIGHT);
                             symbol = '/';
                             style += TextStyle::Bold;
 							break;
 						case 403:
-							//addch('/' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 404:
-							//addch('/' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '/';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 405:
-							//addch('/' | COLOR_PAIR(WHITE_BLACK));
                             symbol = '/';
 							break;
 						case 450:
-							//addch(',' | COLOR_PAIR(BLACK_BLACK) | LIGHT); 
                             symbol = ',';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 451:
-							//addch(',' | COLOR_PAIR(RED_BLACK) | LIGHT);
                             symbol = ',';
                             style += Color::Red;
                             style += TextStyle::Bold;
 							break;
 						case 500:
-							//addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '~';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 501:
-							//addch('~' | COLOR_PAIR(YELLOW_BLACK) | LIGHT);
                             symbol = '~';
                             style += Color::Yellow;
                             style += TextStyle::Bold;
 							break;
 						case 600:
-							//addch('!' | COLOR_PAIR(BLUE_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Blue;
                             style += TextStyle::Bold;
 							break;
 						case 601:
-							//addch('!' | COLOR_PAIR(GREEN_BLACK));
                             symbol = '!';
                             style += Color::Green;
 							break;
 						case 602:
-							//addch('!' | COLOR_PAIR(BLACK_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Black;
                             style += TextStyle::Bold;
 							break;
 						case 603:
-							//addch('!' | COLOR_PAIR(MAGENTA_BLACK) | LIGHT);
                             symbol = '!';
                             style += Color::Magenta;
                             style += TextStyle::Bold;
 							break;
 						case 604:
-							//addch('!' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '!';
                             style += Color::Yellow;
 							break;
 						case 700:
-							//addch('\\' | COLOR_PAIR(YELLOW_BLACK));
                             symbol = '\\';
                             style += Color::Yellow;
 							break;
 					}
 				}
 			} else {
-				//addch(' ');	
                 symbol = ' ';
 			}
             termRend.put(symbol, style);
 		}
-		//printw("\n");
         termRend.put('\n');
 	}
 }
 
 #endif
-
-/*void clearScreen() {
-	for (int i = 0; i < 50; i++) {
-		for (int j = 0; j < 180; j++) {
-			move(i, j);
-			addch(' ');
-		}
-	}
-}*/
 
 void printMenu(const std::vector<std::string> & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
@@ -2243,26 +1969,6 @@ void printMenu(const std::vector<std::string> & items, int active) {
 void mSettingsMode() {
 	int SwitchMode = 1;
 	while (true) {
-        /*
-		move(0, 0);
-		printw("Choose mode");
-
-		move(1, 0);
-		if (SwitchMode == 1)
-		{
-			addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
-		}
-		else addch('1');
-		printw(" Normal");
-		
-		move(2, 0);
-		if (SwitchMode == 2)
-		{
-			addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
-		}
-		else addch('2');
-		printw(" Hard");
-        */
         termRend
             .setCursorPosition(Vec2i{})
             .put("Choose mode");
@@ -2280,7 +1986,6 @@ void mSettingsMode() {
                     SwitchMode--;
 				break;
 			case '\033':
-				//clearScreen();
                 termRend.clear();
 				return;
 				break;
@@ -2295,15 +2000,11 @@ void mSettingsMode() {
 				}
 				break;
 		}
-		//clearScreen();
         termRend.clear();
 	}
 }
 
 void mSettingsMap() {
-	//clearScreen();
-	//move(0, 0);
-	//printw("Do you want to load map from file?");
     termRend
         .clear()
         .setCursorPosition(Vec2i{})
@@ -2312,38 +2013,16 @@ void mSettingsMap() {
 	if (inpChar == 'y' || inpChar == 'Y') {
 		GenerateMap = false;
 	}
-	//clearScreen();
     termRend.clear();
 }
 
 void mSettings() {
 	int SwitchSettings = 1;
-	//clearScreen();
     termRend.clear();
 	while (true) {
-		//move(0, 0);
-		//printw("Settings");
         termRend
             .setCursorPosition(Vec2i{})
             .put("Settings");
-
-        /*
-		move(1, 0);
-		if (SwitchSettings == 1)
-		{
-			addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
-		}
-		else addch('1');
-		printw(" Mode");
-
-		move(2, 0);
-		if (SwitchSettings == 2)
-		{
-			addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
-		}
-		else addch('2');
-		printw(" Maps");
-        */
 
         printMenu({"Mode", "Maps"}, SwitchSettings);
 
@@ -2372,7 +2051,6 @@ void mSettings() {
 			}
 			case '\033': {
 				MenuCondition = 0;
-				//clearScreen();
                 termRend.clear();
 				return;
 				break;
@@ -2410,9 +2088,6 @@ void mainMenu() {
 	while (1)
 	{
 		if (MenuCondition == 0) {
-			//clearScreen();
-			//move(0, 0);
-			//printw("Welcome to RLRPG /*Tip of the day: %s*/", tips[tip].c_str());
             termRend
                 .clear()
                 .setCursorPosition(Vec2i{})
@@ -2420,68 +2095,6 @@ void mainMenu() {
 
             printMenu({ "Start game", "Settings", "About", "Help", "Exit" },
                     Switch);
-
-            /*TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
-            TextStyle itemStyles[5];
-            itemStyles[Switch] = activeItemStyle;
-            std::string items[] = {
-                "Start game",
-                "Settings",
-                "About",
-                "Help",
-                "Exit"
-            };
-            for (int i = 1; i <= 5; ++i) {
-                termRend
-                    .setCursorPosition(Vec2i{ 0, i })
-                    .put("{} {}"_format(i, items[i - 1]), itemStyles[i - 1])
-            }
-            */
-            /*
-			move(1, 0);
-			if (Switch == 1)
-			{
-				addch('1' | COLOR_PAIR(RED_BLACK) | LIGHT);
-			}
-			else addch('1');
-			printw(" Start game");
-
-			move(2, 0);
-			if (Switch == 2)
-			{
-				addch('2' | COLOR_PAIR(RED_BLACK) | LIGHT);
-			}
-			else addch('2');
-			printw(" Settings");
-
-			move(3, 0);
-			if (Switch == 3)
-			{
-				addch('3' | COLOR_PAIR(RED_BLACK) | LIGHT);
-			}
-			else addch('3');
-			printw(" About");
-
-			//move(4, 0);
-            termRend.setCursorPosition(Vec2i{ 0, 4 });
-			if (Switch == 4)
-				//addch('4' | COLOR_PAIR(RED_BLACK) | LIGHT);
-                termRend.put('4', TextStyle{ TextStyle::Bold, Color::Red });
-			else
-                //addch('4');
-                termRend.put('5');
-			printw(" Help");
-
-			//move(5, 0);
-            termRend.setCursorPosition(Vec2i{ 0, 5 });
-			if (Switch == 5)
-				//addch('5' | COLOR_PAIR(RED_BLACK) | LIGHT);
-                termRend.put('5', TextStyle{ TextStyle::Bold, Color::Red });
-			else
-                //addch('5');
-                termRend.put('5');
-			//printw(" Exit");
-            termRend.put(" Exit");*/
 
             char input = termRead.readChar();
 			switch (input) {
@@ -2517,15 +2130,12 @@ void mainMenu() {
 }
 
 void readMap() {
-	//FILE* file = fopen("map.me", "r");
     std::ifstream file{ "map.me" };
 	for (int i = 0; i < FIELD_ROWS; i++) {
 		for (int j = 0; j < FIELD_COLS; j++) {
-			//fscanf(file, "%d", &map[i][j]);
             file >> map[i][j];
 		}
 	}
-	//fclose(file);
 }
 
 int LEVELUP = hero.level * hero.level + 4/* * hero.level + 8*/;
@@ -2533,8 +2143,6 @@ int LEVELUP = hero.level * hero.level + 4/* * hero.level + 8*/;
 void getXP() {
 	if (hero.xp > LEVELUP) {
 		hero.level++;
-		//sprintf(tmp, "Now you are level %i. ", hero.level);
-		//message += tmp;
         message += fmt::format("Now you are level {}. ", hero.level);
 		MaxInvItemsWeight += MaxInvItemsWeight / 4;
 		DEFAULT_HERO_HEALTH += DEFAULT_HERO_HEALTH / 4;
@@ -2555,32 +2163,12 @@ void setRandomPotionEffects() {
 }
 
 int main() {
-	//initscr();
-	
-	//noecho();
-	
-	//start_color();
-    
     termRead.setEchoing(false);
-	
-    /*
-	init_pair(BLACK_BLACK, COLOR_BLACK, COLOR_BLACK);
-	init_pair(RED_BLACK, COLOR_RED, COLOR_BLACK);
-	init_pair(GREEN_BLACK, COLOR_GREEN, COLOR_BLACK);
-	init_pair(YELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(BLUE_BLACK, COLOR_BLUE, COLOR_BLACK);
-	init_pair(MAGENTA_BLACK, COLOR_MAGENTA, COLOR_BLACK);
-	init_pair(CYAN_BLACK, COLOR_CYAN, COLOR_BLACK);
-	init_pair(WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
-	init_pair(BLACK_WHITE, COLOR_BLACK, COLOR_WHITE);
-	init_pair(BLACK_RED, COLOR_BLACK, COLOR_RED);
-    */
 
 	initialize();
 	
 	mainMenu();
 	if (EXIT) { 	
-		//endwin();
 		return 0;
 	}
 
@@ -2605,8 +2193,6 @@ int main() {
 	differentArmor[0] = ChainChestplate;
 	differentArmor[1] = LeatherChestplate;
 
-	//inventory[0].item = LeatherChestplate;
-	//inventory[0].type = ItemArmor;
 	inventory[0] = LeatherChestplate;
 	inventory[0].getItem().inventorySymbol = 'a';
 	inventoryVol++;
@@ -2673,7 +2259,6 @@ int main() {
 	
 	draw();
 			
-    //move(Height, 0);
     termRend.setCursorPosition(Vec2i{ 0, Height} );
     bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
             hero.health,
@@ -2683,24 +2268,9 @@ int main() {
             hero.level, hero.xp,
             Luck);
 
-    /*
-	sprintf(tmp, "HP: %i ", hero.health);
-	bar += tmp;
-	sprintf(tmp, "Sat: %i ", hero.hunger);
-	bar += tmp;
-	sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);
-	bar += tmp;
-	sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);
-	bar += tmp;
-	sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
-	bar += tmp;
-	sprintf(tmp, "Lu: %i ", Luck);			
-	bar += tmp;*/								
 	bar += "Bul: |";
 	for (int i = 0; i < BANDOLIER; i++) {
 		if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-			//sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-			//bar += tmp;
             bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
 		} else {
 			bar += "0|";
@@ -2709,7 +2279,6 @@ int main() {
 	bar += " ";
 	if (hero.isBurdened)
         bar += "Burdened. ";
-	//printw("%- 190s", bar.c_str());
     termRend.put(fmt::sprintf("%- 190s", bar));
 	
 	if (hero.heroWeapon->type != ItemEmpty) {
@@ -2727,53 +2296,35 @@ int main() {
 			}
 			weapon_bar += "]";
 		}		
-		//move(Height + 1, 0);
-		//printw("%- 190s", weapon_bar.c_str());
         termRend
             .setCursorPosition(Vec2i{ 0, Height + 1 })
             .put(fmt::sprintf("%- 190s", weapon_bar));
 	}
 
-	//move(hero.posH, hero.posL);
     termRend.setCursorPosition(Vec2i{ hero.posL, hero.posH });
 	
 	while (true) {
 		if (EXIT) { 	
-			//refresh();
             termRend.display();
-			//endwin();
 			return 0;
 		}
 
 		message = "";
 		bar = "";
 	
-//		sprintf(tmp, "w: %i; Imap: %i; Umap: %i ! ! ", sizeof(Weapon), sizeof(ItemsMap), sizeof(UnitsMap));
-//		message += tmp;
-
 		if (hero.hunger < 1) {
 			message += "You died from starvation. Press any key to exit. ";
-			//move(Height + 2, 0);
-			//printw("%- 190s", message.c_str());
-			//refresh();
             termRend
                 .setCursorPosition(Vec2i{ 0, Height + 2 })
                 .put(fmt::sprintf("%- 190s", message))
                 .display();
             termRead.readChar();
-			//getch();
-			//endwin();
 			return 0;
 		}
 
 		if (hero.health < 1) {
 			hero.health = 0;
 			message += "You died. Press any key to exit. ";
-			//move(Height + 2, 0);
-			//printw("% -190s", message.c_str());
-			//getch();		
-			//refresh();
-			//endwin();
             termRend
                 .setCursorPosition(Vec2i{ 0, Height + 2 })
                 .put(fmt::sprintf("%- 190s", message))
@@ -2782,10 +2333,8 @@ int main() {
 			return 0;
 		}
 
-		//move(hero.posH, hero.posL);
         termRend.setCursorPosition(Vec2i{ hero.posL, hero.posH });
 
-		//char inp = getch();
         char inp = termRead.readChar();
 	
 		hero.moveHero(inp);
@@ -2821,19 +2370,6 @@ int main() {
 			draw();
 			
 			move(Height, 0);									
-            /*
-			sprintf(tmp, "HP: %i ", hero.health);								
-			bar += tmp;										
-			sprintf(tmp, "Sat: %i ", hero.hunger);							
-			bar += tmp;										
-			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);  
-			bar += tmp;											
-			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);
-			bar += tmp;											
-			sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
-			bar += tmp;
-			sprintf(tmp, "Lu: %i ", Luck);								
-			bar += tmp;*/
             bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
                     hero.health,
                     hero.hunger,
@@ -2845,8 +2381,6 @@ int main() {
 			bar += "Bul: |";
 			for (int i = 0; i < BANDOLIER; i++) {
 				if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-					//sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-					//bar += tmp;
                     bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
 				} else {
 					bar += "0|";
@@ -2860,7 +2394,6 @@ int main() {
 				bar += "Hungry. ";
 			}
 
-			//printw("%- 190s", bar.c_str());
             termRend.put(fmt::sprintf("%- 190s", bar));
 		
 			if (hero.heroWeapon->type != ItemEmpty) {
@@ -2878,32 +2411,22 @@ int main() {
 					}
 					weapon_bar += "]";
 				}
-				//move(Height + 1, 0);
-				//printw("%- 190s", weapon_bar.c_str());
                 termRend
                     .setCursorPosition(Vec2i{ 0, Height + 1 })
                     .put(fmt::sprintf("%- 190s", weapon_bar));
 			}
 
-			//move(Height + 2, 0);
-			
-			//printw("%- 190s", message.c_str());
             termRend
                 .setCursorPosition(Vec2i{ 0, Height + 1 })
                 .put(fmt::sprintf("%- 190s", message));
 			
 			if (inp == '\033') {	
-				//move(Height, 0);
-				//printw("Are you sure want to exit?\n");
                 termRend
                     .setCursorPosition(Vec2i{ 0, Height })
                     .put("Are you sure you want to exit?\n")
                     .display();
-				//char inp = getch();
                 char inp = termRead.readChar();
 				if (inp == 'y' || inp == 'Y' || inp == CONTROL_CONFIRM) {
-					//refresh();
-					//endwin();
 					return 0;
 				}
 				Stop = true;
@@ -2911,25 +2434,10 @@ int main() {
 	
 			getXP();
 
-			//move(hero.posH, hero.posL);
             termRend.setCursorPosition(Vec2i{ hero.posL, hero.posH });
 		} else {
 			draw();
-            
-			/*move(Height, 0);
-            //
-			sprintf(tmp, "HP: %i ", hero.health);								//
-			bar += tmp;											//
-			sprintf(tmp, "Sat: %i ", hero.hunger);								//
-			bar += tmp;											//
-			sprintf(tmp, "Def: %i ", hero.heroArmor->item.invArmor.defence);				// 
-			bar += tmp;											//
-			sprintf(tmp, "Dmg: %i ", hero.heroWeapon->item.invWeapon.damage);				//
-			bar += tmp;											// Condition bar		
-			sprintf(tmp, "L/XP: %i/%i ", hero.level, hero.xp);
-			bar += tmp;
-			sprintf(tmp, "Lu: %i ", Luck);									// !DEBUG!
-			bar += tmp;											// !!*/
+
             termRend.setCursorPosition(Vec2i{ 0, Height} );
             bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
                     hero.health,
@@ -2942,19 +2450,17 @@ int main() {
 			bar += "Bul: |";
 			for (int i = 0; i < BANDOLIER; i++) {
 				if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-					//sprintf(tmp, "%i|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-					//bar += tmp;
                     bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
 				} else {
 					bar += "0|";
 				}
 			}
 			bar += " ";
-			if (hero.isBurdened)
-                bar += "Burdened. ";							//
-			//printw("%- 190s", bar.c_str());									//
+			if (hero.isBurdened) {
+                bar += "Burdened. ";
+            }
 		
-			if (hero.hunger < 75) {	
+			if (hero.hunger < 75) {
 				bar += "Hungry. ";
 			}
             termRend
@@ -2962,18 +2468,12 @@ int main() {
                 .setCursorPosition(Vec2i{ 0, Height + 2 })
                 .put(fmt::sprintf("%- 190s", message));
 
-			//move(Height + 2, 0);
-			
-			//printw("%- 190s", message.c_str());
-
 			Stop = false;
 		}
 	}
 		
-	//refresh();
     termRend.display();
 	stopLog();
-	//endwin();
 
 	return 0;
 }
