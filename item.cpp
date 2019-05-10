@@ -1,11 +1,12 @@
 #include"include/item.hpp"
 #include<stdexcept>
+#include<algorithm>
 
 ////////////////////////////////
 // Item
 Item::Item(): mdf(1), showMdf(false), attribute(100), count(1){};
 
-std::string Item::getMdf() {
+std::string Item::getMdf() const {
 	switch (mdf) {
 		case 1: return "nothing";
 		case 2: return "thorns";
@@ -13,7 +14,7 @@ std::string Item::getMdf() {
     throw std::logic_error("Unknown modifier id");
 }
 
-std::string Item::getAttribute() {
+std::string Item::getAttribute() const {
 	switch (attribute) {
 		case 100: return "nothing";
 		case 201: return "being worn";
@@ -22,7 +23,7 @@ std::string Item::getAttribute() {
     throw std::logic_error("Unknown attribute id");
 }
 
-std::string Item::getName() {
+std::string Item::getName() const {
 	switch (symbol) {
 		case 100: return "an egg";
 		case 101: return "an apple";
@@ -568,7 +569,21 @@ Item& PossibleItem::getItem() {
     throw std::logic_error("Unknown item type");
 }
 
-PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
+const Item& PossibleItem::getItem() const {
+	switch (type) {
+		case ItemFood: return item.invFood;
+		case ItemArmor: return item.invArmor;
+		case ItemEmpty: return item.invEmpty;
+		case ItemWeapon: return item.invWeapon;
+		case ItemAmmo: return item.invAmmo;
+		case ItemScroll: return item.invScroll;
+		case ItemPotion: return item.invPotion;
+		case ItemTools: return item.invTools;
+	}
+    throw std::logic_error("Unknown item type");
+}
+
+ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
 
 PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
@@ -604,13 +619,10 @@ std::string getPotionName(int sym) {
     throw std::logic_error("Unknown potion id");
 }
 
-std::optional<int> findItemAtCell(int row, int col, int sym) {
-    for (int i = 0; i < FIELD_DEPTH; i++) {
-        if (itemsMap[row][col][i].type != ItemEmpty && itemsMap[row][col][i].getItem().symbol == sym) {
-            return i;
-        }
-    }
-    return {};
+ItemPileIter findItemAtCell(int row, int col, int sym) {
+    return std::find_if(begin(itemsMap[row][col]), end(itemsMap[row][col]), [sym] (const PossibleItem & item) {
+        return item.getItem().symbol == sym;
+    });
 }
 
 bool randomlySetOnMap(const PossibleItem & item) {
@@ -621,10 +633,9 @@ bool randomlySetOnMap(const PossibleItem & item) {
         int col = std::rand() % FIELD_COLS;
 
         if (map[row][col] == 1) {
-            int depth = std::rand() % FIELD_DEPTH;
-            itemsMap[row][col][depth] = item;
-            itemsMap[row][col][depth].getItem().posH = row;
-            itemsMap[row][col][depth].getItem().posL = col;
+            itemsMap[row][col].push_back(item);
+            itemsMap[row][col].back().getItem().posH = row;
+            itemsMap[row][col].back().getItem().posL = col;
             return true;
         }
     }

@@ -5,6 +5,7 @@
 #include<vector>
 #include<string>
 #include<optional>
+#include<list>
 
 const int TYPES_OF_FOOD = 2;
 const int TYPES_OF_ARMOR = 2;
@@ -57,9 +58,9 @@ public:
 	bool showMdf;
 	bool isStackable;
 
-    std::string getMdf();
-    std::string getAttribute();
-    std::string getName();
+    std::string getMdf() const;
+    std::string getAttribute() const;
+    std::string getName() const;
 };
 
 class EmptyItem: public Item
@@ -145,7 +146,7 @@ class Potion: public Item
 {
 public:
 	Potion(int p);
-    std::string getPotionName();
+    std::string getPotionName() const;
 	int effect;
 
 	Potion();
@@ -221,10 +222,13 @@ struct PossibleItem
 	PossibleItem & operator=(const PossibleItem& other);
 	PossibleItem(const PossibleItem& other);
 	Item& getItem();
+	const Item& getItem() const;
 	~PossibleItem();
 };
 
-extern PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
+using ItemPile = std::list<PossibleItem>;
+using ItemPileIter = ItemPile::iterator;
+extern ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
 extern PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
 extern std::vector<Food> foodTypes;
@@ -236,7 +240,7 @@ extern std::vector<Potion> potionTypes;
 extern std::vector<Tools> toolTypes;
 extern std::vector<bool> potionTypeKnown;
 
-std::optional<int> findItemAtCell(int row, int col, int sym);
+ItemPileIter findItemAtCell(int row, int col, int sym);
 bool randomlySetOnMap(const PossibleItem & item);
 
 template<class ItemType>

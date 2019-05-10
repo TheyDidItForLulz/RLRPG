@@ -212,7 +212,7 @@ void draw() {
             TextStyle style{ TerminalColor{} };
             if (mapSaved[i][j] != 0) {
                 bool near = abs(i - g_hero.posH) <= 1 && abs(j - g_hero.posL) <= 1;
-                if (g_hero.findItemsCountUnderThisCell(i, j) == 0 && unitMap[i][j].type == UnitEmpty) {
+                if (itemsMap[i][j].empty() && unitMap[i][j].type == UnitEmpty) {
                     switch (mapSaved[i][j]) {
                         case 1:
                             if (seenUpdated[i][j]) {
@@ -225,9 +225,9 @@ void draw() {
                             symbol = '#';
                             break;
                     }
-                } else if (g_hero.findItemsCountUnderThisCell(i, j) == 1 && unitMap[i][j].type == UnitEmpty) { /* HERE */
-                    int MeetedItem = g_hero.findNotEmptyItemUnderThisCell(i, j);
-                    switch (itemsMap[i][j][MeetedItem].getItem().symbol) {
+                } else if (itemsMap[i][j].size() == 1 && unitMap[i][j].type == UnitEmpty) { /* HERE */
+                    const auto & item = items[i][j].front();
+                    switch (item.getItem().symbol) {
                         case 100:
                             symbol = '%';
                             break;
@@ -319,7 +319,7 @@ void draw() {
                             style += Color::Yellow;
                             break;
                     }
-                } else if (g_hero.findItemsCountUnderThisCell(i, j) > 1 && unitMap[i][j].type == UnitEmpty) { /* Here */
+                } else if (itemsMap[i][j].size() > 1 && unitMap[i][j].type == UnitEmpty) { /* Here */
                     symbol = '^';
                     style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black, Color::White } };
                 }
@@ -372,13 +372,15 @@ void draw(){
     for (int i = 0; i < FIELD_ROWS; i++) {
         for (int j = 0; j < FIELD_COLS; j++) {
             if (seenUpdated[i][j]) {
-                int itemsOnCell = g_hero.findItemsCountUnderThisCell(i, j);
-                if (itemsOnCell == 0) {
-                    mapSaved[i][j] = map[i][j];
-                } else if (itemsOnCell == 1) {
-                    mapSaved[i][j] = itemsMap[i][j][g_hero.findNotEmptyItemUnderThisCell(i, j)].getItem().symbol;
-                } else {
-                    mapSaved[i][j] = 100500; // Magic constant that means 'pile'
+                switch (itemsMap[i][j].size()) {
+                    case 0:
+                        mapSaved[i][j] = map[i][j];
+                        break;
+                    case 1:
+                        mapSaved[i][j] = itemsMap[i][j].front().getItem().symbol;
+                        break;
+                    default:
+                        mapSaved[i][j] = 100500; // Magic constant that means 'pile'
                 }
             }
         }
@@ -846,6 +848,7 @@ int main() {
         lol,
         kek
     };
+    potionTypeKnown.resize(potionTypes.size());
     
     setRandomPotionEffects();
 

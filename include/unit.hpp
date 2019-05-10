@@ -93,11 +93,8 @@ public:
 	bool isInventoryEmpty();
 	int findEmptyInventoryCell();
 	int getInventoryItemsWeight();
-	void printList(PossibleItem items[], int len, std::string_view msg, int mode);
+	void printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode);
 	bool isMapInInventory();
-	int findItemsCountUnderThisCell(int h, int l);
-	int findEmptyItemUnderThisCell(int h, int l);
-	int findNotEmptyItemUnderThisCell(int h, int l);
 	int findAmmoInInventory();
 	int findScrollInInventory();
 	void printAmmoList(PossibleItem& pAmmo);										// Picked ammo
