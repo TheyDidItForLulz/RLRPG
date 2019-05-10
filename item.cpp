@@ -434,47 +434,95 @@ PossibleItem::PossibleItem(const PossibleItem& other)
 	}
 }
 
-void PossibleItem::operator=(const Food& f)
+PossibleItem::PossibleItem(const Food& f)
 {
 	type = ItemFood;
 	item.invFood = f;
 }
-void PossibleItem::operator=(const Armor& a)
+PossibleItem::PossibleItem(const Armor& a)
 {
 	type = ItemArmor;
 	item.invArmor = a;
 }
-void PossibleItem::operator=(const EmptyItem& e)
+PossibleItem::PossibleItem(const EmptyItem& e)
 {
 	type = ItemEmpty;
 	item.invEmpty = e;
 }
-void PossibleItem::operator=(const Weapon& w)
+PossibleItem::PossibleItem(const Weapon& w)
 {
 	type = ItemWeapon;
 	item.invWeapon = w;
 }
-void PossibleItem::operator=(const Ammo& am)
+PossibleItem::PossibleItem(const Ammo& am)
 {
 	type = ItemAmmo;
 	item.invAmmo = am;
 }
-void PossibleItem::operator=(const Scroll& s)
+PossibleItem::PossibleItem(const Scroll& s)
 {
 	type = ItemScroll;
 	item.invScroll = s;
 }
-void PossibleItem::operator=(const Potion& p)
+PossibleItem::PossibleItem(const Potion& p)
 {
 	type = ItemPotion;
 	item.invPotion = p;
 }
-void PossibleItem::operator=(const Tools& t)
+PossibleItem::PossibleItem(const Tools& t)
 {
 	type = ItemTools;
 	item.invTools = t;
 }
-void PossibleItem::operator=(const PossibleItem& other)
+PossibleItem & PossibleItem::operator=(const Food& f)
+{
+	type = ItemFood;
+	item.invFood = f;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Armor& a)
+{
+	type = ItemArmor;
+	item.invArmor = a;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const EmptyItem& e)
+{
+	type = ItemEmpty;
+	item.invEmpty = e;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Weapon& w)
+{
+	type = ItemWeapon;
+	item.invWeapon = w;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Ammo& am)
+{
+	type = ItemAmmo;
+	item.invAmmo = am;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Scroll& s)
+{
+	type = ItemScroll;
+	item.invScroll = s;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Potion& p)
+{
+	type = ItemPotion;
+	item.invPotion = p;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const Tools& t)
+{
+	type = ItemTools;
+	item.invTools = t;
+    return *this;
+}
+PossibleItem & PossibleItem::operator=(const PossibleItem& other)
 {
 	type = other.type;
 	switch (type)
@@ -503,6 +551,7 @@ void PossibleItem::operator=(const PossibleItem& other)
 		case ItemTools:
 			item.invTools = other.item.invTools;
 	}
+    return *this;
 }
 
 Item& PossibleItem::getItem() {
@@ -523,27 +572,20 @@ PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
 
 PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
-Food differentFood[TYPES_OF_FOOD];
-
-Armor differentArmor[TYPES_OF_ARMOR];
-
-Weapon differentWeapon[TYPES_OF_WEAPONS];
-
-Ammo differentAmmo[TYPES_OF_AMMO];
-
-Scroll differentScroll[TYPES_OF_SCROLLS];
-
-Potion differentPotion[TYPES_OF_POTIONS];
-
-Tools differentTools[TYPES_OF_TOOLS];
-
-bool discoveredPotions[TYPES_OF_POTIONS] = {};
+std::vector<Food> foodTypes;
+std::vector<Armor> armorTypes;
+std::vector<Weapon> weaponTypes;
+std::vector<Ammo> ammoTypes;
+std::vector<Scroll> scrollTypes;
+std::vector<Potion> potionTypes;
+std::vector<Tools> toolTypes;
+std::vector<bool> potionTypeKnown;
 
 std::string getPotionName(int sym) {
 	sym -= 600;
 	
-	if (discoveredPotions[sym]) {
-		switch (differentPotion[sym].effect) {
+	if (potionTypeKnown[sym]) {
+		switch (potionTypes[sym].effect) {
 			case 1: return "a potion of healing";
 			case 2: return "a potion of invisibility";
 			case 3: return "a potion of teleport";
@@ -560,5 +602,33 @@ std::string getPotionName(int sym) {
 		}
 	}
     throw std::logic_error("Unknown potion id");
+}
+
+std::optional<int> findItemAtCell(int row, int col, int sym) {
+    for (int i = 0; i < FIELD_DEPTH; i++) {
+        if (itemsMap[row][col][i].type != ItemEmpty && itemsMap[row][col][i].getItem().symbol == sym) {
+            return i;
+        }
+    }
+    return {};
+}
+
+bool randomlySetOnMap(const PossibleItem & item) {
+    const int attemts = 15;
+
+    for (int i = 0; i < attemts; ++i) {
+        int row = std::rand() % FIELD_ROWS;
+        int col = std::rand() % FIELD_COLS;
+
+        if (map[row][col] == 1) {
+            int depth = std::rand() % FIELD_DEPTH;
+            itemsMap[row][col][depth] = item;
+            itemsMap[row][col][depth].getItem().posH = row;
+            itemsMap[row][col][depth].getItem().posL = col;
+            return true;
+        }
+    }
+
+    return false;
 }
 

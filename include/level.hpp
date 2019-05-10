@@ -1,14 +1,14 @@
 #ifndef LEVEL_HPP
 #define LEVEL_HPP
 
-#define COLS 40
-#define ROWS 10
-#define FIELD_COLS ( COLS * 2 ) + 1											//
-#define FIELD_ROWS ( ROWS * 2 ) + 1											//
+// Should be odd numbers
+const int FIELD_COLS = 81;
+const int FIELD_ROWS = 21;
 															//
 extern int map[FIELD_ROWS][FIELD_COLS];											//
 extern bool seenUpdated[FIELD_ROWS][FIELD_COLS];
 
-#define FLOOR 1
+void initField();
+void readMap();
 
 #endif // LEVEL_HPP

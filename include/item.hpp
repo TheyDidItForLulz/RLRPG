@@ -4,8 +4,7 @@
 #include"level.hpp"
 #include<vector>
 #include<string>
-
-using namespace std;
+#include<optional>
 
 const int TYPES_OF_FOOD = 2;
 const int TYPES_OF_ARMOR = 2;
@@ -15,13 +14,14 @@ const int TYPES_OF_SCROLLS = 2;
 const int TYPES_OF_POTIONS = 5;
 const int TYPES_OF_TOOLS = 1;
 
-#define FOODCOUNT 10
-#define ARMORCOUNT 4
-#define WEAPONCOUNT 25	/* JUST FOR !DEBUG!!*/
-#define AMMOCOUNT 25
-#define SCROLLCOUNT 15 /* JUST FOR !DEBUG!!*/
-#define POTIONCOUNT 25 /* IT TOO */
-#define TOOLSCOUNT 5 /* AND IT */
+const int FOOD_COUNT = 10;
+const int ARMOR_COUNT = 4;
+const int WEAPON_COUNT = 25; /* JUST FOR !DEBUG!!*/
+const int AMMO_COUNT = 25;
+const int SCROLL_COUNT = 15; /* JUST FOR !DEBUG!!*/
+const int POTION_COUNT = 25; /* IT TOO */
+const int TOOL_COUNT = 5; /* AND IT */
+
 #define BANDOLIER TYPES_OF_AMMO
 #define MAX_USABLE_INV_SIZE 53
 #define MAX_TOTAL_INV_SIZE 54+BANDOLIER
@@ -201,15 +201,24 @@ struct PossibleItem
 	ItemType type;
 	PossibleItem(InventoryItem i, ItemType t);
 	PossibleItem();
-	void operator=(const Food& f);
-	void operator=(const Armor& a);
-	void operator=(const EmptyItem& e);
-	void operator=(const Weapon& w);
-	void operator=(const Ammo& am);
-	void operator=(const Scroll& s);
-	void operator=(const Potion& p);
-	void operator=(const Tools& t);
-	void operator=(const PossibleItem& other);
+	PossibleItem(const Food& f);
+	PossibleItem(const Armor& a);
+	PossibleItem(const EmptyItem& e);
+	PossibleItem(const Weapon& w);
+	PossibleItem(const Ammo& am);
+	PossibleItem(const Scroll& s);
+	PossibleItem(const Potion& p);
+	PossibleItem(const Tools& t);
+
+	PossibleItem & operator=(const Food& f);
+	PossibleItem & operator=(const Armor& a);
+	PossibleItem & operator=(const EmptyItem& e);
+	PossibleItem & operator=(const Weapon& w);
+	PossibleItem & operator=(const Ammo& am);
+	PossibleItem & operator=(const Scroll& s);
+	PossibleItem & operator=(const Potion& p);
+	PossibleItem & operator=(const Tools& t);
+	PossibleItem & operator=(const PossibleItem& other);
 	PossibleItem(const PossibleItem& other);
 	Item& getItem();
 	~PossibleItem();
@@ -218,21 +227,30 @@ struct PossibleItem
 extern PossibleItem itemsMap[FIELD_ROWS][FIELD_COLS][FIELD_DEPTH];
 extern PossibleItem inventory[MAX_TOTAL_INV_SIZE];
 
-extern Food differentFood[TYPES_OF_FOOD];
+extern std::vector<Food> foodTypes;
+extern std::vector<Armor> armorTypes;
+extern std::vector<Weapon> weaponTypes;
+extern std::vector<Ammo> ammoTypes;
+extern std::vector<Scroll> scrollTypes;
+extern std::vector<Potion> potionTypes;
+extern std::vector<Tools> toolTypes;
+extern std::vector<bool> potionTypeKnown;
 
-extern Armor differentArmor[TYPES_OF_ARMOR];
+std::optional<int> findItemAtCell(int row, int col, int sym);
+bool randomlySetOnMap(const PossibleItem & item);
 
-extern Weapon differentWeapon[TYPES_OF_WEAPONS];
+template<class ItemType>
+ItemType selectOne(const std::vector<ItemType> & types) {
+    return types[std::rand() % types.size()];
+}
 
-extern Ammo differentAmmo[TYPES_OF_AMMO];
-
-extern Scroll differentScroll[TYPES_OF_SCROLLS];
-
-extern Potion differentPotion[TYPES_OF_POTIONS];
-
-extern Tools differentTools[TYPES_OF_TOOLS];
-
-extern bool discoveredPotions[TYPES_OF_POTIONS];
+template<class ItemType, class Fn = decltype(selectOne<ItemType>)>
+void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const Fn & itemSelector = selectOne<ItemType>) {
+    for (int i = 0; i < n; ++i) {
+        PossibleItem item = itemSelector(types);
+        randomlySetOnMap(item);
+    }
+}
 
 #endif // ITEM_HPP
 

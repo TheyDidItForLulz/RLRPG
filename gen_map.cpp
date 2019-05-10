@@ -3,7 +3,9 @@
 #include"include/level.hpp"
 #include"include/utils.hpp"
 
-#define ROOMS_COUNT 3
+const int ROOMS_COUNT = 3;
+const int COLS = (FIELD_COLS - 1) / 2;
+const int ROWS = (FIELD_ROWS - 1) / 2;
 
 extern int map[ FIELD_ROWS ][ FIELD_COLS ];
 int used[ ROWS ][ COLS ];

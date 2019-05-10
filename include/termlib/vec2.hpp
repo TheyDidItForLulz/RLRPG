@@ -2,8 +2,7 @@
 #define VEC_2_HPP
 
 template<class T>
-class Vec2 {
-public:
+class Vec2 { public:
 	T x, y;
 
 	Vec2(): x(0), y(0) {}
@@ -20,15 +19,19 @@ public:
 		return *this;
 	}
 
-	Vec2 operator+(Vec2 & v) {
+	Vec2 operator+(const Vec2 & v) const {
 		return Vec2(x + v.x, y + v.y);
 	}
 
-	Vec2 operator-(Vec2 & v) {
+	Vec2 operator-(const Vec2 & v) const {
 		return Vec2(x - v.x, y - v.y);
 	}
 
-	Vec2 & operator+=(Vec2 & v) {
+    T operator*(const Vec2 & v) const {
+        return x * v.x + y * v.y;
+    }
+
+	Vec2 & operator+=(const Vec2 & v) {
 		x += v.x;
 		y += v.y;
 		return *this;
@@ -40,19 +43,19 @@ public:
 		return *this;
 	}
 
-	Vec2 operator+(T s) {
+	Vec2 operator+(T s) const {
 		return Vec2(x + s, y + s);
 	}
 
-	Vec2 operator-(T s) {
+	Vec2 operator-(T s) const {
 		return Vec2(x - s, y - s);
 	}
 
-	Vec2 operator*(T s) {
+	Vec2 operator*(T s) const {
 		return Vec2(x * s, y * s);
 	}
 
-	Vec2 operator/(T s) {
+	Vec2 operator/(T s) const {
 		return Vec2(x / s, y / s);
 	}
 

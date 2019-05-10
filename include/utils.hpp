@@ -1,6 +1,8 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include<termlib/vec2.hpp>
+
 template<class T>
 inline int sgn(T x) {
     if (x > 0)
@@ -11,7 +13,7 @@ inline int sgn(T x) {
 }
 
 template<class T>
-inline T sqr(T x) {
+inline auto sqr(T x) {
     return x * x;
 }
 
@@ -30,6 +32,11 @@ inline auto clamp(T min, U val, V max) {
 }
 
 void sleep(double sec);
+
+template<class T>
+T distSquared(const Vec2<T> & point1, const Vec2<T> & point2) {
+    return sqr(point1 - point2);
+}
 
 #endif // UTILS_HPP
  

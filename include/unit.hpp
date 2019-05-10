@@ -37,6 +37,7 @@ public:
     std::string getName();
 	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY);
 	bool canSeeCell(int h, int l);
+    void dropInventory();
 };
 
 class EmptyUnit: public Unit {
@@ -47,8 +48,7 @@ public:
 
 class Enemy: public Unit {
 public:
-	Enemy(int eType);
-
+    static const int TYPES_COUNT = 3;
 	Direction dir;
 	int dist;
 	int movedOnTurn = 0;
@@ -56,15 +56,21 @@ public:
 	int targetH;
 	int targetL;
 
-	void shoot();
-
 	Enemy() {}
+	Enemy(int eType);
+
 	~Enemy() {}
+
+	void shoot();
+    void updatePosition();
 };
+
+extern Enemy differentEnemies[Enemy::TYPES_COUNT];
 
 class Hero: public Unit {
 public:
     static const int MAX_LUCK = 20;
+    static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
 
 	PossibleItem* heroArmor;
 	PossibleItem* heroWeapon;
@@ -106,9 +112,9 @@ public:
 	void showInventory(char inp);
 	void eat();
 	void moveHero(char inp);
+    bool isInvisible() const;
 };
 
-const int TYPES_OF_ENEMIES = 3;
 enum UnitType {
     UnitEmpty,
     UnitHero,
@@ -173,5 +179,7 @@ struct PossibleUnit {
 
     Unit& getUnit();
 };
+
+extern PossibleUnit unitMap[FIELD_ROWS][FIELD_COLS];
 
 #endif // UNIT_HPP

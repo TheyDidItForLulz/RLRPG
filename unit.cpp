@@ -13,6 +13,8 @@
 #include<fmt/core.h>
 #include<fmt/printf.h>
 
+#include<queue>
+
 using namespace fmt::literals;
 
 int g_vision = 16;
@@ -69,12 +71,37 @@ bool Unit::canSeeCell(int h, int l) {
         linearVisibilityCheck(posL + .5, posH + .5, l + 1 - offset, h + 1 - offset);
 }
 
+void Unit::dropInventory() {
+    for (int i = 0; i < UNITINVENTORY; i++) {                                        /* Here are some changes, that we need to test */
+        if (unitInventory[i].type != ItemEmpty) {
+            if (unitInventory[i].getItem().isStackable) {
+                auto optdepth = findItemAtCell(posH, posL, unitInventory[i].getItem().symbol);
+                if (optdepth) {
+                    itemsMap[posH][posL][*optdepth].getItem().count += unitInventory[i].getItem().count;
+                } else {
+                    int empty = g_hero.findEmptyItemUnderThisCell(posH, posL);
+                    if (empty != 101010) {
+                        itemsMap[posH][posL][empty] = unitInventory[i];
+                    }
+                }
+            } else {
+                int empty = g_hero.findEmptyItemUnderThisCell(posH, posL);
+                if (empty != 101010) {
+                    itemsMap[posH][posL][empty] = unitInventory[i];
+                }
+            }
+        }
+    }
+}
+
+Enemy differentEnemies[Enemy::TYPES_COUNT];
+
 Enemy::Enemy(int eType) {
 	switch (eType) {
 		case 0: {
 			health = 7;
-			unitInventory[0] = differentFood[0];
-			unitInventory[1] = differentWeapon[0];
+			unitInventory[0] = foodTypes[0];
+			unitInventory[1] = weaponTypes[0];
 			unitWeapon = &unitInventory[1];
 			inventoryVol = 2;
 			symbol = 201;
@@ -84,7 +111,7 @@ Enemy::Enemy(int eType) {
 		}
 		case 1: {
 			health = 10;
-			unitInventory[0] = differentWeapon[3];
+			unitInventory[0] = weaponTypes[3];
 			unitWeapon = &unitInventory[0];
 			inventoryVol = 1;
 			symbol = 202;
@@ -94,8 +121,8 @@ Enemy::Enemy(int eType) {
 		}
 		case 2: {
 			health = 5;
-			unitInventory[0] = differentWeapon[5];
-			unitInventory[1] = differentAmmo[0];
+			unitInventory[0] = weaponTypes[5];
+			unitInventory[1] = ammoTypes[0];
 			unitWeapon = &unitInventory[0];
 			unitAmmo = &unitInventory[1];
 			unitAmmo->item.invAmmo.count = rand() % 30 + 4;
@@ -109,6 +136,363 @@ Enemy::Enemy(int eType) {
 	dist = 0;
 	targetH = -1;
 	targetL = -1;
+}
+
+void getProjectileDirectionsAndSymbol(Direction direction, int & dx, int & dy, char & sym) {
+    switch (direction) {
+    case Direction::Up:
+        dy = -1;
+        dx = 0;
+        sym = '|';
+        break;
+    case Direction::UpRight:
+        dy = -1;
+        dx = 1;
+        sym = '/';
+        break;
+    case Direction::Right:
+        dx = 1;
+        dy = 0;
+        sym = '-';
+        break;
+    case Direction::DownRight:
+        dx = 1;
+        dy = 1;
+        sym = '\\';
+        break;
+    case Direction::Down:
+        dy = 1;
+        dx = 0;
+        sym = '|';
+        break;
+    case Direction::DownLeft:
+        dy = 1;
+        dx = -1;
+        sym = '/';
+        break;
+    case Direction::Left:
+        dx = -1;
+        dy = 0;
+        sym = '-';
+        break;
+    case Direction::UpLeft:
+        dx = -1;
+        dy = -1;
+        sym = '\\';
+    }
+}
+
+void Enemy::shoot() {
+    if (posH == g_hero.posH && posL < g_hero.posL)
+        dir = Direction::Right;
+    else if (posH == g_hero.posH && posL > g_hero.posL)
+        dir = Direction::Left;
+    else if (posL == g_hero.posL && posH > g_hero.posH)
+        dir = Direction::Up;
+    else if (posL == g_hero.posL && posH < g_hero.posH)
+        dir = Direction::Down;
+    else if (posL > g_hero.posL && posH > g_hero.posH)
+        dir = Direction::UpLeft;
+    else if (posL > g_hero.posL && posH < g_hero.posH)
+        dir = Direction::DownLeft;
+    else if (posL < g_hero.posL && posH < g_hero.posH)
+        dir = Direction::DownRight;
+    else if (posL < g_hero.posL && posH > g_hero.posH)
+        dir = Direction::UpRight;
+    int dx;
+    int dy;
+    char sym;
+    getProjectileDirectionsAndSymbol(dir, dx, dy, sym);
+    for (int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++) {
+        int row = posH + dy * i;
+        int col = posL + dx * i;
+
+        if (map[row][col] == 2)
+            break;
+
+        if (unitMap[row][col].type == UnitHero) {
+            g_hero.health -= (unitAmmo->item.invAmmo.damage + unitWeapon->item.invWeapon.damageBonus) * (( 100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+            break;
+        }
+        termRend
+            .setCursorPosition(Vec2i{ col, row })
+            .put(sym)
+            .display();
+        sleep(DELAY / 3);
+    }
+
+    unitAmmo->item.invAmmo.count--;
+    if (unitAmmo->item.invAmmo.count <= 0) {
+        unitAmmo->type = ItemEmpty;
+    }
+}
+
+int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
+    int depth = 2 + std::abs(targetH - h) + std::abs(targetL - l);                        // <- smth a little bit strange
+    std::queue<int> x, y;
+    x.push(l);
+    y.push(h);
+    int used[FIELD_ROWS][FIELD_COLS] = {};
+    used[h][l] = true;
+    while (!x.empty() && !y.empty()) {
+        int v_x = x.front();
+        int v_y = y.front();
+        if (v_y == targetH && v_x == targetL)
+            break;
+        if (used[v_y][v_x] > depth) {
+            return -1;
+        }
+        x.pop();
+        y.pop();
+    
+        if (v_y < FIELD_ROWS - 1 && !used[v_y + 1][v_x] && (unitMap[v_y + 1][v_x].type == UnitEmpty 
+            || unitMap[v_y + 1][v_x].type == UnitHero) && map[v_y + 1][v_x] != 2) {
+            y.push(v_y + 1);
+            x.push(v_x);
+            used[v_y + 1][v_x] = 1 + used[v_y][v_x];
+        }
+        if (v_y > 0 && !used[v_y - 1][v_x] && (unitMap[v_y - 1][v_x].type == UnitEmpty 
+            || unitMap[v_y - 1][v_x].type == UnitHero) && map[v_y - 1][v_x] != 2) {
+            y.push(v_y - 1);
+            x.push(v_x);    
+            used[v_y - 1][v_x] = 1 + used[v_y][v_x];
+        }
+        if (v_x < FIELD_COLS - 1 && !used[v_y][v_x + 1] && (unitMap[v_y][v_x + 1].type == UnitEmpty 
+            || unitMap[v_y][v_x + 1].type == UnitHero) && map[v_y][v_x + 1] != 2) {
+            y.push(v_y);
+            x.push(v_x + 1);
+            used[v_y][v_x + 1] = 1 + used[v_y][v_x];
+        }
+        if (v_x > 0 && !used[v_y][v_x - 1] && (unitMap[v_y][v_x - 1].type == UnitEmpty 
+            || unitMap[v_y][v_x - 1].type == UnitHero) && map[v_y][v_x - 1] != 2) {
+            y.push(v_y);
+            x.push(v_x - 1);
+            used[v_y][v_x - 1] = 1 + used[v_y][v_x];    
+        }
+        if (g_mode == 2) {
+            if (v_y < FIELD_ROWS - 1)
+            {
+                if (v_x > 0 && !used[v_y + 1][v_x - 1] && (unitMap[v_y + 1][v_x - 1].type == UnitEmpty 
+                    || unitMap[v_y + 1][v_x - 1].type == UnitHero) && map[v_y + 1][v_x - 1] != 2) {
+                    y.push(v_y + 1);
+                    x.push(v_x - 1);
+                    used[v_y + 1][v_x - 1] = 1 + used[v_y][v_x];
+                }
+                if (v_x < FIELD_COLS - 1 && !used[v_y + 1][v_x + 1] && (unitMap[v_y + 1][v_x + 1].type == UnitEmpty 
+                    || unitMap[v_y + 1][v_x + 1].type == UnitHero) && map[v_y + 1][v_x + 1] != 2) { 
+                    y.push(v_y + 1);
+                    x.push(v_x + 1);
+                    used[v_y + 1][v_x + 1] = 1 + used[v_y][v_x];
+                }
+            }
+            if (v_y > 0) {
+                if (v_x > 0 && !used[v_y - 1][v_x - 1] && (unitMap[v_y - 1][v_x - 1].type == UnitEmpty 
+                    || unitMap[v_y - 1][v_x - 1].type == UnitHero) && map[v_y - 1][v_x - 1] != 2) {
+                    y.push(v_y - 1);
+                    x.push(v_x - 1);
+                    used[v_y - 1][v_x - 1] = 1 + used[v_y][v_x];
+                }
+                if (v_x < FIELD_COLS - 1 && !used[v_y - 1][v_x + 1] && (unitMap[v_y - 1][v_x + 1].type == UnitEmpty 
+                    || unitMap[v_y - 1][v_x + 1].type == UnitHero) && map[v_y - 1][v_x + 1] != 2) {
+                    y.push(v_y - 1);
+                    x.push(v_x + 1);
+                    used[v_y - 1][v_x + 1] = 1 + used[v_y][v_x];
+                }
+            }
+        }
+    }
+
+    if (!used[targetH][targetL]) {
+        return -1;
+    }
+    int v_y = targetH, v_x = targetL;
+    while (used[v_y][v_x] != 2) {
+        if (g_mode == 2) {
+            if (v_y && v_x && used[v_y - 1][v_x - 1] + 1 == used[v_y][v_x]) {
+                --v_y;
+                --v_x;
+                continue;
+            }
+            if (v_y && v_x < FIELD_COLS - 1 && used[v_y - 1][v_x + 1] + 1 == used[v_y][v_x]) {
+                --v_y;
+                ++v_x;
+                continue;
+            }
+            if (v_y < FIELD_ROWS - 1 && v_x && used[v_y + 1][v_x - 1] + 1 == used[v_y][v_x]) {
+                ++v_y;
+                --v_x;
+                continue;
+            }
+            if (v_y < FIELD_ROWS - 1 && v_x < FIELD_COLS - 1 && used[v_y + 1][v_x + 1] + 1 == used[v_y][v_x]) {
+                ++v_y;
+                ++v_x;
+                continue;
+            }
+        }
+        if (v_y && used[v_y - 1][v_x] + 1 == used[v_y][v_x]) {
+            --v_y;
+            continue;
+        }
+        if (v_x && used[v_y][v_x - 1] + 1 == used[v_y][v_x]) {
+            --v_x;
+            continue;
+        }
+        if (v_y < FIELD_ROWS - 1 && used[v_y + 1][v_x] + 1 == used[v_y][v_x]) {
+            ++v_y;
+            continue;
+        }
+        if (v_x < FIELD_COLS - 1 && used[v_y][v_x + 1] + 1 == used[v_y][v_x]) {
+            ++v_x;
+            continue;
+        }
+    }
+
+    posH = v_y;
+    posL = v_x;
+}
+
+void Enemy::updatePosition() {
+    movedOnTurn = g_turns;
+
+    bool canSeeHero =
+        not g_hero.isInvisible()
+        and distSquared(Vec2i{ posL, posH }, Vec2i{ g_hero.posL, g_hero.posH }) < sqr(vision)
+        and canSeeCell(g_hero.posH, g_hero.posL);
+    
+    int pH = 1, pL = 1;
+
+    if (canSeeHero) {
+        if ((posH == g_hero.posH or posL == g_hero.posL or std::abs(g_hero.posH - posH) == std::abs(g_hero.posL - posL))
+                and unitWeapon->item.invWeapon.Ranged
+                and unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range >= std::abs(g_hero.posH - posH) + std::abs(g_hero.posL - posL)) {
+            shoot();
+        } else {
+            targetH = g_hero.posH;
+            targetL = g_hero.posL;
+
+            if (bfs(g_hero.posH, g_hero.posL, posH, posL, pH, pL) == -1) {
+                canSeeHero = false;
+            } else {
+                if (unitMap[pH][pL].type == UnitEnemy) {
+                    return;
+                } else if (unitMap[pH][pL].type == UnitHero) {
+                    if (unitWeapon->type == ItemWeapon) {
+                        if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                            g_hero.health -= unitWeapon->item.invWeapon.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                        } else {
+                            health -= unitWeapon->item.invWeapon.damage;
+                        }
+                    } else if (unitWeapon->type == ItemTools) {
+                        if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                            g_hero.health -= unitWeapon->item.invTools.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                        } else {
+                            health -= unitWeapon->item.invTools.damage;
+                        }
+                    }
+                    if (health <= 0) {
+                        unitMap[posH][posL].type = UnitEmpty;
+                    }
+                } else {
+                    unitMap[pH][pL] = unitMap[posH][posL];
+                    unitMap[posH][posL].type = UnitEmpty;
+                    posH = pH;
+                    posL = pL;
+                }
+            }
+        }
+    }
+    if (not canSeeHero) {
+        bool needRandDir = false;
+        if (targetH != -1 and (targetH != posH or targetL != posL)) {
+            if (bfs(targetH, targetL, posH, posL, pH, pL) == -1) {
+                needRandDir = true;
+            } else {
+                if (pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
+                    if (unitMap[pH][pL].type == UnitHero) {
+                        if (unitWeapon->type == ItemWeapon) {
+                            if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                                g_hero.health -= unitWeapon->item.invWeapon.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                            } else {
+                                health -= unitWeapon->item.invWeapon.damage;
+                            }
+                        } else if (unitWeapon->type == ItemTools) {
+                            if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                                g_hero.health -= unitWeapon->item.invTools.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                            } else {
+                                health -= unitWeapon->item.invTools.damage;
+                            }
+                        }
+                        if (health <= 0) {
+                            unitMap[posH][posL].type = UnitEmpty;
+                        }
+                    } else {
+                        unitMap[pH][pL] = unitMap[posH][posL];
+                        unitMap[posH][posL].type = UnitEmpty;
+                        posH = pH;
+                        posL = pL;
+                    }
+                }
+            }
+        } else {
+            needRandDir = true;
+        }
+        if (needRandDir) {
+            std::vector<int> visionArrayH;
+            std::vector<int> visionArrayL;
+
+            for (int i = std::max(posH - vision, 0); i < std::min(FIELD_ROWS, posH + vision); i++) {
+                for (int j = std::max(posL - vision, 0); j < std::min(posL + vision, FIELD_COLS); j++) {
+                    if ((i != posH or j != posL) and map[i][j] != 2
+                            and distSquared(Vec2i{ posL, posH }, Vec2{ j, i }) < sqr(vision)
+                            and unitMap[i][j].type == UnitEmpty and canSeeCell(i, j)) {
+                        visionArrayH.push_back(i);
+                        visionArrayL.push_back(j);
+                    }
+                }    
+            }
+            while (true) {
+                int r = std::rand() % visionArrayH.size(); 
+                int rposH = visionArrayH[r];
+                int rposL = visionArrayL[r];
+                
+                targetH = rposH;
+                targetL = rposL;
+
+                if (bfs(targetH, targetL, posH, posL, pH, pL) != -1) {
+                    break;
+                }
+            }
+            if (pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
+                if (unitMap[pH][pL].type == UnitHero) {
+                    if (unitWeapon->type == ItemWeapon) {
+                        if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                            g_hero.health -= unitWeapon->item.invWeapon.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                        } else {
+                            health -= unitWeapon->item.invWeapon.damage;
+                        }
+                    } else if (unitWeapon->type == ItemTools) {
+                        if (g_hero.heroArmor->item.invArmor.mdf != 2) {
+                            g_hero.health -= unitWeapon->item.invTools.damage * ((100 - g_hero.heroArmor->item.invArmor.defence) / 100.0);
+                        } else {
+                            health -= unitWeapon->item.invTools.damage;
+                        }
+                    }
+                    if (health <= 0) {
+                        unitMap[posH][posL].type = UnitEmpty;
+                    }
+                } else {
+                    unitMap[pH][pL] = unitMap[posH][posL];
+                    unitMap[posH][posL].type = UnitEmpty;
+                    posH = pH;
+                    posL = pL;
+                }
+            }
+        }
+    }
+}
+
+bool Hero::isInvisible() const {
+    return turnsInvisible > 0;
 }
 
 void Hero::checkVisibleCells() {
@@ -727,14 +1111,10 @@ void Hero::moveHero(char inp)
 		{
 			char hv = termRead.readChar();
 			
-			if (hv == 'h')
-			{
-				if (termRead.readChar() == 'e')
-				{
-					if (termRead.readChar() == 'a')
-					{
-						if (termRead.readChar() == 'l')
-						{
+			if (hv == 'h') {
+				if (termRead.readChar() == 'e') {
+					if (termRead.readChar() == 'a') {
+						if (termRead.readChar() == 'l') {
 							hunger = 3000;
 							health = DEFAULT_HERO_HEALTH * 100;
 						}
@@ -742,45 +1122,28 @@ void Hero::moveHero(char inp)
 				}
 			}
 		
-			if (hv == 'w')
-			{
-				if (termRead.readChar() == 'a')
-				{
-					if (termRead.readChar() == 'l')
-					{
-						if (termRead.readChar() == 'l')
-						{
-							if (termRead.readChar() == 's')
-							{
+			if (hv == 'w') {
+				if (termRead.readChar() == 'a') {
+					if (termRead.readChar() == 'l') {
+						if (termRead.readChar() == 'l') {
+							if (termRead.readChar() == 's') {
 								canMoveThroughWalls = true;
 							}
 						}
 					}
 				}
-			}
-			else if (hv == 'd')
-			{
-				if (termRead.readChar() == 's')
-				{
-					if (termRead.readChar() == 'c')
-					{
+			} else if (hv == 'd') {
+				if (termRead.readChar() == 's') {
+					if (termRead.readChar() == 'c') {
 						canMoveThroughWalls = false;
 					}
+				} else {
+					itemsMap[1][1][0] = foodTypes[0];
 				}
-				else
-				{
-					itemsMap[1][1][0] = differentFood[0];
-				}
-
-			}
-			else if (hv == 'k')
-			{
-				if (termRead.readChar() == 'i')
-				{
-					if (termRead.readChar() == 'l')
-					{
-						if (termRead.readChar() == 'l')
-						{
+			} else if (hv == 'k') {
+				if (termRead.readChar() == 'i') {
+					if (termRead.readChar() == 'l') {
+						if (termRead.readChar() == 'l') {
 							health -= (DEFAULT_HERO_HEALTH * 2) / 3;
 							message += "Ouch! ";
 						}
@@ -791,6 +1154,688 @@ void Hero::moveHero(char inp)
 		}
 	}
 }
+
+void Hero::showInventory(char inp) {    
+    PossibleItem list[MAX_USABLE_INV_SIZE];
+    int len = 0;
+    switch (inp) {    
+        case CONTROL_SHOWINVENTORY: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type != ItemEmpty) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+            
+            printList(list, len, "Here is your inventory.", 1);
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            len = 0;
+            break;
+        }
+        case CONTROL_EAT: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type == ItemFood) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+            printList(list, len, "What do you want to eat?", 1);
+            len = 0;
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+            if (inventory[intch].type == ItemFood) {
+                int prob = rand() % g_hero.luck;
+                if (prob == 0) {
+                    hunger += inventory[intch].item.invFood.FoodHeal / 3;
+                    health --;
+                    message += "Fuck! This food was rotten! ";
+                } else {
+                    hunger += inventory[intch].item.invFood.FoodHeal;
+                }
+                if (inventory[intch].getItem().count == 1) {
+                    inventory[intch].type = ItemEmpty;
+                } else {
+                    inventory[intch].getItem().count--;
+                }
+            }
+            break;
+        }    
+        case CONTROL_WEAR: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type == ItemArmor) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+            printList(list, len, "What do you want to wear?", 1);
+            len = 0;
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+            if (inventory[intch].type == ItemArmor) {
+                message += "Now you wearing {}. "_format(inventory[intch].getItem().getName());
+
+                if (heroArmor->type != ItemEmpty) {
+                    heroArmor->getItem().attribute = 100;
+                }
+                heroArmor = &inventory[intch];
+                inventory[intch].getItem().attribute = 201;
+            }
+            break;
+        }
+        case CONTROL_DROP: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type != ItemEmpty) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+
+            printList(list, len, "What do you want to drop?", 1);
+            len = 0;
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+            int num = findEmptyItemUnderThisCell(posH, posL);
+            if (num == 101010) {
+                message += "There is too much items";
+                return;
+            }
+            if (choice == heroArmor->getItem().inventorySymbol)
+                showInventory(CONTROL_TAKEOFF);
+            if (choice == heroWeapon->getItem().inventorySymbol)
+                showInventory(CONTROL_UNEQUIP);
+            if (inventory[intch].getItem().isStackable && inventory[intch].getItem().count > 1) {
+                clearRightPane();
+                termRend
+                    .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                    .put("How much items do you want to drop? [1-9]");
+
+                int dropCount = clamp(1, termRead.readChar() - '0', inventory[intch].getItem().count);
+
+                auto optdepth = findItemAtCell(posH, posL, inventory[intch].getItem().symbol);
+                if (optdepth) {        
+                    itemsMap[posH][posL][*optdepth].getItem().count += dropCount;
+                } else {            
+                    itemsMap[posH][posL][num] = inventory[intch];
+                    itemsMap[posH][posL][num].getItem().count = dropCount;
+                }
+                inventory[intch].getItem().count -= dropCount;
+                if (inventory[intch].getItem().count == 0) {
+                    inventory[intch].type = ItemEmpty;
+                }
+            } else if (inventory[intch].getItem().isStackable && inventory[intch].getItem().count == 1) {
+                auto optdepth = findItemAtCell(posH, posL, inventory[intch].getItem().symbol);
+                if (optdepth) {        
+                    itemsMap[posH][posL][*optdepth].getItem().count++;
+                    inventory[intch].getItem().count--;
+                } else {            
+                    itemsMap[posH][posL][num] = inventory[intch];
+                }
+                inventory[intch].type = ItemEmpty;
+            } else {
+                itemsMap[posH][posL][num] = inventory[intch];
+                inventory[intch].type = ItemEmpty;
+            }
+
+            if (getInventoryItemsWeight() <= g_maxBurden && isBurdened) {
+                message += "You are burdened no more. ";
+                isBurdened = false;
+            }
+
+            break;
+        }
+        case CONTROL_TAKEOFF: {
+            
+            heroArmor->getItem().attribute = 100;
+            heroArmor = &inventory[Hero::EMPTY_SLOT];
+            break;
+        
+        }
+        case CONTROL_WIELD: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type == ItemWeapon || inventory[i].type == ItemTools) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+
+            printList(list, len, "What do you want to wield?", 1);
+            len = 0;
+            
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+            if (inventory[intch].type == ItemWeapon || inventory[intch].type == ItemTools) {
+                message += "You wield {}. "_format(inventory[intch].getItem().getName());
+
+                if (heroWeapon->type != ItemEmpty) {
+                    heroWeapon->getItem().attribute = 100;
+                }
+                heroWeapon = &inventory[intch];
+                inventory[intch].getItem().attribute = 301;
+            }
+    
+            break;
+        
+        }
+        case CONTROL_UNEQUIP: {
+            heroWeapon->getItem().attribute = 100;
+            heroWeapon = &inventory[Hero::EMPTY_SLOT];
+            break;
+        }
+        case CONTROL_THROW: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type != ItemEmpty) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+
+            printList(list, len, "What do you want to throw?", 1);
+            len = 0;
+
+            char choice = termRead.readChar();
+            if (choice == '\033') return;
+            int intch = choice - 'a';
+
+            if (inventory[intch].type != ItemEmpty) {
+                clearRightPane();
+                termRend
+                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+                    .put("In what direction?");
+                char secondChoise = termRead.readChar();
+
+                if (inventory[intch].getItem().inventorySymbol == heroArmor->getItem().inventorySymbol)
+                    showInventory(CONTROL_TAKEOFF);
+                else if (inventory[intch].getItem().inventorySymbol == heroWeapon->getItem().inventorySymbol)
+                    showInventory(CONTROL_UNEQUIP);
+
+                throwAnimated(inventory[intch], getDirectionByControl(secondChoise));
+            }
+            break;
+        }
+        case CONTROL_DRINK: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type == ItemPotion) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+
+            printList(list, len, "What do you want to drink?", 1);
+            len = 0;
+
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+
+            if (inventory[intch].type == ItemPotion) {
+                switch (inventory[intch].item.invPotion.effect) {
+                    case 1: {
+                        health = std::min(health + 3, DEFAULT_HERO_HEALTH);
+                        message += "Now you feeling better. ";
+                        break;
+                    }
+                    case 2: {
+                        g_hero.turnsInvisible = 150;
+                        message += "Am I invisible? Oh, lol! ";
+                        break;
+                    }
+                    case 3: {
+                        for (int i = 0; i < 1; i++) {
+                            int l = rand() % FIELD_COLS;
+                            int h = rand() % FIELD_ROWS;
+                            if (map[h][l] != 2 && unitMap[h][l].type == UnitEmpty) {
+                                unitMap[h][l] = unitMap[posH][posL];
+                                unitMap[posH][posL].type = UnitEmpty;
+                                posH = h;
+                                posL = l;
+                                checkVisibleCells();
+                            } else {
+                                i--;
+                            }
+                        }
+                        message += "Teleportation is so straaange thing! ";
+                        break;
+                    }
+                    case 4: {
+                        message += "Well.. You didn't die. Nice. ";
+                        break;
+                    }
+                    case 5: {
+                        g_vision = 1;
+                        g_hero.turnsBlind = 50;
+                        message += "My eyes!! ";
+                        break;
+                    }
+                }
+                potionTypeKnown[inventory[intch].item.invPotion.symbol - 600] = true;
+                if (inventory[intch].getItem().count == 1) {
+                    inventory[intch].type = ItemEmpty;
+                } else {
+                    --inventory[intch].getItem().count;
+                }
+            }
+            break;
+        }
+        case CONTROL_READ: {
+            for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
+                if (inventory[i].type == ItemScroll) {
+                    list[len] = inventory[i];
+                    len++;
+                }
+            }
+
+            printList(list, len, "What do you want to read?", 1);
+            len = 0;
+
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+            int intch = choice - 'a';
+
+            if (inventory[intch].type == ItemScroll) {
+                switch (inventory[intch].item.invPotion.effect) {
+                    case 1: {
+                        message += "You wrote this map. Why you read it, I don't know. ";
+                        break;
+                    }
+                    case 2: {
+                        clearRightPane();
+                        termRend
+                            .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                            .put("What do you want to identify?");
+
+                        char in = termRead.readChar();
+                        int intin = in - 'a';
+                        if (inventory[intin].type != ItemEmpty) {
+                            if (inventory[intin].type != ItemPotion) {
+                                inventory[intin].getItem().showMdf = true;
+                            } else if (inventory[intin].type == ItemPotion) {
+                                potionTypeKnown[inventory[intin].getItem().symbol - 600] = true;
+                            }    
+                        
+                            if (inventory[intch].getItem().count == 1) {
+                                inventory[intch].type = ItemEmpty;
+                            } else {
+                                --inventory[intch].getItem().count;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        case CONTROL_OPENBANDOLIER: {
+            clearRightPane();
+            termRend
+                .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                .put("Here is your ammo.");
+            int choice = 0;
+            int num = 0;
+            PossibleItem buffer;
+            int pos;
+            while (true) {
+                num = 0;
+                for (int i = 0; i < BANDOLIER; i++) {
+                    num += 2;
+
+                    TextStyle style = TextStyle{ TerminalColor{} };
+                    char symbol = '-';
+
+                    if (inventory[AMMO_SLOT + i].type == ItemAmmo) {
+                        switch (inventory[AMMO_SLOT + i].getItem().symbol) {
+                            case 450:
+                                style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black } };
+                                symbol = ',';
+                                break;
+                            case 451:
+                                style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Red } };
+                                symbol = ',';
+                                break;
+                        }
+                    }
+                    if (choice == i)
+                        style += TextStyle::Underlined;
+
+                    termRend
+                        .setCursorPosition(Vec2i{ FIELD_COLS + num + 12, 1 })
+                        .put(symbol, style);
+                }
+                char input = termRead.readChar();
+                switch (input) {
+                    case CONTROL_LEFT: {
+                        if (choice > 0)
+                            choice--;
+                        break;
+                    }
+                    case CONTROL_RIGHT: {
+                        if (choice < BANDOLIER - 1)
+                            choice++;
+                        break;
+                    }
+                    case CONTROL_EXCHANGE: {
+                        if (buffer.type != ItemEmpty) {
+                            inventory[pos] = inventory[AMMO_SLOT + choice];
+                            inventory[AMMO_SLOT + choice] = buffer;
+                            buffer.type = ItemEmpty;
+                        } else {
+                            buffer = inventory[AMMO_SLOT + choice];
+                            inventory[AMMO_SLOT + choice].type = ItemEmpty;
+                            pos = AMMO_SLOT + choice;
+                        }
+                        break;
+                    }
+                    case '\033': {
+                        if (buffer.type != ItemEmpty) {
+                            inventory[pos].type = ItemAmmo;
+                            buffer.type = ItemEmpty;
+                        }
+                        return;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        case CONTROL_RELOAD: {
+            clearRightPane();
+            termRend
+                .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                .put("Now you can load your weapon");
+            while (true) {
+                for (int i = 0; i < heroWeapon->item.invWeapon.cartridgeSize; i++) {
+                    TextStyle style{ TerminalColor{} };
+                    char symbol = 'i';
+                    if (heroWeapon->item.invWeapon.cartridge[i].count == 1) {
+                        switch (heroWeapon->item.invWeapon.cartridge[i].symbol) {
+                            case 450:
+                                style = TextStyle{ TextStyle::Bold, Color::Black };
+                                break;
+                            case 451:
+                                style = TextStyle{ TextStyle::Bold, Color::Red };
+                                break;
+                            default:
+                                symbol = '?';
+                        }
+                    } else {
+                        symbol = '_';
+                    }
+                    termRend
+                        .setCursorPosition(Vec2i{ FIELD_COLS + i + 10, 1 })
+                        .put(symbol, style);
+                }
+                
+                std::string loadString = "";
+                
+                for (int i = 0; i < BANDOLIER; i++) {
+                    int ac = inventory[AMMO_SLOT + i].item.invArmor.count;
+                    loadString += "[{}|"_format(i + 1);
+                    if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
+                        switch (inventory[AMMO_SLOT + i].getItem().symbol) {
+                            case 450:
+                                loadString += " steel bullets ";
+                                break;
+                            case 451:
+                                loadString += " shotgun shells ";
+                                break;
+                            default:
+                                loadString += " omgwth? ";
+                        }
+                        loadString += "]";
+                    }
+                    else loadString += " nothing ]";
+                }
+                
+                loadString += "   [u] - unload ";
+                
+                termRend
+                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 2 })
+                    .put(loadString);
+                
+                char in = termRead.readChar();
+                if (in == '\033')
+                    return;
+
+                if (in == 'u') {
+                    if (heroWeapon->item.invWeapon.currentCS == 0) {
+                        continue;
+                    } else {
+                        bool found = false;
+                        for (int j = 0; j < BANDOLIER; j++) {
+                            if (inventory[AMMO_SLOT + j].type == ItemAmmo && 
+                                    inventory[AMMO_SLOT + j].getItem().symbol == 
+                                    heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol) {
+                                heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+                                inventory[AMMO_SLOT + j].item.invAmmo.count++;
+                                heroWeapon->item.invWeapon.currentCS--;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            for (int j = 0; j < BANDOLIER; j++) {
+                                if (inventory[AMMO_SLOT + j].type == ItemEmpty) {
+                                    inventory[AMMO_SLOT + j] = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+                                    inventory[AMMO_SLOT + j].type = ItemAmmo;
+                                    heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+                                    heroWeapon->item.invWeapon.currentCS--;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found) {
+                            bool can_stack = false;
+                            for (int j = 0; j < FIELD_DEPTH; j++) {
+                                if (itemsMap[posH][posL][j].type == 
+                                        ItemAmmo && 
+                                        itemsMap[posH][posL][j].getItem().symbol == 
+                                        heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].symbol) {
+                                    itemsMap[posH][posL][j].item.invAmmo.count++;
+                                    heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+                                    heroWeapon->item.invWeapon.currentCS--;
+                                    can_stack = true;
+                                    found = true;
+                                }
+                            }
+                            if (!can_stack) {
+                                int empty = findEmptyItemUnderThisCell(posH, posL);
+                                if (empty != 101010) {
+                                    itemsMap[posH][posL][empty].item.invAmmo = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1];
+                                    itemsMap[posH][posL][empty].type = ItemAmmo;
+                                    heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count--;
+                                    heroWeapon->item.invWeapon.currentCS--;
+                                    found = true;
+                                }
+                            }
+                        }
+                        if (!found) {
+                            message += "You can`t unload your weapon. Idk, why. ";
+                        }
+                    }
+                } else {
+                    int intin = in - '1';
+                    if (inventory[AMMO_SLOT + intin].type != ItemEmpty) {
+                        if (heroWeapon->item.invWeapon.currentCS >= heroWeapon->item.invWeapon.cartridgeSize) {
+                            message += "Weapon is loaded ";
+                            return;
+                        }
+                        heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS] = inventory[AMMO_SLOT + intin].item.invAmmo;
+                        heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS].count = 1;
+                        heroWeapon->item.invWeapon.currentCS++;
+                        if (inventory[AMMO_SLOT + intin].item.invAmmo.count > 1) {
+                            inventory[AMMO_SLOT + intin].item.invAmmo.count --;
+                        } else {
+                            inventory[AMMO_SLOT + intin].type = ItemEmpty;
+                        }
+                    }
+                }
+            }
+            break;    
+        }
+    }
+}
+
+void Hero::attackEnemy(int& a1, int& a2) {
+    if (heroWeapon->type == ItemWeapon) {
+        unitMap[posH + a1][posL + a2].getUnit().health -= heroWeapon->item.invWeapon.damage;
+    } else if (heroWeapon->type == ItemTools) {
+        unitMap[posH + a1][posL + a2].getUnit().health -= heroWeapon->item.invTools.damage;
+    }
+    if (unitMap[posH + a1][posL + a2].getUnit().health <= 0) {
+        unitMap[posH + a1][posL + a2].getUnit().dropInventory();
+        unitMap[posH + a1][posL + a2].type = UnitEmpty;
+        xp += unitMap[posH + a1][posL + a2].unit.uEnemy.xpIncreasing;
+    }
+}
+
+void Hero::throwAnimated(PossibleItem& item, Direction direction) {
+    int ThrowFIELD_COLS = 0;
+    int dx = 0;
+    int dy = 0;
+    char sym;
+    getProjectileDirectionsAndSymbol(direction, dx, dy, sym);
+    for (int i = 0; i < 12 - item.getItem().weight / 3; i++) {                        // 12 is "strength"
+        int row = posH + dy * (i + 1);
+        int col = posL + dx * (i + 1);
+
+        if (map[row][col] == 2)
+            break;
+
+        if (unitMap[row][col].type != UnitEmpty) {
+            unitMap[row][col].getUnit().health -= item.getItem().weight / 2;
+            if (unitMap[row][col].getUnit().health <= 0) {
+                unitMap[row][col].getUnit().dropInventory();
+                unitMap[row][col].type = UnitEmpty;
+                xp += unitMap[row][col].unit.uEnemy.xpIncreasing;
+            }
+            break;
+        }
+        termRend
+            .setCursorPosition(Vec2i{ col, row })
+            .put(sym)
+            .display();
+        ThrowFIELD_COLS++;
+        sleep(DELAY);
+    }
+    int empty = findEmptyItemUnderThisCell(posH + dy * ThrowFIELD_COLS, posL + dx * ThrowFIELD_COLS);
+    if (empty == 101010) {
+        int empty2 = findEmptyItemUnderThisCell(posH + dy * (ThrowFIELD_COLS - 1), posL + dx * (ThrowFIELD_COLS - 1));
+        itemsMap[posH + dy * (ThrowFIELD_COLS - 1)][posL + dx * (ThrowFIELD_COLS - 1)][empty2] = item;
+        item.type = ItemEmpty;
+    } else {
+        itemsMap[posH + dy * ThrowFIELD_COLS][posL + dx * ThrowFIELD_COLS][empty] = item;
+        item.type = ItemEmpty;
+    }
+}
+
+void Hero::shoot() {
+    if (heroWeapon->item.invWeapon.Ranged == false) {
+        message += "You have no ranged weapon in hands. ";
+        return;
+    }
+    if (heroWeapon->item.invWeapon.currentCS == 0) {
+        message += "You have no bullets. ";
+        g_stop = true;
+        return;
+    }
+    termRend
+        .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+        .put("In what direction? ");
+
+    char choice = termRead.readChar();
+    if (choice != CONTROL_UP 
+            && choice != CONTROL_DOWN 
+            && choice != CONTROL_LEFT 
+            && choice != CONTROL_RIGHT 
+            && choice != CONTROL_UPLEFT 
+            && choice != CONTROL_UPRIGHT 
+            && choice != CONTROL_DOWNLEFT
+            && choice != CONTROL_DOWNRIGHT) {
+        g_stop = true;
+        return;
+    }
+    int dx = 0;
+    int dy = 0;
+    char sym;
+    getProjectileDirectionsAndSymbol(getDirectionByControl(choice), dx, dy, sym);
+    int bulletPower = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + g_hero.heroWeapon->item.invWeapon.damageBonus;
+
+    for (int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++) {
+        int row = posH + dy * i;
+        int col = posL + dx * i; 
+
+        if (map[row][col] == 2)
+            break;
+
+        if (unitMap[row][col].type != UnitEmpty) {
+            unitMap[row][col].getUnit().health -= bulletPower - i / 3;
+            if (unitMap[row][col].getUnit().health <= 0) {
+                unitMap[row][col].getUnit().dropInventory();
+                unitMap[row][col].type = UnitEmpty;
+                xp += unitMap[row][col].unit.uEnemy.xpIncreasing;
+            }
+        }
+        termRend
+            .setCursorPosition(Vec2i{ col, row })
+            .put(sym)
+            .display();
+        sleep(DELAY / 3);
+    }
+    heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].count = 0;
+    heroWeapon->item.invWeapon.currentCS--;
+}
+
+void Hero::mHLogic(int& a1, int& a2) {
+    if (map[posH + a1][posL + a2] != 2 || 
+            (map[posH + a1][posL + a2] == 2 && canMoveThroughWalls) && 
+            (posH + a1 > 0 && posH + a1 < FIELD_ROWS - 1 && posL + a2 > 0 && posL + a2 < FIELD_COLS - 1)) {
+        if (unitMap[posH + a1][posL + a2].type == UnitEmpty) {
+            unitMap[posH + a1][posL + a2] = unitMap[posH][posL];
+            unitMap[posH][posL].type = UnitEmpty;
+            posH += a1;
+            posL += a2;
+        } else if (unitMap[posH + a1][posL + a2].type == UnitEnemy) {
+            attackEnemy(a1, a2);
+        }
+    } else if (map[posH + a1][posL + a2] == 2) {
+        if (heroWeapon->type == ItemTools) {
+            if (heroWeapon->item.invTools.possibility == 1) {
+                termRend
+                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+                    .put("Do you want to dig this wall? [yn]");
+
+                char inpChar = termRead.readChar();
+                if (inpChar == 'y' || inpChar == 'Y') {
+                    map[posH + a1][posL + a2] = 1;
+                    heroWeapon->item.invTools.uses--;
+                    if (heroWeapon->item.invTools.uses <= 0) {
+                        message += "Your {} is broken. "_format(heroWeapon->getItem().getName());
+                        heroWeapon->type = ItemEmpty;
+                        checkVisibleCells();
+                    }
+                    return;
+                }
+            }
+        }
+        message += "The wall is the way. ";
+        g_stop = true;
+    }
+    checkVisibleCells();
+}
+
+PossibleUnit unitMap[FIELD_ROWS][FIELD_COLS];
 
 PossibleUnit::PossibleUnit(UnitedUnits u, UnitType t): type(t) {
     switch (type) {
