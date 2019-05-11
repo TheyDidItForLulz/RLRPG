@@ -361,13 +361,30 @@ bool randomlySetOnMap(Item::Ptr item) {
         int col = std::rand() % FIELD_COLS;
 
         if (map[row][col] == 1) {
-            itemsMap[row][col].push_back(std::move(item));
-            itemsMap[row][col].back()->posH = row;
-            itemsMap[row][col].back()->posL = col;
+            drop(std::move(item), row, col);
             return true;
         }
     }
 
     return false;
+}
+
+void drop(Item::Ptr item, int row, int col) {
+    if (row < 0 or col < 0 or row >= FIELD_ROWS or col >= FIELD_COLS)
+        throw std::logic_error("Trying to drop an item outside of the map");
+    if (map[row][col] == 2)
+        throw std::logic_error("Trying to drop an item in a wall");
+    if (not item)
+        return;
+    item->posH = row;
+    item->posL = col;
+    if (item->isStackable) {
+        auto it = findItemAtCell(row, col, item->symbol);
+        if (it != end(itemsMap[row][col])) {
+            (*it)->count += item->count;
+            return;
+        }
+    }
+    itemsMap[row][col].push_back(std::move(item));
 }
 

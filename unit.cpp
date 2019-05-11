@@ -122,17 +122,7 @@ bool Unit::canSeeCell(int h, int l) const {
 
 void Unit::dropInventory() {
     for (int i = 0; i < UNITINVENTORY; i++) {
-        if (not unitInventory[i])
-            continue;
-        if (unitInventory[i]->isStackable) {
-            auto it = findItemAtCell(posH, posL, unitInventory[i]->symbol);
-            if (it != end(itemsMap[posH][posL])) {
-                (*it)->count += unitInventory[i]->count;
-                unitInventory[i].reset();
-                continue;
-            }
-        }
-        itemsMap[posH][posL].push_back(std::move(unitInventory[i]));
+        drop(std::move(unitInventory[i]), posH, posL);
     }
 }
 
@@ -769,8 +759,6 @@ void Hero::pickUp() {
             inventory[eic] = std::move(item);
             inventory[eic]->inventorySymbol = eic + 'a';
             itemsMap[posH][posL].erase(itemIter);
-            //log("picked up item ({}) ({})", eic + 'a', char(eic + 'a'));
-            //log("Item(selected): {} '{}'", inventory[eic].getItem().getName(), inventory[eic].getItem().inventorySymbol);
             inventoryVol++;
         } else {
             message += "Your inventory is full, motherfuck'a! ";
@@ -1078,9 +1066,9 @@ void Hero::showInventory(char inp) {
             auto & item = inventory[intch];
             if (not item)
                 break;
-            if (not item->isStackable) {
-                itemsMap[posH][posL].push_back(std::move(item));
-            } else if (item->count > 1) {
+            if (not item->isStackable or item->count == 1) {
+                drop(std::move(item), posH, posL);
+            } else {
                 clearRightPane();
                 termRend
                     .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
@@ -1098,14 +1086,6 @@ void Hero::showInventory(char inp) {
                 item->count -= dropCount;
                 if (item->count == 0) {
                     item.reset();
-                }
-            } else {
-                auto iter = findItemAtCell(posH, posL, item->symbol);
-                if (iter != end(itemsMap[posH][posL])) {
-                    (*iter)->count++;
-                    item.reset();
-                } else {            
-                    itemsMap[posH][posL].push_back(std::move(item));
                 }
             }
 
@@ -1304,10 +1284,9 @@ void Hero::showInventory(char inp) {
                 .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
                 .put("Here is your ammo.");
             int choice = 0;
-            int num = 0;
             std::optional<int> takenFrom;
             while (true) {
-                num = 0;
+                int num = 0;
                 for (int i = 0; i < BANDOLIER; i++) {
                     num += 2;
 
@@ -1453,18 +1432,8 @@ void Hero::showInventory(char inp) {
                     }
                     if (found)
                         continue;
-                    for (auto & item : itemsMap[posH][posL]) {
-                        if (item->symbol == heroWeapon->cartridge[heroWeapon->currentCS - 1]->symbol) {
-                            item->count++;
-                            heroWeapon->cartridge[heroWeapon->currentCS - 1].reset();
-                            heroWeapon->currentCS--;
-                            found = true;
-                        }
-                    }
-                    if (not found) {
-                        itemsMap[posH][posL].push_back(std::move(heroWeapon->cartridge[heroWeapon->currentCS - 1]));
-                        heroWeapon->currentCS--;
-                    }
+                    drop(std::move(heroWeapon->cartridge[heroWeapon->currentCS - 1]), posH, posL);
+                    heroWeapon->currentCS--;
                 } else {
                     int intin = in - '1';
                     auto & item = inventory[AMMO_SLOT + intin];
@@ -1531,7 +1500,7 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
         throwDist++;
         sleep(DELAY);
     }
-    itemsMap[posH + offset.y * throwDist][posL + offset.x * throwDist].push_back(std::move(item));
+    drop(std::move(item), posH + offset.y * throwDist, posL + offset.x * throwDist);
 }
 
 void Hero::shoot() {

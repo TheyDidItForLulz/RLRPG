@@ -261,5 +261,7 @@ void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const
     }
 }
 
+void drop(Item::Ptr item, int row, int col);
+
 #endif // ITEM_HPP
 
