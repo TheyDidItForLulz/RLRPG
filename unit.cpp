@@ -36,7 +36,7 @@ std::string Unit::getName() {
     }
 }
 
-bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double toY) {
+bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const {
     double dx = toX - fromX;
     double dy = toY - fromY;
     if (std::abs(dx) > std::abs(dy)) {
@@ -63,7 +63,7 @@ bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double 
     return true;
 }
 
-bool Unit::canSeeCell(int h, int l) {
+bool Unit::canSeeCell(int h, int l) const {
     double offset = 1. / VISION_PRECISION;
     return
         linearVisibilityCheck(posL + .5, posH + .5, l + offset, h + offset) ||
@@ -87,6 +87,16 @@ void Unit::dropInventory() {
             }
         }
     }
+}
+
+void Unit::move(int row, int col) {
+    if (map[row][col] == 2 or unitMap[row][col].type != UnitEmpty or posH == row and posL == col)
+        return;
+
+    unitMap[row][col] = unitMap[posH][posL];
+    unitMap[row][col].getUnit().posH = row;
+    unitMap[row][col].getUnit().posL = col;
+    unitMap[posH][posL].type = UnitEmpty;
 }
 
 Enemy differentEnemies[Enemy::TYPES_COUNT];
@@ -222,77 +232,55 @@ void Enemy::shoot() {
     }
 }
 
+Vec2i fromDirection(Direction dir) {
+    switch (dir) {
+        case Direction::Up: return Vec2i{ 0, -1 };
+        case Direction::UpRight: return Vec2i{ 1, -1 };
+        case Direction::Right: return Vec2i{ 1, 0 };
+        case Direction::DownRight: return Vec2i{ 1, 1 };
+        case Direction::Down: return Vec2i{ 0, 1 };
+        case Direction::DownLeft: return Vec2i{ -1, 1 };
+        case Direction::Left: return Vec2i{ -1, 0 };
+        case Direction::UpLeft: return Vec2i{ -1, -1 };
+    }
+}
+
 int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
+    if (targetH == h and targetL == l) {
+        return -1;
+    }
     int depth = 2 + std::abs(targetH - h) + std::abs(targetL - l);                        // <- smth a little bit strange
-    std::queue<int> x, y;
-    x.push(l);
-    y.push(h);
+    std::queue<Vec2i> q;
+    q.push(Vec2i{ l, h });
     int used[FIELD_ROWS][FIELD_COLS] = {};
-    used[h][l] = true;
-    while (!x.empty() && !y.empty()) {
-        int v_x = x.front();
-        int v_y = y.front();
-        if (v_y == targetH && v_x == targetL)
+    used[h][l] = 1;
+    std::vector<Vec2i> dirs = {
+        fromDirection(Direction::Up),
+        fromDirection(Direction::Down),
+        fromDirection(Direction::Right),
+        fromDirection(Direction::Left)
+    };
+    if (g_mode == 2) {
+        dirs.push_back(fromDirection(Direction::UpRight));
+        dirs.push_back(fromDirection(Direction::UpLeft));
+        dirs.push_back(fromDirection(Direction::DownRight));
+        dirs.push_back(fromDirection(Direction::DownLeft));
+    }
+    while (not q.empty()) {
+        auto v = q.front();
+        if (v.y == targetH && v.x == targetL)
             break;
-        if (used[v_y][v_x] > depth) {
+        if (used[v.y][v.x] > depth) {
             return -1;
         }
-        x.pop();
-        y.pop();
-    
-        if (v_y < FIELD_ROWS - 1 && !used[v_y + 1][v_x] && (unitMap[v_y + 1][v_x].type == UnitEmpty 
-            || unitMap[v_y + 1][v_x].type == UnitHero) && map[v_y + 1][v_x] != 2) {
-            y.push(v_y + 1);
-            x.push(v_x);
-            used[v_y + 1][v_x] = 1 + used[v_y][v_x];
-        }
-        if (v_y > 0 && !used[v_y - 1][v_x] && (unitMap[v_y - 1][v_x].type == UnitEmpty 
-            || unitMap[v_y - 1][v_x].type == UnitHero) && map[v_y - 1][v_x] != 2) {
-            y.push(v_y - 1);
-            x.push(v_x);    
-            used[v_y - 1][v_x] = 1 + used[v_y][v_x];
-        }
-        if (v_x < FIELD_COLS - 1 && !used[v_y][v_x + 1] && (unitMap[v_y][v_x + 1].type == UnitEmpty 
-            || unitMap[v_y][v_x + 1].type == UnitHero) && map[v_y][v_x + 1] != 2) {
-            y.push(v_y);
-            x.push(v_x + 1);
-            used[v_y][v_x + 1] = 1 + used[v_y][v_x];
-        }
-        if (v_x > 0 && !used[v_y][v_x - 1] && (unitMap[v_y][v_x - 1].type == UnitEmpty 
-            || unitMap[v_y][v_x - 1].type == UnitHero) && map[v_y][v_x - 1] != 2) {
-            y.push(v_y);
-            x.push(v_x - 1);
-            used[v_y][v_x - 1] = 1 + used[v_y][v_x];    
-        }
-        if (g_mode == 2) {
-            if (v_y < FIELD_ROWS - 1)
-            {
-                if (v_x > 0 && !used[v_y + 1][v_x - 1] && (unitMap[v_y + 1][v_x - 1].type == UnitEmpty 
-                    || unitMap[v_y + 1][v_x - 1].type == UnitHero) && map[v_y + 1][v_x - 1] != 2) {
-                    y.push(v_y + 1);
-                    x.push(v_x - 1);
-                    used[v_y + 1][v_x - 1] = 1 + used[v_y][v_x];
-                }
-                if (v_x < FIELD_COLS - 1 && !used[v_y + 1][v_x + 1] && (unitMap[v_y + 1][v_x + 1].type == UnitEmpty 
-                    || unitMap[v_y + 1][v_x + 1].type == UnitHero) && map[v_y + 1][v_x + 1] != 2) { 
-                    y.push(v_y + 1);
-                    x.push(v_x + 1);
-                    used[v_y + 1][v_x + 1] = 1 + used[v_y][v_x];
-                }
-            }
-            if (v_y > 0) {
-                if (v_x > 0 && !used[v_y - 1][v_x - 1] && (unitMap[v_y - 1][v_x - 1].type == UnitEmpty 
-                    || unitMap[v_y - 1][v_x - 1].type == UnitHero) && map[v_y - 1][v_x - 1] != 2) {
-                    y.push(v_y - 1);
-                    x.push(v_x - 1);
-                    used[v_y - 1][v_x - 1] = 1 + used[v_y][v_x];
-                }
-                if (v_x < FIELD_COLS - 1 && !used[v_y - 1][v_x + 1] && (unitMap[v_y - 1][v_x + 1].type == UnitEmpty 
-                    || unitMap[v_y - 1][v_x + 1].type == UnitHero) && map[v_y - 1][v_x + 1] != 2) {
-                    y.push(v_y - 1);
-                    x.push(v_x + 1);
-                    used[v_y - 1][v_x + 1] = 1 + used[v_y][v_x];
-                }
+        q.pop();
+
+        for (auto dir : dirs) {
+            auto tv = v + dir;
+            if (tv.x >= 0 and tv.y >= 0 and tv.x < FIELD_COLS - 1 and tv.y < FIELD_ROWS - 1
+                    and unitMap[tv.y][tv.x].type != UnitEnemy and map[tv.y][tv.x] != 2 and used[tv.y][tv.x] == 0) {
+                q.push(tv);
+                used[tv.y][tv.x] = 1 + used[v.y][v.x];
             }
         }
     }
@@ -300,50 +288,22 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
     if (!used[targetH][targetL]) {
         return -1;
     }
-    int v_y = targetH, v_x = targetL;
-    while (used[v_y][v_x] != 2) {
-        if (g_mode == 2) {
-            if (v_y && v_x && used[v_y - 1][v_x - 1] + 1 == used[v_y][v_x]) {
-                --v_y;
-                --v_x;
-                continue;
+    //int v_y = targetH, v_x = targetL;
+    Vec2i v{ targetL, targetH };
+    while (used[v.y][v.x] > 2) {
+        for (auto dir : dirs) {
+            auto tv = v - dir;
+            if (tv.x >= 0 and tv.y >= 0 and tv.x < FIELD_COLS - 1 and tv.y < FIELD_ROWS - 1
+                    and used[tv.y][tv.x] + 1 == used[v.y][v.x]) {
+                v = tv;
+                break;
             }
-            if (v_y && v_x < FIELD_COLS - 1 && used[v_y - 1][v_x + 1] + 1 == used[v_y][v_x]) {
-                --v_y;
-                ++v_x;
-                continue;
-            }
-            if (v_y < FIELD_ROWS - 1 && v_x && used[v_y + 1][v_x - 1] + 1 == used[v_y][v_x]) {
-                ++v_y;
-                --v_x;
-                continue;
-            }
-            if (v_y < FIELD_ROWS - 1 && v_x < FIELD_COLS - 1 && used[v_y + 1][v_x + 1] + 1 == used[v_y][v_x]) {
-                ++v_y;
-                ++v_x;
-                continue;
-            }
-        }
-        if (v_y && used[v_y - 1][v_x] + 1 == used[v_y][v_x]) {
-            --v_y;
-            continue;
-        }
-        if (v_x && used[v_y][v_x - 1] + 1 == used[v_y][v_x]) {
-            --v_x;
-            continue;
-        }
-        if (v_y < FIELD_ROWS - 1 && used[v_y + 1][v_x] + 1 == used[v_y][v_x]) {
-            ++v_y;
-            continue;
-        }
-        if (v_x < FIELD_COLS - 1 && used[v_y][v_x + 1] + 1 == used[v_y][v_x]) {
-            ++v_x;
-            continue;
         }
     }
 
-    posH = v_y;
-    posL = v_x;
+    posH = v.y;
+    posL = v.x;
+    return depth - 2;
 }
 
 void Enemy::updatePosition() {
@@ -386,12 +346,11 @@ void Enemy::updatePosition() {
                     }
                     if (health <= 0) {
                         unitMap[posH][posL].type = UnitEmpty;
+                        return;
                     }
                 } else {
-                    unitMap[pH][pL] = unitMap[posH][posL];
-                    unitMap[posH][posL].type = UnitEmpty;
-                    posH = pH;
-                    posL = pL;
+                    move(pH, pL);
+                    return;
                 }
             }
         }
@@ -419,12 +378,11 @@ void Enemy::updatePosition() {
                         }
                         if (health <= 0) {
                             unitMap[posH][posL].type = UnitEmpty;
+                            return;
                         }
                     } else {
-                        unitMap[pH][pL] = unitMap[posH][posL];
-                        unitMap[posH][posL].type = UnitEmpty;
-                        posH = pH;
-                        posL = pL;
+                        move(pH, pL);
+                        return;
                     }
                 }
             }
@@ -445,7 +403,9 @@ void Enemy::updatePosition() {
                     }
                 }    
             }
-            while (true) {
+            int attempts = 15;
+            bool stepped = false;;
+            for (int i = 0; i < attempts; ++i) {
                 int r = std::rand() % visionArrayH.size(); 
                 int rposH = visionArrayH[r];
                 int rposL = visionArrayL[r];
@@ -454,10 +414,11 @@ void Enemy::updatePosition() {
                 targetL = rposL;
 
                 if (bfs(targetH, targetL, posH, posL, pH, pL) != -1) {
+                    stepped = true;
                     break;
                 }
             }
-            if (pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
+            if (stepped && pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
                 if (unitMap[pH][pL].type == UnitHero) {
                     if (unitWeapon->type == ItemWeapon) {
                         if (g_hero.heroArmor->item.invArmor.mdf != 2) {
@@ -474,12 +435,15 @@ void Enemy::updatePosition() {
                     }
                     if (health <= 0) {
                         unitMap[posH][posL].type = UnitEmpty;
+                        return;
                     }
                 } else {
-                    unitMap[pH][pL] = unitMap[posH][posL];
-                    unitMap[posH][posL].type = UnitEmpty;
-                    posH = pH;
-                    posL = pL;
+                    /*unitMap[pH][pL] = unitMap[posH][posL];
+                    unitMap[pH][pL].getUnit().posH = pH;
+                    unitMap[pH][pL].getUnit().posL = pL;
+                    unitMap[posH][posL].type = UnitEmpty;*/
+                    move(pH, pL);
+                    return;
                 }
             }
         }
@@ -501,7 +465,7 @@ void Hero::checkVisibleCells() {
     }
 }
 
-bool Hero::isInventoryEmpty() {
+bool Hero::isInventoryEmpty() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type != ItemEmpty)
             return false;
@@ -509,7 +473,7 @@ bool Hero::isInventoryEmpty() {
     return true;
 }
 
-int Hero::findEmptyInventoryCell() {
+int Hero::findEmptyInventoryCell() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemEmpty)
             return i;
@@ -517,7 +481,7 @@ int Hero::findEmptyInventoryCell() {
     return 101010;                                            // Magic constant, means "Inventory is full".
 }
 
-int Hero::getInventoryItemsWeight() {
+int Hero::getInventoryItemsWeight() const {
     int toReturn = 0;
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type != ItemEmpty) {
@@ -527,7 +491,7 @@ int Hero::getInventoryItemsWeight() {
     return toReturn;
 }
 
-void Hero::printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode) {
+void Hero::printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode) const {
     int num = 0;
 
     termRend
@@ -603,7 +567,7 @@ void Hero::printList(const std::vector<PossibleItem> & items, std::string_view m
     }
 }
 
-bool Hero::isMapInInventory() {
+bool Hero::isMapInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type != ItemEmpty && inventory[i].getItem().symbol == 500)
             return true;
@@ -613,7 +577,7 @@ bool Hero::isMapInInventory() {
 
 // 101010 something went wrong
 
-int Hero::findAmmoInInventory() {
+int Hero::findAmmoInInventory() const {
     for (int i = 0; i < BANDOLIER; i++) {
         if (inventory[AMMO_SLOT + i].type == ItemAmmo) {
             return i;
@@ -622,7 +586,7 @@ int Hero::findAmmoInInventory() {
     return 101010;
 }
 
-int Hero::findScrollInInventory() {
+int Hero::findScrollInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemScroll) {
             return i;
@@ -800,7 +764,7 @@ void Hero::pickUp() {
     }
 }
 
-bool Hero::isFoodInInventory() {
+bool Hero::isFoodInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemFood)
             return true;
@@ -808,7 +772,7 @@ bool Hero::isFoodInInventory() {
     return false;
 }
 
-bool Hero::isArmorInInventory() {
+bool Hero::isArmorInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemArmor)
             return true;
@@ -816,7 +780,7 @@ bool Hero::isArmorInInventory() {
     return false;
 }
 
-bool Hero::isWeaponOrToolsInInventory() {
+bool Hero::isWeaponOrToolsInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemWeapon || inventory[i].type == ItemTools)
             return true;
@@ -824,7 +788,7 @@ bool Hero::isWeaponOrToolsInInventory() {
     return false;
 }
 
-bool Hero::isPotionInInventory() {
+bool Hero::isPotionInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
         if (inventory[i].type == ItemPotion)
             return true;
@@ -832,7 +796,7 @@ bool Hero::isPotionInInventory() {
     return false;
 }
 
-void Hero::clearRightPane() {
+void Hero::clearRightPane() const {
     for (int i = 0; i < 100; i++) {
         for (int j = 0; j < 50; j++) {
             termRend
@@ -1722,6 +1686,17 @@ PossibleUnit& PossibleUnit::operator=(const PossibleUnit& p) {
 }
 
 Unit& PossibleUnit::getUnit() {
+    switch (type) {
+        case UnitEmpty:
+            return unit.uEmpty;
+        case UnitHero:
+            return unit.uHero;
+        case UnitEnemy:
+            return unit.uEnemy;
+    }        
+}
+
+const Unit& PossibleUnit::getUnit() const {
     switch (type) {
         case UnitEmpty:
             return unit.uEmpty;

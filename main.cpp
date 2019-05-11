@@ -29,8 +29,7 @@
                                                 '\'(Pickaxe) == 700
 */
 ////////////////////////////////////////////////// Modificators ///////////////////////////////////////////////////////////
-/*
-                                                1 - Nothing
+/* 1 - Nothing
                                                 2 - Thorns (chance to turn damage back)
 */
 /////////////////////////////////////////////////// Attributes ////////////////////////////////////////////////////////////
@@ -140,6 +139,9 @@ void updateAI() {
                 if (g_mode == 2 && g_turns % 200 == 0) {
                     unitMap[i][j].getUnit().health++;
                 }
+                /*if (i != unitMap[i][j].getUnit().posH or j != unitMap[i][j].getUnit().posL) {
+                    std::abort();
+                }*/
                 unitMap[i][j].unit.uEnemy.updatePosition();
             }
         }
@@ -193,435 +195,147 @@ void spawnUnits() {
     }
 }
 
-#ifdef DEBUG
-
-void draw() {
-    termRend.setCursorPosition(Vec2i{});
-
-    static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
-
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            mapSaved[i][j] = map[i][j];
-        }
-    }
+struct SymbolRenderData {
+    TextStyle style;
+    char symbol;
     
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            char symbol = ' ';
-            TextStyle style{ TerminalColor{} };
-            if (mapSaved[i][j] != 0) {
-                bool near = abs(i - g_hero.posH) <= 1 && abs(j - g_hero.posL) <= 1;
-                if (itemsMap[i][j].empty() && unitMap[i][j].type == UnitEmpty) {
-                    switch (mapSaved[i][j]) {
-                        case 1:
-                            if (seenUpdated[i][j]) {
-                                symbol = '.';
-                            }
-                            break;
-                        case 2:
-                            if (seenUpdated[i][j])
-                                style += TextStyle::Bold;
-                            symbol = '#';
-                            break;
-                    }
-                } else if (itemsMap[i][j].size() == 1 && unitMap[i][j].type == UnitEmpty) { /* HERE */
-                    const auto & item = items[i][j].front();
-                    switch (item.getItem().symbol) {
-                        case 100:
-                            symbol = '%';
-                            break;
-                        case 101:
-                            symbol = '%';
-                            style += Color::Red;
-                            break;
-                        case 300:
-                            symbol = '&';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 301:
-                            symbol = '&';
-                            style += Color::Yellow;
-                            break;
-                        case 400:
-                            symbol = '/';
-                            style += Color::Red;
-                            style += TextStyle::Bold;
-                            break;
-                        case 401:
-                            symbol = '/';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 402:
-                            symbol = '/';
-                            style += TextStyle::Bold;
-                            break;
-                        case 403:
-                            symbol = '/';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 404:
-                            symbol = '/';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 405:
-                            symbol = '/';
-                            break;
-                        case 450:
-                            symbol = ',';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 451:
-                            symbol = ',';
-                            style += Color::Red;
-                            style += TextStyle::Bold;
-                            break;
-                        case 500:
-                            symbol = '~';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 501:
-                            symbol = '~';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 600:
-                            symbol = '!';
-                            style += Color::Blue;
-                            style += TextStyle::Bold;
-                            break;
-                        case 601:
-                            symbol = '!';
-                            style += Color::Green;
-                            break;
-                        case 602:
-                            symbol = '!';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 603:
-                            symbol = '!';
-                            style += Color::Magenta;
-                            style += TextStyle::Bold;
-                            break;
-                        case 604:
-                            symbol = '!';
-                            style += Color::Yellow;
-                            break;
-                        case 700:
-                            symbol = '\\';
-                            style += Color::Yellow;
-                            break;
-                    }
-                } else if (itemsMap[i][j].size() > 1 && unitMap[i][j].type == UnitEmpty) { /* Here */
-                    symbol = '^';
-                    style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black, Color::White } };
-                }
-                if (unitMap[i][j].type == UnitHero) { /* Here */
-                    symbol = '@';
-                    style += Color::Green;
-                } else if (unitMap[i][j].type == UnitEnemy) { /* Here */
-                    symbol = '@';
-                    switch (unitMap[i][j].getUnit().symbol) { /* Here */
-                        case 201:
-                            style += Color::Yellow;
-                            break;
-                        case 202:
-                            style = TextStyle{ TextStyle::Bold, Color::Green };
-                            break;
-                        case 203:
-                            style = TextStyle{ TextStyle::Bold, Color::Black };
-                            break;
-                    }
-                }
-            } else {
-                symbol = ' ';
-            }
-            termRend.put(symbol, style);
-        }
-        
-        termRend.put('\n');
-        
+
+    SymbolRenderData(char symbol, TextStyle style = {})
+        : symbol(symbol)
+        , style(style) {}
+};
+
+struct CellRenderData {
+    std::optional<SymbolRenderData> level;
+    std::optional<SymbolRenderData> item;
+    std::optional<SymbolRenderData> unit;
+
+    std::optional<SymbolRenderData> get() const {
+        if (unit.has_value())
+            return unit;
+        if (item.has_value())
+            return item;
+        return level;
     }
 
-}
-
-#else
-
-void draw(){
-    
-    //move(0, 0);
-    termRend.setCursorPosition(Vec2i{});
-
-    static int mapSaved[FIELD_ROWS][FIELD_COLS] = {};
-
-    if (g_mode == 2 && !g_hero.isMapInInventory()) {
-        for (int i = 0; i < FIELD_ROWS; i++) {
-            for (int j = 0; j < FIELD_COLS; j++) {
-                mapSaved[i][j] = 0;
-            }
+    CellRenderData forCache() const {
+        CellRenderData cached;
+        cached.item = item;
+        if (level.has_value() and level->symbol != '.') {
+            cached.level = level;
         }
+        return cached;
     }
+};
 
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            if (seenUpdated[i][j]) {
-                switch (itemsMap[i][j].size()) {
-                    case 0:
-                        mapSaved[i][j] = map[i][j];
-                        break;
-                    case 1:
-                        mapSaved[i][j] = itemsMap[i][j].front().getItem().symbol;
-                        break;
-                    default:
-                        mapSaved[i][j] = 100500; // Magic constant that means 'pile'
-                }
-            }
-        }
-    }
-    
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            char symbol = ' ';
-            TextStyle style{ TerminalColor{} };
-            if (mapSaved[i][j] != 0) {
-                bool near = abs(i - g_hero.posH) <= 1 && abs(j - g_hero.posL) <= 1;
-                if (seenUpdated[i][j]) {
-                    if (unitMap[i][j].type == UnitEmpty) {
-                        switch (mapSaved[i][j]) {
-                            case 1:
-                                symbol = '.';
-                                break;
-                            case 2:
-                                style += TextStyle::Bold;
-                                symbol = '#';
-                                break;
-                            case 100:
-                                symbol = '%';
-                                break;
-                            case 101:
-                                symbol = '%';
-                                style += Color::Red;
-                                break;
-                            case 300:
-                                symbol = '&';
-                                style += Color::Black;
-                                style += TextStyle::Bold;
-                                break;
-                            case 301:
-                                symbol = '&';
-                                style += Color::Yellow;
-                                break;
-                            case 400:
-                                symbol = '/';
-                                style += Color::Red;
-                                style += TextStyle::Bold;
-                                break;
-                            case 401:
-                                symbol = '/';
-                                style += Color::Yellow;
-                                style += TextStyle::Bold;
-                                break;
-                            case 402:
-                                symbol = '/';
-                                style += TextStyle::Bold;
-                                break;
-                            case 403:
-                                symbol = '/';
-                                style += Color::Yellow;
-                                style += TextStyle::Bold;
-                                break;
-                            case 404:
-                                symbol = '/';
-                                style += Color::Black;
-                                style += TextStyle::Bold;
-                                break;
-                            case 405:
-                                symbol = '/';
-                                break;
-                            case 450:
-                                symbol = ',';
-                                style += Color::Black;
-                                style += TextStyle::Bold;
-                                break;
-                            case 451:
-                                symbol = ',';
-                                style += Color::Red;
-                                style += TextStyle::Bold;
-                                break;
-                            case 500:
-                                symbol = '~';
-                                style += Color::Yellow;
-                                style += TextStyle::Bold;
-                                break;
-                            case 501:
-                                symbol = '~';
-                                style += Color::Yellow;
-                                style += TextStyle::Bold;
-                                break;
-                            case 600:
-                                symbol = '!';
-                                style += Color::Blue;
-                                style += TextStyle::Bold;
-                                break;
-                            case 601:
-                                symbol = '!';
-                                style += Color::Green;
-                                break;
-                            case 602:
-                                symbol = '!';
-                                style += Color::Black;
-                                style += TextStyle::Bold;
-                                break;
-                            case 603:
-                                symbol = '!';
-                                style += Color::Magenta;
-                                style += TextStyle::Bold;
-                                break;
-                            case 604:
-                                symbol = '!';
-                                style += Color::Yellow;
-                                break;
-                            case 700:
-                                symbol = '\\';
-                                style += Color::Yellow;
-                                break;
-                        }
-                    } else {
-                        if (unitMap[i][j].type == UnitHero) {
-                            symbol = '@';
-                            style += Color::Green;
-                        } else if (unitMap[i][j].type == UnitEnemy && seenUpdated[i][j]) {
-                            symbol = '@';
-                            switch (unitMap[i][j].getUnit().symbol) {
-                                case 201:
-                                    style += Color::Yellow;
-                                    break;
-                                case 202:
-                                    style = TextStyle{ TextStyle::Bold, Color::Green };
-                                    break;
-                                case 203:
-                                    style = TextStyle{ TextStyle::Bold, Color::Black };
-                                    break;                            
-                            }
-                        }
-                    }
-                } else {
-                    switch (mapSaved[i][j]) {
-                        case 1:
-                            symbol = ' ';
-                            break;
-                        case 2:
-                            symbol = '#';
-                            break;
-                        case 100:
-                            symbol = '%';
-                            break;
-                        case 101:
-                            symbol = '%';
-                            style += Color::Red;
-                            break;
-                        case 300:
-                            symbol = '&';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 301:
-                            symbol = '&';
-                            style += Color::Yellow;
-                            break;
-                        case 400:
-                            symbol = '/';
-                            style += Color::Red;
-                            style += TextStyle::Bold;
-                            break;
-                        case 401:
-                            symbol = '/';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 402:
-                            symbol = '/';
-                            style += TextStyle::Bold;
-                            break;
-                        case 403:
-                            symbol = '/';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 404:
-                            symbol = '/';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 405:
-                            symbol = '/';
-                            break;
-                        case 450:
-                            symbol = ',';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 451:
-                            symbol = ',';
-                            style += Color::Red;
-                            style += TextStyle::Bold;
-                            break;
-                        case 500:
-                            symbol = '~';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 501:
-                            symbol = '~';
-                            style += Color::Yellow;
-                            style += TextStyle::Bold;
-                            break;
-                        case 600:
-                            symbol = '!';
-                            style += Color::Blue;
-                            style += TextStyle::Bold;
-                            break;
-                        case 601:
-                            symbol = '!';
-                            style += Color::Green;
-                            break;
-                        case 602:
-                            symbol = '!';
-                            style += Color::Black;
-                            style += TextStyle::Bold;
-                            break;
-                        case 603:
-                            symbol = '!';
-                            style += Color::Magenta;
-                            style += TextStyle::Bold;
-                            break;
-                        case 604:
-                            symbol = '!';
-                            style += Color::Yellow;
-                            break;
-                        case 700:
-                            symbol = '\\';
-                            style += Color::Yellow;
-                            break;
-                    }
-                }
-            } else {
-                symbol = ' ';
-            }
-            termRend.put(symbol, style);
-        }
-        termRend.put('\n');
+SymbolRenderData getRenderData(const PossibleItem & item) {
+    switch (item.getItem().symbol) {
+        case 100: return '%';
+        case 101: return { '%', { Color::Red } };
+        case 300: return { '&', { TextStyle::Bold, Color::Black } };
+        case 301: return { '&', { Color::Yellow } };
+        case 400: return { '/', { TextStyle::Bold, Color::Red } };
+        case 401: return { '/', { TextStyle::Bold, Color::Yellow } };
+        case 402: return { '/', { TextStyle::Bold } };
+        case 403: return { '/', { TextStyle::Bold, Color::Yellow } };
+        case 404: return { '/', { TextStyle::Bold, Color::Black } };
+        case 405: return '/';
+        case 450: return { ',', { TextStyle::Bold, Color::Black } };
+        case 451: return { ',', { TextStyle::Bold, Color::Red } };
+        case 500: return { '~', { TextStyle::Bold, Color::Yellow } };
+        case 501: return { '~', { TextStyle::Bold, Color::Yellow } };
+        case 600: return { '!', { TextStyle::Bold, Color::Blue } };
+        case 601: return { '!', { Color::Green } };
+        case 602: return { '!', { TextStyle::Bold, Color::Black } };
+        case 603: return { '!', { TextStyle::Bold, Color::Magenta } };
+        case 604: return { '!', { Color::Yellow } };
+        case 700: return { '\\', { Color::Yellow } };
+        default: return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
     }
 }
 
+SymbolRenderData getRenderData(const PossibleUnit & unit) {
+    switch (unit.type) {
+        case UnitHero: return { '@', { Color::Green } };
+        case UnitEnemy:
+            switch (unit.getUnit().symbol) {
+                case 201: return { '@', { Color::Yellow } };
+                case 202: return { '@', { TextStyle::Bold, Color::Green } };
+                case 203: return { '@', { TextStyle::Bold, Color::Black } };
+            }
+    }
+    return { '?', { TextStyle::Bold, TerminalColor{ Color::Yellow, Color::Blue } } }; 
+}
+
+std::optional<CellRenderData> cachedMap[FIELD_ROWS][FIELD_COLS];
+
+std::optional<CellRenderData> getRenderData(int row, int col) {
+#ifndef DEBUG
+    if (not seenUpdated[row][col]) {
+        return {};
+    }
 #endif
+    CellRenderData renderData;
+    if (unitMap[row][col].type != UnitEmpty) {
+        renderData.unit = getRenderData(unitMap[row][col]);
+    }
+    if (itemsMap[row][col].size() == 1) {
+        renderData.item = getRenderData(itemsMap[row][col].front());
+    } else if (itemsMap[row][col].size() > 1) {
+        renderData.item = SymbolRenderData{ '^', { TextStyle::Bold, TerminalColor{ Color::Black, Color::White } } };
+    }
+    switch (map[row][col]) {
+        case 1:
+            if (seenUpdated[row][col]) {
+                renderData.level = '.';
+            } else {
+                renderData.level = ' ';
+            }
+            break;
+        case 2:
+            if (seenUpdated[row][col]) {
+                renderData.level = SymbolRenderData{ '#', { TextStyle::Bold } };
+            } else {
+                renderData.level = '#';
+            }
+    }
+    return renderData;
+}
+
+void clearCachedMap() {
+    for (int r = 0; r < FIELD_ROWS; ++r) {
+        for (int c = 0; c < FIELD_COLS; ++c) {
+            cachedMap[r][c] = {};
+        }
+    }
+}
+
+void cache(int row, int col, const CellRenderData & renderData) {
+    cachedMap[row][col] = renderData.forCache();
+}
+
+void drawMap(){
+    termRend.setCursorPosition(Vec2i{});
+
+    if (g_mode == 2 and not g_hero.isMapInInventory())
+        clearCachedMap();
+
+    for (int i = 0; i < FIELD_ROWS; i++) {
+        for (int j = 0; j < FIELD_COLS; j++) {
+            auto cell = getRenderData(i, j);
+
+            if (cell)
+                cache(i, j, *cell);
+            else if (cachedMap[i][j])
+                cell = cachedMap[i][j];
+
+            auto symbol = cell->get().value_or(' ');
+
+            termRend.put(symbol.symbol, symbol.style);
+        }
+        termRend.put('\n');
+    }
+}
 
 void printMenu(const std::vector<std::string_view> & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
@@ -869,7 +583,7 @@ int main() {
 
     int TurnsCounter = 0;
     
-    draw();
+    drawMap();
             
     termRend.setCursorPosition(Vec2i{ 0, FIELD_ROWS} );
     bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
@@ -980,7 +694,7 @@ int main() {
             
             ++g_turns;
 
-            draw();
+            drawMap();
 
             bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
                     g_hero.health,
@@ -1050,7 +764,7 @@ int main() {
 
             termRend.setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
         } else {
-            draw();
+            drawMap();
 
             termRend.setCursorPosition(Vec2i{ 0, FIELD_ROWS} );
             bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",

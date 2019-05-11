@@ -35,9 +35,10 @@ public:
 	int vision;
 
     std::string getName();
-	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY);
-	bool canSeeCell(int h, int l);
+	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const;
+	bool canSeeCell(int h, int l) const;
     void dropInventory();
+    void move(int row, int col);
 };
 
 class EmptyUnit: public Unit {
@@ -90,20 +91,20 @@ public:
 	void checkVisibleCells();
 	void attackEnemy(int& a1, int& a2);
 	void mHLogic(int& a1, int& a2);
-	bool isInventoryEmpty();
-	int findEmptyInventoryCell();
-	int getInventoryItemsWeight();
-	void printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode);
-	bool isMapInInventory();
-	int findAmmoInInventory();
-	int findScrollInInventory();
+	bool isInventoryEmpty() const;
+	int findEmptyInventoryCell() const;
+	int getInventoryItemsWeight() const;
+	void printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode) const;
+	bool isMapInInventory() const;
+	int findAmmoInInventory() const;
+	int findScrollInInventory() const;
 	void printAmmoList(PossibleItem& pAmmo);										// Picked ammo
 	void pickUp();
-	bool isFoodInInventory();
-	bool isArmorInInventory();
-	bool isWeaponOrToolsInInventory();
-	bool isPotionInInventory();
-	void clearRightPane();
+	bool isFoodInInventory() const;
+	bool isArmorInInventory() const;
+	bool isWeaponOrToolsInInventory() const;
+	bool isPotionInInventory() const;
+	void clearRightPane() const;
 	void throwAnimated(PossibleItem& item, Direction direction);
 	void shoot();
 	void showInventory(char inp);
@@ -174,7 +175,8 @@ struct PossibleUnit {
 
     PossibleUnit& operator=(const PossibleUnit& p);
 
-    Unit& getUnit();
+    Unit & getUnit();
+    const Unit & getUnit() const;
 };
 
 extern PossibleUnit unitMap[FIELD_ROWS][FIELD_COLS];

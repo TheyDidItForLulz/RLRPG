@@ -1,5 +1,6 @@
 #include"include/log.hpp"
 #include<stdarg.h>
+#include<string>
 
 static FILE * logfile;
 
@@ -8,11 +9,11 @@ int initLog() {
 	return logfile == nullptr;
 }
 
-void log(const char * fmt, ...) {
+void log(std::string_view fmt, ...) {
 	if (logfile) {
 		va_list vargs;
 		va_start(vargs, fmt);
-		vfprintf(logfile, fmt, vargs);
+		vfprintf(logfile, std::string(fmt).c_str(), vargs);
 		fflush(logfile);
 		va_end(vargs);
 	}
