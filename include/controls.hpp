@@ -79,7 +79,7 @@ inline std::optional<Direction> directionFrom(Vec2i vec) {
 #define CONTROL_OPENBANDOLIER 'a'
 #define CONTROL_RELOAD 'R'
 
-inline Direction getDirectionByControl(char control) {
+inline std::optional<Direction> getDirectionByControl(char control) {
     switch (control) {
         case CONTROL_UP: return Direction::Up;
         case CONTROL_UPRIGHT: return Direction::UpRight;
@@ -87,9 +87,9 @@ inline Direction getDirectionByControl(char control) {
         case CONTROL_DOWNRIGHT: return Direction::DownRight;
         case CONTROL_DOWN: return Direction::Down;
         case CONTROL_DOWNLEFT: return Direction::DownLeft;
-        case CONTROL_LEFT: return Direction::DownLeft;
+        case CONTROL_LEFT: return Direction::Left;
         case CONTROL_UPLEFT: return Direction::UpLeft;
-        default: throw std::logic_error("No direction for the provided control");
+        default: std::nullopt;
     }
 };
 

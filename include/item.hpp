@@ -6,6 +6,7 @@
 #include<string>
 #include<optional>
 #include<list>
+#include<memory>
 
 const int TYPES_OF_FOOD = 2;
 const int TYPES_OF_ARMOR = 2;
@@ -40,12 +41,12 @@ enum ItemType {
 	ItemTools = 1 << 7
 };
 
-class Item
-{
+class Item {
 public:
-		
+    using Ptr = std::unique_ptr<Item>;
+
 	Item();
-	~Item();
+	virtual ~Item();
 
 	int posH;
 	int posL;
@@ -61,17 +62,25 @@ public:
     std::string getMdf() const;
     std::string getAttribute() const;
     std::string getName() const;
+    virtual ItemType getType() const = 0;
+    virtual Item::Ptr clone() const = 0;
 };
 
-class EmptyItem: public Item
-{
+class EmptyItem: public Item {
 public:
 	EmptyItem();
 	~EmptyItem();
+
+    ItemType getType() const override {
+        return ItemEmpty;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<EmptyItem>(*this);
+    }
 };
 
-class Food: public Item
-{
+class Food: public Item {
 public:	
 	Food(int FoodType);
 	
@@ -80,10 +89,17 @@ public:
 
 	Food();
 	~Food();
+
+    ItemType getType() const override {
+        return ItemFood;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Food>(*this);
+    }
 };
 
-class Armor: public Item
-{
+class Armor: public Item {
 public:
 	Armor(int ArmorType);
 
@@ -92,23 +108,37 @@ public:
 
 	Armor();
 	~Armor();
+
+    ItemType getType() const override {
+        return ItemArmor;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Armor>(*this);
+    }
 };
 
-class Ammo: public Item
-{
+class Ammo: public Item {
 public:
 	Ammo(int AmmoType);
 
 	int range;
 	int damage;
-	int count;
+	//int count;
 
 	Ammo();
 	~Ammo();
+
+    ItemType getType() const override {
+        return ItemAmmo;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Ammo>(*this);
+    }
 };
 
-class Weapon: public Item
-{
+class Weapon: public Item {
 public:
 	Weapon(int WeaponType);
 	
@@ -120,7 +150,7 @@ public:
 	int cartridgeSize;
 	int currentCS;
 	
-	Ammo cartridge[MAX_CARTRIDGE_SIZE];
+    std::unique_ptr<Ammo> cartridge[MAX_CARTRIDGE_SIZE];
 //	vector<Ammo> cartridge;
 
 	Weapon();
@@ -130,20 +160,34 @@ public:
 	Weapon& operator=(const Weapon&);
 
 	~Weapon();
+
+    ItemType getType() const override {
+        return ItemWeapon;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Weapon>(*this);
+    }
 };
 
-class Scroll: public Item
-{
+class Scroll: public Item {
 public:
 	Scroll(int s);
 	int effect;
 
 	Scroll();
 	~Scroll();
+
+    ItemType getType() const override {
+        return ItemScroll;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Scroll>(*this);
+    }
 };
 
-class Potion: public Item
-{
+class Potion: public Item {
 public:
 	Potion(int p);
     std::string getPotionName() const;
@@ -151,12 +195,19 @@ public:
 
 	Potion();
 	~Potion();
+
+    ItemType getType() const override {
+        return ItemPotion;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Potion>(*this);
+    }
 };
 
 std::string getPotionName(int sym);
 
-class Tools: public Item
-{
+class Tools: public Item {
 public:
 	Tools(int t);
 	int possibility;
@@ -170,66 +221,20 @@ public:
 
 	Tools();
 	~Tools();
+
+    ItemType getType() const override {
+        return ItemTools;
+    }
+
+    Item::Ptr clone() const override {
+        return std::make_unique<Tools>(*this);
+    }
 };
 
-union InventoryItem
-{
-	EmptyItem invEmpty;
-	Food invFood;
-	Armor invArmor;
-	Weapon invWeapon;
-	Ammo invAmmo;
-	Scroll invScroll;
-	Potion invPotion;
-	Tools invTools;
-	InventoryItem(EmptyItem e);
-	InventoryItem(Food f);
-	InventoryItem(Armor a);
-	InventoryItem(Weapon w);
-	InventoryItem(Ammo am);
-	InventoryItem(Scroll s);
-	InventoryItem(Potion p);
-	InventoryItem(Tools t);
-	InventoryItem();
-	InventoryItem(const InventoryItem& i) = delete;
-	InventoryItem& operator=(const InventoryItem& ii) = delete;
-	~InventoryItem();
-};
-
-struct PossibleItem
-{
-	InventoryItem item;
-	ItemType type;
-	PossibleItem(InventoryItem i, ItemType t);
-	PossibleItem();
-	PossibleItem(const Food& f);
-	PossibleItem(const Armor& a);
-	PossibleItem(const EmptyItem& e);
-	PossibleItem(const Weapon& w);
-	PossibleItem(const Ammo& am);
-	PossibleItem(const Scroll& s);
-	PossibleItem(const Potion& p);
-	PossibleItem(const Tools& t);
-
-	PossibleItem & operator=(const Food& f);
-	PossibleItem & operator=(const Armor& a);
-	PossibleItem & operator=(const EmptyItem& e);
-	PossibleItem & operator=(const Weapon& w);
-	PossibleItem & operator=(const Ammo& am);
-	PossibleItem & operator=(const Scroll& s);
-	PossibleItem & operator=(const Potion& p);
-	PossibleItem & operator=(const Tools& t);
-	PossibleItem & operator=(const PossibleItem& other);
-	PossibleItem(const PossibleItem& other);
-	Item& getItem();
-	const Item& getItem() const;
-	~PossibleItem();
-};
-
-using ItemPile = std::list<PossibleItem>;
+using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
 extern ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
-extern PossibleItem inventory[MAX_TOTAL_INV_SIZE];
+extern Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
 extern std::vector<Food> foodTypes;
 extern std::vector<Armor> armorTypes;
@@ -241,7 +246,7 @@ extern std::vector<Tools> toolTypes;
 extern std::vector<bool> potionTypeKnown;
 
 ItemPileIter findItemAtCell(int row, int col, int sym);
-bool randomlySetOnMap(const PossibleItem & item);
+bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>
 ItemType selectOne(const std::vector<ItemType> & types) {
@@ -251,8 +256,8 @@ ItemType selectOne(const std::vector<ItemType> & types) {
 template<class ItemType, class Fn = decltype(selectOne<ItemType>)>
 void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const Fn & itemSelector = selectOne<ItemType>) {
     for (int i = 0; i < n; ++i) {
-        PossibleItem item = itemSelector(types);
-        randomlySetOnMap(item);
+        Item::Ptr item = std::make_unique<ItemType>(itemSelector(types));
+        randomlySetOnMap(std::move(item));
     }
 }
 

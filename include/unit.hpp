@@ -18,13 +18,16 @@ extern int g_maxBurden;
 class Unit {
 public:
 	Unit() {}
+    Unit(const Unit &);
 	~Unit() {}
 
-	PossibleItem unitInventory[UNITINVENTORY];
+    Unit & operator=(const Unit &);
 
-	PossibleItem* unitWeapon;
-	PossibleItem* unitArmor;
-	PossibleItem* unitAmmo;
+    Item::Ptr unitInventory[UNITINVENTORY];
+
+	Weapon* unitWeapon = nullptr;
+	Armor* unitArmor = nullptr;
+	Ammo* unitAmmo = nullptr;
 
 	int health;
     int maxHealth;
@@ -40,6 +43,7 @@ public:
     void dropInventory();
     void move(int row, int col);
     void heal(int hp);
+    void dealDamage(int damage);
 };
 
 class EmptyUnit: public Unit {
@@ -74,8 +78,8 @@ public:
     static const int MAX_LUCK = 20;
     static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
 
-	PossibleItem* heroArmor;
-	PossibleItem* heroWeapon;
+	Armor* heroArmor = nullptr;
+	Weapon* heroWeapon = nullptr;
 
 	int hunger = 900;
 	int xp = 0;
@@ -90,15 +94,16 @@ public:
     Hero();
 	
 	void checkVisibleCells();
-	void attackEnemy(int& a1, int& a2);
-	void printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode) const;
+	void attackEnemy(int row, int col);
+	void printList(const std::vector<Item *> & items, std::string_view msg, int mode) const;
 	void pickUp();
 	void clearRightPane() const;
-	void throwAnimated(PossibleItem& item, Direction direction);
+	void throwAnimated(Item::Ptr item, Direction direction);
 	void shoot();
 	void showInventory(char inp);
 	void eat();
 	void moveHero(char inp);
+    void dealDamage(int damage);
 
     bool isInvisible() const;
 	bool isInventoryEmpty() const;
@@ -116,7 +121,7 @@ public:
 
 private:
 	void pickUpAmmo(ItemPileIter ammo);
-	void moveHeroImpl(int& a1, int& a2);
+	void moveHeroImpl(int row, int col);
 };
 
 enum UnitType {

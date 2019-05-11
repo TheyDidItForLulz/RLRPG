@@ -223,8 +223,8 @@ struct CellRenderData {
     }
 };
 
-SymbolRenderData getRenderData(const PossibleItem & item) {
-    switch (item.getItem().symbol) {
+SymbolRenderData getRenderData(const Item::Ptr & item) {
+    switch (item->symbol) {
         case 100: return '%';
         case 101: return { '%', { Color::Red } };
         case 300: return { '&', { TextStyle::Bold, Color::Black } };
@@ -486,18 +486,20 @@ void setRandomPotionEffects() {
 void draw() {
     drawMap();
 
+    int defence = g_hero.heroArmor ? g_hero.heroArmor->defence : 0;
+    int damage = g_hero.heroWeapon ? g_hero.heroWeapon->damage : 0;
     bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
             g_hero.health,
             g_hero.hunger,
-            g_hero.heroArmor->item.invArmor.defence,
-            g_hero.heroWeapon->item.invWeapon.damage,
+            defence,
+            damage,
             g_hero.level, g_hero.xp,
             g_hero.luck);
 
     bar += "Bul: |";
     for (int i = 0; i < BANDOLIER; i++) {
-        if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-            bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
+        if (inventory[AMMO_SLOT + i]) {
+            bar += fmt::format("{}|", dynamic_cast<Ammo &>(*inventory[AMMO_SLOT + i]).count);
         } else {
             bar += "0|";
         }
@@ -510,14 +512,14 @@ void draw() {
         bar += "Hungry. ";
     }
 
-    if (g_hero.heroWeapon->type != ItemEmpty) {
+    if (g_hero.heroWeapon != nullptr) {
         weaponBar = "";
-        weaponBar += g_hero.heroWeapon->getItem().getName();
-        if (g_hero.heroWeapon->item.invWeapon.Ranged) {
+        weaponBar += g_hero.heroWeapon->getName();
+        if (g_hero.heroWeapon->Ranged) {
             weaponBar += "[";
-            for (int i = 0; i < g_hero.heroWeapon->item.invWeapon.cartridgeSize; i++) {
-                if (i < g_hero.heroWeapon->item.invWeapon.currentCS && (g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
-                    g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451)) {
+            for (int i = 0; i < g_hero.heroWeapon->cartridgeSize; i++) {
+                if (i < g_hero.heroWeapon->currentCS && (g_hero.heroWeapon->cartridge[i]->symbol == 450 ||
+                    g_hero.heroWeapon->cartridge[i]->symbol == 451)) {
                     weaponBar += "i";
                 } else {
                     weaponBar += "_";
@@ -560,13 +562,13 @@ int main() {
     Armor LeatherChestplate(1);
     armorTypes = { ChainChestplate, LeatherChestplate };
 
-    inventory[0] = LeatherChestplate;
-    inventory[0].getItem().inventorySymbol = 'a';
+    inventory[0] = std::make_unique<Armor>(LeatherChestplate);
+    inventory[0]->inventorySymbol = 'a';
 
-    g_hero.heroArmor = &inventory[0];
-    g_hero.heroArmor->getItem().attribute = 201;
+    g_hero.heroArmor = dynamic_cast<Armor *>(inventory[0].get());
+    g_hero.heroArmor->attribute = 201;
     if (rand() % (500 / g_hero.luck) == 0)
-        g_hero.heroArmor->getItem().mdf = 2;
+        g_hero.heroArmor->mdf = 2;
     
     Weapon CopperShortsword(0);
     Weapon BronzeSpear(1);

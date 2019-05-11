@@ -80,10 +80,8 @@ Food::~Food(){};
 
 ////////////////////////////////
 // Armor
-Armor::Armor(int ArmorType)
-{
-	switch (ArmorType)
-	{
+Armor::Armor(int ArmorType) {
+	switch (ArmorType) {
 		case 0:
 			symbol = 300;
 			defence =33;
@@ -106,10 +104,8 @@ Armor::~Armor(){};
 
 ////////////////////////////////
 // Ammo
-Ammo::Ammo(int AmmoType)
-{
-	switch (AmmoType)
-	{
+Ammo::Ammo(int AmmoType) {
+	switch (AmmoType) {
 		case 0:
 			symbol = 450;
 			weight = 0;
@@ -133,12 +129,10 @@ Ammo::~Ammo(){}
 
 ////////////////////////////////
 // Weapon
-Weapon::Weapon(int WeaponType)
-{
+Weapon::Weapon(int WeaponType) {
 	cartridgeSize = 0;
 	currentCS = 0;
-	switch (WeaponType)
-	{
+	switch (WeaponType) {
 		case 0:
 			symbol = 400;
 			damage = 4;
@@ -196,13 +190,11 @@ Weapon::Weapon(int WeaponType)
 	}*/
 };
 
-Weapon::Weapon()
-{
+Weapon::Weapon() {
 //	cartridge.clear();
 };
 
-Weapon::Weapon(const Weapon& other)
-{
+Weapon::Weapon(const Weapon& other) {
 	symbol = other.symbol;
 	damage = other.damage;
 	weight = other.weight;
@@ -211,11 +203,10 @@ Weapon::Weapon(const Weapon& other)
 	damageBonus = other.damageBonus;
 	cartridgeSize = other.cartridgeSize;
 	currentCS = other.currentCS;
-	if (Ranged)
-	{
-		for (int i = 0; i < cartridgeSize; i++)
-		{
-			cartridge[i] = other.cartridge[i];
+	if (Ranged) {
+		for (int i = 0; i < cartridgeSize; i++) {
+            if (other.cartridge[i])
+                cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
 		}
 //		cartridge = other.cartridge;
 //		cartridge.clear();
@@ -225,8 +216,7 @@ Weapon::Weapon(const Weapon& other)
 	}
 }
 
-Weapon& Weapon::operator=(const Weapon& other)
-{
+Weapon& Weapon::operator=(const Weapon& other) {
 	symbol = other.symbol;
 	damage = other.damage;
 	weight = other.weight;
@@ -235,11 +225,10 @@ Weapon& Weapon::operator=(const Weapon& other)
 	damageBonus = other.damageBonus;
 	cartridgeSize = other.cartridgeSize;
 	currentCS = other.currentCS;
-	if (Ranged)
-	{
-		for (int i = 0; i < cartridgeSize; i++)
-		{
-			cartridge[i] = other.cartridge[i];
+	if (Ranged) {
+		for (int i = 0; i < cartridgeSize; i++) {
+            if (other.cartridge[i])
+                cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
 		}
 //		cartridge = other.cartridge;
 //		cartridge.clear();
@@ -254,10 +243,8 @@ Weapon::~Weapon(){};
 
 ////////////////////////////////
 // Scroll
-Scroll::Scroll(int s)
-{
-	switch (s)
-	{
+Scroll::Scroll(int s) {
+	switch (s) {
 		case 0:
 			symbol = 500;
 			weight = 1;
@@ -276,10 +263,8 @@ Scroll::~Scroll(){}
 
 ////////////////////////////////
 // Potion
-Potion::Potion(int p)
-{
-	switch (p)
-	{
+Potion::Potion(int p) {
+	switch (p) {
 		case 0:
 			symbol = 600;
 			break;
@@ -306,10 +291,8 @@ Potion::~Potion(){}
 
 ////////////////////////////////
 // Tools
-Tools::Tools(int t)
-{
-	switch (t)
-	{
+Tools::Tools(int t) {
+	switch (t) {
 		case 0:
 			symbol = 700;
 			weight = 4;
@@ -327,265 +310,10 @@ Tools::~Tools(){}
 
 ////////////////////////////////
 // InventoryItem
-InventoryItem::InventoryItem(EmptyItem e)
-{
-	invEmpty = e;
-}
-InventoryItem::InventoryItem(Food f)
-{
-	invFood = f;
-}
-InventoryItem::InventoryItem(Armor a)
-{
-	invArmor = a;
-}
-InventoryItem::InventoryItem(Weapon w)
-{
-	invWeapon = w;
-}
-InventoryItem::InventoryItem(Ammo am)
-{
-	invAmmo = am;
-}
-InventoryItem::InventoryItem(Scroll s)
-{
-	invScroll = s;
-}
-InventoryItem::InventoryItem(Potion p)
-{
-	invPotion = p;
-}
-InventoryItem::InventoryItem(Tools t)
-{
-	invTools = t;
-}
-//InventoryItem::InventoryItem(const InventoryItem& ii) = delete;
-InventoryItem::InventoryItem()
-{
-	invEmpty = EmptyItem();
-}
-
-//InventoryItem& InventoryItem::operator=(const InventoryItem& ii) = delete;
-
-InventoryItem::~InventoryItem(){}
-
-////////////////////////////////
-// PossibleItem
-PossibleItem::PossibleItem(InventoryItem i, ItemType t): type(t)
-{
-	switch (type)
-	{
-		case ItemFood:
-			item.invFood = i.invFood;
-			break;
-		case ItemArmor:
-			item.invArmor = i.invArmor;
-			break;
-		case ItemEmpty:
-			item.invEmpty = i.invEmpty;
-			break;
-		case ItemWeapon:
-			item.invWeapon = i.invWeapon;
-			break;
-		case ItemAmmo:
-			item.invAmmo = i.invAmmo;
-			break;
-		case ItemScroll:
-			item.invScroll = i.invScroll;
-			break;
-		case ItemPotion:
-			item.invPotion = i.invPotion;
-			break;
-		case ItemTools:
-			item.invTools = i.invTools;
-	}
-}
-PossibleItem::PossibleItem(){type = ItemEmpty;}
-
-PossibleItem::~PossibleItem(){};
-
-PossibleItem::PossibleItem(const PossibleItem& other)
-{
-	type = other.type;
-	switch (type)
-	{
-		case ItemFood:
-			item.invFood = other.item.invFood;
-			break;
-		case ItemArmor:
-			item.invArmor = other.item.invArmor;
-			break;
-		case ItemEmpty:
-			item.invEmpty = other.item.invEmpty;
-			break;
-		case ItemWeapon:
-			item.invWeapon = other.item.invWeapon;
-			break;
-		case ItemAmmo:
-			item.invAmmo = other.item.invAmmo;
-			break;
-		case ItemScroll:
-			item.invScroll = other.item.invScroll;
-			break;
-		case ItemPotion:
-			item.invPotion = other.item.invPotion;
-			break;
-		case ItemTools:
-			item.invTools = other.item.invTools;
-	}
-}
-
-PossibleItem::PossibleItem(const Food& f)
-{
-	type = ItemFood;
-	item.invFood = f;
-}
-PossibleItem::PossibleItem(const Armor& a)
-{
-	type = ItemArmor;
-	item.invArmor = a;
-}
-PossibleItem::PossibleItem(const EmptyItem& e)
-{
-	type = ItemEmpty;
-	item.invEmpty = e;
-}
-PossibleItem::PossibleItem(const Weapon& w)
-{
-	type = ItemWeapon;
-	item.invWeapon = w;
-}
-PossibleItem::PossibleItem(const Ammo& am)
-{
-	type = ItemAmmo;
-	item.invAmmo = am;
-}
-PossibleItem::PossibleItem(const Scroll& s)
-{
-	type = ItemScroll;
-	item.invScroll = s;
-}
-PossibleItem::PossibleItem(const Potion& p)
-{
-	type = ItemPotion;
-	item.invPotion = p;
-}
-PossibleItem::PossibleItem(const Tools& t)
-{
-	type = ItemTools;
-	item.invTools = t;
-}
-PossibleItem & PossibleItem::operator=(const Food& f)
-{
-	type = ItemFood;
-	item.invFood = f;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Armor& a)
-{
-	type = ItemArmor;
-	item.invArmor = a;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const EmptyItem& e)
-{
-	type = ItemEmpty;
-	item.invEmpty = e;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Weapon& w)
-{
-	type = ItemWeapon;
-	item.invWeapon = w;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Ammo& am)
-{
-	type = ItemAmmo;
-	item.invAmmo = am;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Scroll& s)
-{
-	type = ItemScroll;
-	item.invScroll = s;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Potion& p)
-{
-	type = ItemPotion;
-	item.invPotion = p;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const Tools& t)
-{
-	type = ItemTools;
-	item.invTools = t;
-    return *this;
-}
-PossibleItem & PossibleItem::operator=(const PossibleItem& other)
-{
-	type = other.type;
-	switch (type)
-	{
-		case ItemFood:
-			item.invFood = other.item.invFood;
-			break;
-		case ItemArmor:
-			item.invArmor = other.item.invArmor;
-			break;
-		case ItemEmpty:
-			item.invEmpty = other.item.invEmpty;
-			break;
-		case ItemWeapon:
-			item.invWeapon = other.item.invWeapon;
-			break;
-		case ItemAmmo:
-			item.invAmmo = other.item.invAmmo;
-			break;
-		case ItemScroll:
-			item.invScroll = other.item.invScroll;
-			break;
-		case ItemPotion:
-			item.invPotion = other.item.invPotion;
-			break;
-		case ItemTools:
-			item.invTools = other.item.invTools;
-	}
-    return *this;
-}
-
-Item& PossibleItem::getItem() {
-	switch (type) {
-		case ItemFood: return item.invFood;
-		case ItemArmor: return item.invArmor;
-		case ItemEmpty: return item.invEmpty;
-		case ItemWeapon: return item.invWeapon;
-		case ItemAmmo: return item.invAmmo;
-		case ItemScroll: return item.invScroll;
-		case ItemPotion: return item.invPotion;
-		case ItemTools: return item.invTools;
-	}
-    throw std::logic_error("Unknown item type");
-}
-
-const Item& PossibleItem::getItem() const {
-	switch (type) {
-		case ItemFood: return item.invFood;
-		case ItemArmor: return item.invArmor;
-		case ItemEmpty: return item.invEmpty;
-		case ItemWeapon: return item.invWeapon;
-		case ItemAmmo: return item.invAmmo;
-		case ItemScroll: return item.invScroll;
-		case ItemPotion: return item.invPotion;
-		case ItemTools: return item.invTools;
-	}
-    throw std::logic_error("Unknown item type");
-}
 
 ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
 
-PossibleItem inventory[MAX_TOTAL_INV_SIZE];
+Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
 std::vector<Food> foodTypes;
 std::vector<Armor> armorTypes;
@@ -620,22 +348,22 @@ std::string getPotionName(int sym) {
 }
 
 ItemPileIter findItemAtCell(int row, int col, int sym) {
-    return std::find_if(begin(itemsMap[row][col]), end(itemsMap[row][col]), [sym] (const PossibleItem & item) {
-        return item.getItem().symbol == sym;
+    return std::find_if(begin(itemsMap[row][col]), end(itemsMap[row][col]), [sym] (const Item::Ptr & item) {
+        return item->symbol == sym;
     });
 }
 
-bool randomlySetOnMap(const PossibleItem & item) {
-    const int attemts = 15;
+bool randomlySetOnMap(Item::Ptr item) {
+    const int attemts = 32;
 
     for (int i = 0; i < attemts; ++i) {
         int row = std::rand() % FIELD_ROWS;
         int col = std::rand() % FIELD_COLS;
 
         if (map[row][col] == 1) {
-            itemsMap[row][col].push_back(item);
-            itemsMap[row][col].back().getItem().posH = row;
-            itemsMap[row][col].back().getItem().posL = col;
+            itemsMap[row][col].push_back(std::move(item));
+            itemsMap[row][col].back()->posH = row;
+            itemsMap[row][col].back()->posL = col;
             return true;
         }
     }
