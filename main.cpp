@@ -137,7 +137,7 @@ void updateAI() {
                 message += "{{{}|{}|{}|{}}}"_format(i, j, unitMap[i][j].unit.uEnemy.symbol, unitMap[i][j].getUnit().health);
 #                endif
                 if (g_mode == 2 && g_turns % 200 == 0) {
-                    unitMap[i][j].getUnit().health++;
+                    unitMap[i][j].getUnit().heal(1);
                 }
                 /*if (i != unitMap[i][j].getUnit().posH or j != unitMap[i][j].getUnit().posL) {
                     std::abort();
@@ -471,8 +471,8 @@ void getXP() {
         g_hero.level++;
         message += fmt::format("Now you are level {}. ", g_hero.level);
         g_maxBurden += g_maxBurden / 4;
-        DEFAULT_HERO_HEALTH += DEFAULT_HERO_HEALTH / 4;
-        g_hero.health = DEFAULT_HERO_HEALTH;
+        g_hero.maxHealth += g_hero.maxHealth / 4;
+        g_hero.health = g_hero.maxHealth;
         g_levelUpXP = getLevelUpXP(g_hero.level * g_hero.level + 4);
     }
 }
@@ -486,6 +486,59 @@ void setRandomPotionEffects() {
             i--;
         }
     }
+}
+
+void draw() {
+    drawMap();
+
+    bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
+            g_hero.health,
+            g_hero.hunger,
+            g_hero.heroArmor->item.invArmor.defence,
+            g_hero.heroWeapon->item.invWeapon.damage,
+            g_hero.level, g_hero.xp,
+            g_hero.luck);
+
+    bar += "Bul: |";
+    for (int i = 0; i < BANDOLIER; i++) {
+        if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
+            bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
+        } else {
+            bar += "0|";
+        }
+    }
+    bar += " ";
+    if (g_hero.isBurdened)
+        bar += "Burdened. ";
+
+    if (g_hero.hunger < 75) {    
+        bar += "Hungry. ";
+    }
+
+    if (g_hero.heroWeapon->type != ItemEmpty) {
+        weaponBar = "";
+        weaponBar += g_hero.heroWeapon->getItem().getName();
+        if (g_hero.heroWeapon->item.invWeapon.Ranged) {
+            weaponBar += "[";
+            for (int i = 0; i < g_hero.heroWeapon->item.invWeapon.cartridgeSize; i++) {
+                if (i < g_hero.heroWeapon->item.invWeapon.currentCS && (g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
+                    g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451)) {
+                    weaponBar += "i";
+                } else {
+                    weaponBar += "_";
+                }
+            }
+            weaponBar += "]";
+        }
+    }
+    termRend
+        .setCursorPosition(Vec2i{ 0, FIELD_ROWS })
+        .put(fmt::sprintf("%- 190s", bar))
+        .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 1 })
+        .put(fmt::sprintf("%- 190s", weaponBar))
+        .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
+        .put(fmt::sprintf("%- 190s", message))
+        .setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
 }
 
 int main() {
@@ -503,10 +556,6 @@ int main() {
     } else {
         readMap();
     }
-
-    g_hero.health = DEFAULT_HERO_HEALTH;
-    g_hero.symbol = 200;
-    g_hero.hunger = 900;
 
     Food Egg(0);
     Food Apple(1);
@@ -573,8 +622,6 @@ int main() {
     differentEnemies[1] = Zombie;
     differentEnemies[2] = Guardian;
 
-    g_hero.heroWeapon = &inventory[Hero::EMPTY_SLOT];
-
     setItems();
 
     spawnUnits();
@@ -582,61 +629,17 @@ int main() {
     g_hero.checkVisibleCells();
 
     int TurnsCounter = 0;
-    
-    drawMap();
-            
-    termRend.setCursorPosition(Vec2i{ 0, FIELD_ROWS} );
-    bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
-            g_hero.health,
-            g_hero.hunger,
-            g_hero.heroArmor->item.invArmor.defence,
-            g_hero.heroWeapon->item.invWeapon.damage,
-            g_hero.level, g_hero.xp,
-            g_hero.luck);
 
-    bar += "Bul: |";
-    for (int i = 0; i < BANDOLIER; i++) {
-        if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-            bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-        } else {
-            bar += "0|";
-        }
-    }
-    bar += " ";
-    if (g_hero.isBurdened)
-        bar += "Burdened. ";
-    termRend.put(fmt::sprintf("%- 190s", bar));
-    
-    if (g_hero.heroWeapon->type != ItemEmpty) {
-        weaponBar = "";
-        weaponBar += g_hero.heroWeapon->getItem().getName();
-        if (g_hero.heroWeapon->item.invWeapon.Ranged) {
-            weaponBar += "[";
-            for (int i = 0; i < g_hero.heroWeapon->item.invWeapon.cartridgeSize; i++) {
-                if (i < g_hero.heroWeapon->item.invWeapon.currentCS && (g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
-                    g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451)) {
-                    weaponBar += "i";
-                } else {
-                    weaponBar += "_";
-                }
-            }
-            weaponBar += "]";
-        }        
-        termRend
-            .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 1 })
-            .put(fmt::sprintf("%- 190s", weaponBar));
-    }
-
-    termRend.setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
+    draw();
     
     while (true) {
         if (g_exit) {     
-            termRend.display();
             return 0;
         }
 
         message = "";
         bar = "";
+        weaponBar = "";
     
         bool died = false;
 
@@ -667,12 +670,13 @@ int main() {
         g_hero.moveHero(inp);
 
         if (!g_stop) {
-            TurnsCounter++;
 
-            if (TurnsCounter % 25 == 0 && TurnsCounter != 0 && g_mode == 1) {
-                if (g_hero.health < DEFAULT_HERO_HEALTH) {
-                    g_hero.health ++;
-                }
+            updateAI();
+            
+            ++g_turns;
+
+            if (g_turns % 25 == 0 && g_turns != 0 && g_mode == 1) {
+                g_hero.heal(1);
             }
 
             g_hero.hunger--;
@@ -690,63 +694,7 @@ int main() {
             if (g_hero.isBurdened)
                 g_hero.hunger--;
 
-            updateAI();
-            
-            ++g_turns;
-
-            drawMap();
-
-            bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
-                    g_hero.health,
-                    g_hero.hunger,
-                    g_hero.heroArmor->item.invArmor.defence,
-                    g_hero.heroWeapon->item.invWeapon.damage,
-                    g_hero.level, g_hero.xp,
-                    g_hero.luck);
-            
-            bar += "Bul: |";
-            for (int i = 0; i < BANDOLIER; i++) {
-                if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-                    bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-                } else {
-                    bar += "0|";
-                }
-            }
-            bar += " ";
-            if (g_hero.isBurdened)
-                bar += "Burdened. ";
-    
-            if (g_hero.hunger < 75) {    
-                bar += "Hungry. ";
-            }
-
-            termRend
-                .setCursorPosition(Vec2i{ 0, FIELD_ROWS })
-                .put(fmt::sprintf("%- 190s", bar));
-        
-            if (g_hero.heroWeapon->type != ItemEmpty) {
-                weaponBar = "";
-                weaponBar += g_hero.heroWeapon->getItem().getName();
-                if (g_hero.heroWeapon->item.invWeapon.Ranged) {
-                    weaponBar += "[";
-                    for (int i = 0; i < g_hero.heroWeapon->item.invWeapon.cartridgeSize; i++) {
-                        if (i < g_hero.heroWeapon->item.invWeapon.currentCS && (g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 450 ||
-                            g_hero.heroWeapon->item.invWeapon.cartridge[i].symbol == 451)) {
-                            weaponBar += "i";
-                        } else {
-                            weaponBar += "_";
-                        }
-                    }
-                    weaponBar += "]";
-                }
-                termRend
-                    .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 1 })
-                    .put(fmt::sprintf("%- 190s", weaponBar));
-            }
-
-            termRend
-                .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 1 })
-                .put(fmt::sprintf("%- 190s", message));
+            draw();
             
             if (inp == '\033') {    
                 termRend
@@ -764,38 +712,7 @@ int main() {
 
             termRend.setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
         } else {
-            drawMap();
-
-            termRend.setCursorPosition(Vec2i{ 0, FIELD_ROWS} );
-            bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
-                    g_hero.health,
-                    g_hero.hunger,
-                    g_hero.heroArmor->item.invArmor.defence,
-                    g_hero.heroWeapon->item.invWeapon.damage,
-                    g_hero.level, g_hero.xp,
-                    g_hero.luck);
-
-            bar += "Bul: |";
-            for (int i = 0; i < BANDOLIER; i++) {
-                if (inventory[AMMO_SLOT + i].type != ItemEmpty) {
-                    bar += fmt::format("{}|", inventory[AMMO_SLOT + i].item.invAmmo.count);
-                } else {
-                    bar += "0|";
-                }
-            }
-            bar += " ";
-            if (g_hero.isBurdened) {
-                bar += "Burdened. ";
-            }
-        
-            if (g_hero.hunger < 75) {
-                bar += "Hungry. ";
-            }
-            termRend
-                .put(fmt::sprintf("%- 190s", bar))
-                .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
-                .put(fmt::sprintf("%- 190s", message));
-
+            draw();
             g_stop = false;
         }
     }

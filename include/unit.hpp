@@ -14,7 +14,6 @@
 
 extern int g_vision;
 extern int g_maxBurden;
-extern int DEFAULT_HERO_HEALTH;
 
 class Unit {
 public:
@@ -28,6 +27,7 @@ public:
 	PossibleItem* unitAmmo;
 
 	int health;
+    int maxHealth;
 	int inventoryVol = 0;
 	int posH;
 	int posL;
@@ -39,6 +39,7 @@ public:
 	bool canSeeCell(int h, int l) const;
     void dropInventory();
     void move(int row, int col);
+    void heal(int hp);
 };
 
 class EmptyUnit: public Unit {
@@ -86,7 +87,7 @@ public:
 	bool isBurdened = false;
 	bool canMoveThroughWalls = false;
 
-	Hero() {}
+    Hero();
 	
 	void checkVisibleCells();
 	void attackEnemy(int& a1, int& a2);

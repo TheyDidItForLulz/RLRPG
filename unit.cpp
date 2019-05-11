@@ -20,7 +20,6 @@ using namespace fmt::literals;
 
 int g_vision = 16;
 int g_maxBurden = 25;                                
-int DEFAULT_HERO_HEALTH = 15;
 
 extern TerminalRenderer termRend;
 extern TerminalReader termRead;
@@ -61,6 +60,10 @@ bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double 
         }
     }
     return true;
+}
+
+void Unit::heal(int hp) {
+    health = std::min(health + hp, maxHealth);
 }
 
 bool Unit::canSeeCell(int h, int l) const {
@@ -105,6 +108,7 @@ Enemy::Enemy(int eType) {
     switch (eType) {
         case 0: {
             health = 7;
+            maxHealth = 7;
             unitInventory[0] = foodTypes[0];
             unitInventory[1] = weaponTypes[0];
             unitWeapon = &unitInventory[1];
@@ -116,6 +120,7 @@ Enemy::Enemy(int eType) {
         }
         case 1: {
             health = 10;
+            maxHealth = 10;
             unitInventory[0] = weaponTypes[3];
             unitWeapon = &unitInventory[0];
             inventoryVol = 1;
@@ -126,6 +131,7 @@ Enemy::Enemy(int eType) {
         }
         case 2: {
             health = 5;
+            maxHealth = 5;
             unitInventory[0] = weaponTypes[5];
             unitInventory[1] = ammoTypes[0];
             unitWeapon = &unitInventory[0];
@@ -448,6 +454,13 @@ void Enemy::updatePosition() {
             }
         }
     }
+}
+
+Hero::Hero() {
+    maxHealth = 15;
+    health = 15;
+    symbol = 200;
+    heroWeapon = &inventory[Hero::EMPTY_SLOT];
 }
 
 bool Hero::isInvisible() const {
@@ -970,7 +983,7 @@ void Hero::moveHero(char inp) {
                     if (termRead.readChar() == 'a') {
                         if (termRead.readChar() == 'l') {
                             hunger = 3000;
-                            health = DEFAULT_HERO_HEALTH * 100;
+                            health = maxHealth * 100;
                         }
                     }
                 }
@@ -998,7 +1011,7 @@ void Hero::moveHero(char inp) {
                 if (termRead.readChar() == 'i') {
                     if (termRead.readChar() == 'l') {
                         if (termRead.readChar() == 'l') {
-                            health -= (DEFAULT_HERO_HEALTH * 2) / 3;
+                            health -= (health * 2) / 3;
                             message += "Ouch! ";
                         }
                     }
@@ -1204,7 +1217,7 @@ void Hero::showInventory(char inp) {
             if (inventory[intch].type == ItemPotion) {
                 switch (inventory[intch].item.invPotion.effect) {
                     case 1: {
-                        health = std::min(health + 3, DEFAULT_HERO_HEALTH);
+                        heal(3);
                         message += "Now you feeling better. ";
                         break;
                     }
