@@ -105,7 +105,6 @@ using namespace fmt::literals;
 #include"include/gen_map.hpp"
 #include"include/unit.hpp"
 #include"include/utils.hpp"
-#include"include/log.hpp"
 
 // !COMMENT! // Enemies must move at first turn
 int g_mode = 1;    
@@ -120,7 +119,6 @@ TerminalReader termRead;
 void initialize() {
     std::srand(std::time(0));
     initField();
-    initLog();
 }
 
 std::string message = "";
@@ -139,9 +137,6 @@ void updateAI() {
                 if (g_mode == 2 && g_turns % 200 == 0) {
                     unitMap[i][j].getUnit().heal(1);
                 }
-                /*if (i != unitMap[i][j].getUnit().posH or j != unitMap[i][j].getUnit().posL) {
-                    std::abort();
-                }*/
                 unitMap[i][j].unit.uEnemy.updatePosition();
             }
         }
@@ -718,7 +713,6 @@ int main() {
     }
         
     termRend.display();
-    stopLog();
 
     return 0;
 }

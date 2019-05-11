@@ -30,14 +30,14 @@ const int TOOL_COUNT = 5; /* AND IT */
 #define MAX_CARTRIDGE_SIZE 10
 
 enum ItemType {
-	ItemFood,
-	ItemArmor,
-	ItemEmpty,
-	ItemWeapon,
-	ItemAmmo,
-	ItemScroll,
-	ItemPotion,
-	ItemTools
+	ItemFood = 1 << 0,
+	ItemArmor = 1 << 1,
+	ItemEmpty = 1 << 2,
+	ItemWeapon = 1 << 3,
+	ItemAmmo = 1 << 4,
+	ItemScroll = 1 << 5,
+	ItemPotion = 1 << 6,
+	ItemTools = 1 << 7
 };
 
 class Item

@@ -2,6 +2,8 @@
 #define CONTROLS_HPP
 
 #include<stdexcept>
+#include<termlib/vec2.hpp>
+#include<optional>
 
 enum class Direction {
     Left,
@@ -13,6 +15,44 @@ enum class Direction {
     DownLeft,
     DownRight
 };
+
+inline Vec2i toVec2i(Direction dir) {
+    switch (dir) {
+        case Direction::Up: return Vec2i{ 0, -1 };
+        case Direction::UpRight: return Vec2i{ 1, -1 };
+        case Direction::Right: return Vec2i{ 1, 0 };
+        case Direction::DownRight: return Vec2i{ 1, 1 };
+        case Direction::Down: return Vec2i{ 0, 1 };
+        case Direction::DownLeft: return Vec2i{ -1, 1 };
+        case Direction::Left: return Vec2i{ -1, 0 };
+        case Direction::UpLeft: return Vec2i{ -1, -1 };
+    }
+    return Vec2i{};
+}
+
+inline std::optional<Direction> directionFrom(Vec2i vec) {
+    if (vec.x < 0)
+        if (vec.y < 0)
+            return Direction::UpLeft;
+        else if (vec.y > 0)
+            return Direction::DownLeft;
+        else
+            return Direction::Left;
+    else if (vec.x > 0)
+        if (vec.y < 0)
+            return Direction::UpRight;
+        else if (vec.y > 0)
+            return Direction::DownRight;
+        else
+            return Direction::Right;
+    else
+        if (vec.y < 0)
+            return Direction::Up;
+        else if (vec.y > 0)
+            return Direction::Down;
+        else
+            return {};
+}
 
 #define CONTROL_UP 'k'
 #define CONTROL_DOWN 'j'

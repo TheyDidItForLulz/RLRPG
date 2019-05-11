@@ -38,26 +38,20 @@ std::string Unit::getName() {
 bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const {
     double dx = toX - fromX;
     double dy = toY - fromY;
-    if (std::abs(dx) > std::abs(dy)) {
-        double k = dy / dx;
-        int s = sgn(dx);
-        for (int i = 0; i * s < dx * s; i += s) {
-            int x = fromX + i;
-            int y = fromY + i * k;
-            if (map[y][x] == 2) {
-                return false;
-            }
-        }
-    } else {
-        double k = dx / dy;
-        int s = sgn(dy);
-        for (int i = 0; i * s < dy * s; i += s) {
-            int x = fromX + i * k;
-            int y = fromY + i;
-            if (map[y][x] == 2) {
-                return false;
-            }
-        }
+    bool steep = std::abs(dx) < std::abs(dy);
+    if (steep) {
+        std::swap(dx, dy);
+        std::swap(fromX, fromY);
+    }
+    double k = dy / dx;
+    int s = sgn(dx);
+    for (int i = 0; i * s < dx * s; i += s) {
+        int x = fromX + i;
+        int y = fromY + i * k;
+        if (steep)
+            std::swap(x, y);
+        if (map[y][x] == 2)
+            return false;
     }
     return true;
 }
@@ -149,74 +143,27 @@ Enemy::Enemy(int eType) {
     targetL = -1;
 }
 
-void getProjectileDirectionsAndSymbol(Direction direction, int & dx, int & dy, char & sym) {
+char getProjectileSymbol(Direction direction) {
     switch (direction) {
-    case Direction::Up:
-        dy = -1;
-        dx = 0;
-        sym = '|';
-        break;
-    case Direction::UpRight:
-        dy = -1;
-        dx = 1;
-        sym = '/';
-        break;
-    case Direction::Right:
-        dx = 1;
-        dy = 0;
-        sym = '-';
-        break;
-    case Direction::DownRight:
-        dx = 1;
-        dy = 1;
-        sym = '\\';
-        break;
-    case Direction::Down:
-        dy = 1;
-        dx = 0;
-        sym = '|';
-        break;
-    case Direction::DownLeft:
-        dy = 1;
-        dx = -1;
-        sym = '/';
-        break;
-    case Direction::Left:
-        dx = -1;
-        dy = 0;
-        sym = '-';
-        break;
-    case Direction::UpLeft:
-        dx = -1;
-        dy = -1;
-        sym = '\\';
+        case Direction::Up:
+        case Direction::Down: return '|';
+        case Direction::Left:
+        case Direction::Right: return '-';
+        case Direction::UpRight:
+        case Direction::DownLeft: return '/';
+        case Direction::UpLeft:
+        case Direction::DownRight: return '\\';
+        default: throw std::logic_error("Unknown direction");
     }
 }
 
 void Enemy::shoot() {
-    if (posH == g_hero.posH && posL < g_hero.posL)
-        dir = Direction::Right;
-    else if (posH == g_hero.posH && posL > g_hero.posL)
-        dir = Direction::Left;
-    else if (posL == g_hero.posL && posH > g_hero.posH)
-        dir = Direction::Up;
-    else if (posL == g_hero.posL && posH < g_hero.posH)
-        dir = Direction::Down;
-    else if (posL > g_hero.posL && posH > g_hero.posH)
-        dir = Direction::UpLeft;
-    else if (posL > g_hero.posL && posH < g_hero.posH)
-        dir = Direction::DownLeft;
-    else if (posL < g_hero.posL && posH < g_hero.posH)
-        dir = Direction::DownRight;
-    else if (posL < g_hero.posL && posH > g_hero.posH)
-        dir = Direction::UpRight;
-    int dx;
-    int dy;
-    char sym;
-    getProjectileDirectionsAndSymbol(dir, dx, dy, sym);
+    auto dir = directionFrom(Vec2i{ g_hero.posL - posL, g_hero.posH - posH }).value();
+    Vec2i offset = toVec2i(dir);
+    char sym = getProjectileSymbol(dir);
     for (int i = 1; i < unitWeapon->item.invWeapon.range + unitAmmo->item.invAmmo.range; i++) {
-        int row = posH + dy * i;
-        int col = posL + dx * i;
+        int row = posH + offset.y * i;
+        int col = posL + offset.x * i;
 
         if (map[row][col] == 2)
             break;
@@ -238,19 +185,6 @@ void Enemy::shoot() {
     }
 }
 
-Vec2i fromDirection(Direction dir) {
-    switch (dir) {
-        case Direction::Up: return Vec2i{ 0, -1 };
-        case Direction::UpRight: return Vec2i{ 1, -1 };
-        case Direction::Right: return Vec2i{ 1, 0 };
-        case Direction::DownRight: return Vec2i{ 1, 1 };
-        case Direction::Down: return Vec2i{ 0, 1 };
-        case Direction::DownLeft: return Vec2i{ -1, 1 };
-        case Direction::Left: return Vec2i{ -1, 0 };
-        case Direction::UpLeft: return Vec2i{ -1, -1 };
-    }
-}
-
 int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
     if (targetH == h and targetL == l) {
         return -1;
@@ -261,16 +195,16 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
     int used[FIELD_ROWS][FIELD_COLS] = {};
     used[h][l] = 1;
     std::vector<Vec2i> dirs = {
-        fromDirection(Direction::Up),
-        fromDirection(Direction::Down),
-        fromDirection(Direction::Right),
-        fromDirection(Direction::Left)
+        toVec2i(Direction::Up),
+        toVec2i(Direction::Down),
+        toVec2i(Direction::Right),
+        toVec2i(Direction::Left)
     };
     if (g_mode == 2) {
-        dirs.push_back(fromDirection(Direction::UpRight));
-        dirs.push_back(fromDirection(Direction::UpLeft));
-        dirs.push_back(fromDirection(Direction::DownRight));
-        dirs.push_back(fromDirection(Direction::DownLeft));
+        dirs.push_back(toVec2i(Direction::UpRight));
+        dirs.push_back(toVec2i(Direction::UpLeft));
+        dirs.push_back(toVec2i(Direction::DownRight));
+        dirs.push_back(toVec2i(Direction::DownLeft));
     }
     while (not q.empty()) {
         auto v = q.front();
@@ -294,7 +228,6 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
     if (!used[targetH][targetL]) {
         return -1;
     }
-    //int v_y = targetH, v_x = targetL;
     Vec2i v{ targetL, targetH };
     while (used[v.y][v.x] > 2) {
         for (auto dir : dirs) {
@@ -562,13 +495,13 @@ void Hero::printList(const std::vector<PossibleItem> & items, std::string_view m
                 termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
                 if (items[i].getItem().showMdf == true) {
                     termRend.put("[{}] {} ({}) {{{}}}. "_format(
-                            i + 'a',
+                            char(i + 'a'),
                             items[i].getItem().getName(),
                             items[i].getItem().getAttribute(),
                             items[i].getItem().getMdf()));
                 } else {
                     termRend.put("[{}] {} ({}). "_format(
-                            i + 'a',
+                            char(i + 'a'),
                             items[i].getItem().getName(),
                             items[i].getItem().getAttribute()));
                 }
@@ -608,14 +541,14 @@ int Hero::findScrollInInventory() const {
     return 101010;
 }
 
-void Hero::printAmmoList(PossibleItem& pAmmo) {                                        // Picked ammo
+void Hero::pickUpAmmo(ItemPileIter ammoIter) {                                        // Picked ammo
     clearRightPane();
     termRend
         .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
-        .put("In what slot do vou want to pull your ammo?");
+        .put("In what slot do you want to pull your ammo?");
     int choice = 0;
     int num = 0;
-    while (1) {
+    while (true) {
         num = 0;
         for (int i = 0; i < BANDOLIER; i++) {
             termRend.setCursorPosition(Vec2i{ FIELD_COLS + num + 12, 1 });
@@ -652,17 +585,14 @@ void Hero::printAmmoList(PossibleItem& pAmmo) {                                 
                     choice++;
                 break;
             case CONTROL_CONFIRM:
-                if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol != pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
-                    PossibleItem buffer;
-                    buffer = pAmmo;
-                    pAmmo = inventory[AMMO_SLOT + choice];
-                    inventory[AMMO_SLOT + choice] = buffer;
-                } else if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol == pAmmo.item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
-                    inventory[AMMO_SLOT + choice].item.invAmmo.count += pAmmo.item.invAmmo.count;
-                    pAmmo.type = ItemEmpty;
+                if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol != ammoIter->item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
+                    std::swap(*ammoIter, inventory[AMMO_SLOT + choice]);
+                } else if (inventory[AMMO_SLOT + choice].item.invAmmo.symbol == ammoIter->item.invAmmo.symbol && inventory[AMMO_SLOT + choice].type == ItemAmmo) {
+                    inventory[AMMO_SLOT + choice].item.invAmmo.count += ammoIter->item.invAmmo.count;
+                    itemsMap[posH][posL].erase(ammoIter);
                 } else if (inventory[AMMO_SLOT + choice].type == ItemEmpty) {
-                    inventory[AMMO_SLOT + choice] = pAmmo;
-                    pAmmo.type = ItemEmpty;
+                    inventory[AMMO_SLOT + choice] = *ammoIter;
+                    itemsMap[posH][posL].erase(ammoIter);
                 }
                 return;
                 break;
@@ -679,11 +609,12 @@ void Hero::pickUp() {
         g_stop = true;
         return;
     } else if (itemsMap[posH][posL].size() == 1) {
-        auto & itemToPick = itemsMap[posH][posL].front();
+        auto it = itemsMap[posH][posL].begin();
+        auto & itemToPick = *it;
         message += "You picked up {}. "_format(itemToPick.getItem().getName());
 
         if (itemToPick.type == ItemAmmo) {
-            printAmmoList(itemToPick);
+            pickUpAmmo(it);
             return;
         }
 
@@ -704,7 +635,7 @@ void Hero::pickUp() {
             if (eic != 101010) {
                 inventory[eic] = itemToPick;
                 inventory[eic].getItem().inventorySymbol = eic + 'a';
-                log("Item index: '%c'\n", inventory[eic].getItem().inventorySymbol);
+                log("Item: {} '{}'", inventory[eic].getItem().getName(), inventory[eic].getItem().inventorySymbol);
                 itemsMap[posH][posL].pop_back();
                 inventoryVol++;
             } else {
@@ -740,10 +671,10 @@ void Hero::pickUp() {
     auto selected = std::begin(itemsMap[posH][posL]);
     std::advance(selected, intch);
     
-    message += "You picked up %s. "_format(selected->getItem().getName());
+    message += "You picked up {}. "_format(selected->getItem().getName());
     
     if (selected->type == ItemAmmo) {
-        printAmmoList(*selected);
+        pickUpAmmo(selected);
         return;
     }
 
@@ -765,6 +696,8 @@ void Hero::pickUp() {
             inventory[eic] = *selected;
             inventory[eic].getItem().inventorySymbol = eic + 'a';
             itemsMap[posH][posL].erase(selected);
+            log("picked up item ({}) ({})", eic + 'a', char(eic + 'a'));
+            log("Item(selected): {} '{}'", inventory[eic].getItem().getName(), inventory[eic].getItem().inventorySymbol);
             inventoryVol++;
         } else {
             message += "Your inventory is full, motherfuck'a! ";
@@ -833,46 +766,46 @@ void Hero::moveHero(char inp) {
     switch (inp) {
         case CONTROL_UP: {
             a1 --;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_DOWN: {
             a1 ++;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;    
         }
         case CONTROL_LEFT: {
             a2 --;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_RIGHT: {
             a2 ++;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_UPLEFT: {
             a1 --;
             a2 --;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;    
         }
         case CONTROL_UPRIGHT: {
             a2 ++;
             a1 --;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_DOWNLEFT: {
             a1 ++;
             a2 --;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_DOWNRIGHT: {
             a1 ++;
             a2 ++;
-            mHLogic(a1, a2);
+            moveHeroImpl(a1, a2);
             break;
         }
         case CONTROL_PICKUP: {
@@ -1148,8 +1081,13 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_WIELD: {
             std::copy_if(inventory, inventory + MAX_USABLE_INV_SIZE, listInserter, [&] (const PossibleItem & item) {
+                //log("Filtering item {} '{}' '{}'", item.getItem().getName(), item.getItem().inventorySymbol, (int) item.getItem().inventorySymbol);
                 return item.type == ItemWeapon or item.type == ItemTools;
             });
+
+            for (auto & item : list) {
+                log("Offering item '{}' '{}'", item.getItem().inventorySymbol, (int) item.getItem().inventorySymbol);
+            }
 
             printList(list, "What do you want to wield?", 1);
             
@@ -1528,13 +1466,11 @@ void Hero::attackEnemy(int& a1, int& a2) {
 
 void Hero::throwAnimated(PossibleItem& item, Direction direction) {
     int throwDist = 0;
-    int dx = 0;
-    int dy = 0;
-    char sym;
-    getProjectileDirectionsAndSymbol(direction, dx, dy, sym);
+    auto offset = toVec2i(direction);
+    char sym = getProjectileSymbol(direction);
     for (int i = 0; i < 12 - item.getItem().weight / 3; i++) {                        // 12 is "strength"
-        int row = posH + dy * (i + 1);
-        int col = posL + dx * (i + 1);
+        int row = posH + offset.y * (i + 1);
+        int col = posL + offset.x * (i + 1);
 
         if (map[row][col] == 2)
             break;
@@ -1555,7 +1491,7 @@ void Hero::throwAnimated(PossibleItem& item, Direction direction) {
         throwDist++;
         sleep(DELAY);
     }
-    itemsMap[posH + dy * throwDist][posL + dx * throwDist].push_back(item);
+    itemsMap[posH + offset.y * throwDist][posL + offset.x * throwDist].push_back(item);
     item.type = ItemEmpty;
 }
 
@@ -1585,15 +1521,14 @@ void Hero::shoot() {
         g_stop = true;
         return;
     }
-    int dx = 0;
-    int dy = 0;
-    char sym;
-    getProjectileDirectionsAndSymbol(getDirectionByControl(choice), dx, dy, sym);
+    auto direction = getDirectionByControl(choice);
+    auto offset = toVec2i(direction);
+    char sym = getProjectileSymbol(direction);
     int bulletPower = heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].damage + g_hero.heroWeapon->item.invWeapon.damageBonus;
 
     for (int i = 1; i < heroWeapon->item.invWeapon.range + heroWeapon->item.invWeapon.cartridge[heroWeapon->item.invWeapon.currentCS - 1].range; i++) {
-        int row = posH + dy * i;
-        int col = posL + dx * i; 
+        int row = posH + offset.y * i;
+        int col = posL + offset.x * i; 
 
         if (map[row][col] == 2)
             break;
@@ -1616,7 +1551,7 @@ void Hero::shoot() {
     heroWeapon->item.invWeapon.currentCS--;
 }
 
-void Hero::mHLogic(int& a1, int& a2) {
+void Hero::moveHeroImpl(int& a1, int& a2) {
     if (map[posH + a1][posL + a2] != 2 || 
             (map[posH + a1][posL + a2] == 2 && canMoveThroughWalls) && 
             (posH + a1 > 0 && posH + a1 < FIELD_ROWS - 1 && posL + a2 > 0 && posL + a2 < FIELD_COLS - 1)) {

@@ -91,27 +91,32 @@ public:
 	
 	void checkVisibleCells();
 	void attackEnemy(int& a1, int& a2);
-	void mHLogic(int& a1, int& a2);
-	bool isInventoryEmpty() const;
-	int findEmptyInventoryCell() const;
-	int getInventoryItemsWeight() const;
 	void printList(const std::vector<PossibleItem> & items, std::string_view msg, int mode) const;
-	bool isMapInInventory() const;
-	int findAmmoInInventory() const;
-	int findScrollInInventory() const;
-	void printAmmoList(PossibleItem& pAmmo);										// Picked ammo
 	void pickUp();
-	bool isFoodInInventory() const;
-	bool isArmorInInventory() const;
-	bool isWeaponOrToolsInInventory() const;
-	bool isPotionInInventory() const;
 	void clearRightPane() const;
 	void throwAnimated(PossibleItem& item, Direction direction);
 	void shoot();
 	void showInventory(char inp);
 	void eat();
 	void moveHero(char inp);
+
     bool isInvisible() const;
+	bool isInventoryEmpty() const;
+	bool isMapInInventory() const;
+	bool isFoodInInventory() const;
+	bool isArmorInInventory() const;
+	bool isWeaponOrToolsInInventory() const;
+	bool isPotionInInventory() const;
+
+	int findEmptyInventoryCell() const;
+	int findAmmoInInventory() const;
+	int findScrollInInventory() const;
+
+	int getInventoryItemsWeight() const;
+
+private:
+	void pickUpAmmo(ItemPileIter ammo);
+	void moveHeroImpl(int& a1, int& a2);
 };
 
 enum UnitType {
