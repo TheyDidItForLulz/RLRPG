@@ -51,11 +51,6 @@ std::string Item::getName() const {
 Item::~Item(){};
 
 ////////////////////////////////
-// EmptyItem
-EmptyItem::EmptyItem(){};
-EmptyItem::~EmptyItem(){};
-
-////////////////////////////////
 // Food
 Food::Food(int FoodType)
 {
@@ -63,12 +58,12 @@ Food::Food(int FoodType)
 	{
 		case 0:
 			symbol = 100;
-			FoodHeal = 100;
+			nutritionalValue = 100;
 			weight = 1;
 			break;
 		case 1:
 			symbol = 101;
-			FoodHeal = 125;
+			nutritionalValue = 125;
 			weight = 1;
 			break;
 	}
@@ -111,14 +106,12 @@ Ammo::Ammo(int AmmoType) {
 			weight = 0;
 			range = 2;
 			damage = 1;
-			count = 1;
 			break;
 		case 1:
 			symbol = 451;
 			weight = 0;
 			range = 1;
 			damage = 2;
-			count = 1;
 			break;
 	}
 	isStackable = true;
@@ -130,89 +123,74 @@ Ammo::~Ammo(){}
 ////////////////////////////////
 // Weapon
 Weapon::Weapon(int WeaponType) {
-	cartridgeSize = 0;
-	currentCS = 0;
+	maxCartridgeSize = 0;
+    currCartridgeSize = 0;
 	switch (WeaponType) {
 		case 0:
 			symbol = 400;
 			damage = 4;
 			weight = 3;
-			Ranged = false;
+			isRanged = false;
 			break;
 		case 1:
 			symbol = 401;
 			damage = 5;
 			weight = 5;
-			Ranged = false;
+			isRanged = false;
 			break;
 		case 2:
 			symbol = 402;
 			damage = 3;
 			weight = 3;
 			range = 14;
-			Ranged = true;
+			isRanged = true;
 			damageBonus = 4;
-			cartridgeSize = 1;
+			maxCartridgeSize = 1;
 			break;
 		case 3:
 			symbol = 403;
 			damage = 2;
 			weight = 1;
-			Ranged = false;
+			isRanged = false;
 			break;
 		case 4:
 			symbol = 404;
 			damage = 2;
 			weight = 4;
-			Ranged = true;
+			isRanged = true;
 			range = 4;
 			damageBonus = 5;
-			cartridgeSize = 6;
+			maxCartridgeSize = 6;
 			break;
 		case 5:
 			symbol = 405;
 			damage = 1;
 			weight = 2;
-			Ranged = true;
+			isRanged = true;
 			range = 7;
 			damageBonus = 2;
-			cartridgeSize = 10;
+			maxCartridgeSize = 10;
 			break;
 	}
 	isStackable = false;
-/*	if (cartridgeSize)
-	{
-		cartridge.resize(cartridgeSize);
-	}
-	else
-	{
-		cartridge.clear();
-	}*/
 };
 
-Weapon::Weapon() {
-//	cartridge.clear();
-};
+Weapon::Weapon() {}
 
 Weapon::Weapon(const Weapon& other) {
 	symbol = other.symbol;
 	damage = other.damage;
 	weight = other.weight;
-	Ranged = other.Ranged;
+	isRanged = other.isRanged;
 	range = other.range;
 	damageBonus = other.damageBonus;
-	cartridgeSize = other.cartridgeSize;
-	currentCS = other.currentCS;
-	if (Ranged) {
-		for (int i = 0; i < cartridgeSize; i++) {
+	maxCartridgeSize = other.maxCartridgeSize;
+	currCartridgeSize = other.currCartridgeSize;
+	if (isRanged) {
+		for (int i = 0; i < maxCartridgeSize; i++) {
             if (other.cartridge[i])
                 cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
 		}
-//		cartridge = other.cartridge;
-//		cartridge.clear();
-//		for (const Ammo& a : other.cartridge) {
-//			cartridge.push_back(a);
-//		}
 	}
 }
 
@@ -220,21 +198,16 @@ Weapon& Weapon::operator=(const Weapon& other) {
 	symbol = other.symbol;
 	damage = other.damage;
 	weight = other.weight;
-	Ranged = other.Ranged;
+	isRanged = other.isRanged;
 	range = other.range;
 	damageBonus = other.damageBonus;
-	cartridgeSize = other.cartridgeSize;
-	currentCS = other.currentCS;
-	if (Ranged) {
-		for (int i = 0; i < cartridgeSize; i++) {
+	maxCartridgeSize = other.maxCartridgeSize;
+	currCartridgeSize = other.currCartridgeSize;
+	if (isRanged) {
+		for (int i = 0; i < maxCartridgeSize; i++) {
             if (other.cartridge[i])
                 cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
 		}
-//		cartridge = other.cartridge;
-//		cartridge.clear();
-//		for (const Ammo& a : other.cartridge) {
-//			cartridge.push_back(a);
-//		}
 	}
 	return *this;
 }
@@ -298,7 +271,7 @@ Tools::Tools(int t) {
 			weight = 4;
 			damage = 2;
 			possibility = 1;
-			Ranged = false;
+			isRanged = false;
 			range = 1;
 			break;
 	}
@@ -347,8 +320,9 @@ std::string getPotionName(int sym) {
     throw std::logic_error("Unknown potion id");
 }
 
-ItemPileIter findItemAtCell(int row, int col, int sym) {
-    return std::find_if(begin(itemsMap[row][col]), end(itemsMap[row][col]), [sym] (const Item::Ptr & item) {
+ItemPileIter findItemAt(Coord c, int sym) {
+    auto & pile = itemsMap[c.y][c.x];
+    return std::find_if(begin(pile), end(pile), [sym] (const Item::Ptr & item) {
         return item->symbol == sym;
     });
 }
@@ -361,7 +335,7 @@ bool randomlySetOnMap(Item::Ptr item) {
         int col = std::rand() % FIELD_COLS;
 
         if (map[row][col] == 1) {
-            drop(std::move(item), row, col);
+            drop(std::move(item), Coord{ col, row });
             return true;
         }
     }
@@ -369,22 +343,21 @@ bool randomlySetOnMap(Item::Ptr item) {
     return false;
 }
 
-void drop(Item::Ptr item, int row, int col) {
-    if (row < 0 or col < 0 or row >= FIELD_ROWS or col >= FIELD_COLS)
+void drop(Item::Ptr item, Coord cell) {
+    if (cell.y < 0 or cell.x < 0 or cell.y >= FIELD_ROWS or cell.x >= FIELD_COLS)
         throw std::logic_error("Trying to drop an item outside of the map");
-    if (map[row][col] == 2)
+    if (map[cell.y][cell.x] == 2)
         throw std::logic_error("Trying to drop an item in a wall");
     if (not item)
         return;
-    item->posH = row;
-    item->posL = col;
+    item->pos = cell;
     if (item->isStackable) {
-        auto it = findItemAtCell(row, col, item->symbol);
-        if (it != end(itemsMap[row][col])) {
+        auto it = findItemAt(cell, item->symbol);
+        if (it != end(itemsMap[cell.y][cell.x])) {
             (*it)->count += item->count;
             return;
         }
     }
-    itemsMap[row][col].push_back(std::move(item));
+    itemsMap[cell.y][cell.x].push_back(std::move(item));
 }
 

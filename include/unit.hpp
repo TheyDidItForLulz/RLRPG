@@ -5,18 +5,18 @@
 #include"controls.hpp"
 #include"utils.hpp"
 #include<stdlib.h>
+#include<termlib/vec2.hpp>
+
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
 #define DEFAULT_VISION 16
 #define VISION_PRECISION 256
-#define UNITINVENTORY 4
 #define AMMO_SLOT 53
 
 extern int g_vision;
 extern int g_maxBurden;
 
 enum UnitType {
-    UnitEmpty,
     UnitHero,
     UnitEnemy
 };
@@ -34,32 +34,22 @@ public:
 	Weapon* weapon = nullptr;
 	Armor* armor = nullptr;
 
+    Coord pos = {-1, -1};
 	int health;
     int maxHealth;
-	int inventoryVol = 0;
-	int posH;
-	int posL;
 	int symbol;
 	int vision;
 
     std::string getName();
-	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const;
-	bool canSeeCell(int h, int l) const;
-    void move(int row, int col);
+	bool canSee(Coord cell) const;
+    void setTo(Coord cell);
     void heal(int hp);
     void dealDamage(int damage);
 
     virtual UnitType getType() const = 0;
-};
 
-class EmptyUnit: public Unit {
-public:
-	EmptyUnit() {}
-	~EmptyUnit() {}
-
-    UnitType getType() const override {
-        return UnitEmpty;
-    }
+protected:
+	bool linearVisibilityCheck(Vec2d from, Vec2d to) const;
 };
 
 class Enemy: public Unit {
@@ -69,13 +59,10 @@ public:
 
     Item::Ptr inventory[MAX_INV_SIZE];
 
-	Direction dir;
-	int dist = 0;
-	int movedOnTurn = 0;
-	int xpIncreasing;
-	int targetH = -1;
-	int targetL = -1;
 	Ammo* ammo = nullptr;
+    std::optional<Coord> target;
+	int lastTurnMoved = 0;
+	int xpCost;
 
 	Enemy() {}
 	Enemy(int eType);
@@ -92,6 +79,10 @@ public:
     UnitType getType() const override {
         return UnitEnemy;
     }
+
+private:
+    std::optional<Coord> searchForShortestPath(Coord to) const; // returns next cell in the path if path exists
+    void moveOrAttack(Coord cell);
 };
 
 extern Enemy enemyTypes[Enemy::TYPES_COUNT];
@@ -114,16 +105,9 @@ public:
     Hero();
 	
 	void checkVisibleCells();
-	void attackEnemy(int row, int col);
-	void printList(const std::vector<Item *> & items, std::string_view msg, int mode) const;
-	void pickUp();
 	void clearRightPane() const;
-	void throwAnimated(Item::Ptr item, Direction direction);
-	void shoot();
-	void showInventory(char inp);
-	void eat();
-	void moveHero(char inp);
     void dealDamage(int damage);
+	void processInput(char inp);
 
     bool isInvisible() const;
 	bool isInventoryEmpty() const;
@@ -147,8 +131,17 @@ public:
     }
 
 private:
+	void attackEnemy(Coord cell);
+	void throwAnimated(Item::Ptr item, Direction direction);
+	void shoot();
+	void eat();
+	void pickUp();
+	void showInventory(char inp);
+
+	void printList(const std::vector<Item *> & items, std::string_view msg, int mode) const;
+
 	void pickUpAmmo(ItemPileIter ammo);
-	void moveHeroImpl(int row, int col);
+	void moveTo(Coord cell);
 
     void levelUp();
 };

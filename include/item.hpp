@@ -7,38 +7,18 @@
 #include<optional>
 #include<list>
 #include<memory>
+#include<termlib/vec2.hpp>
 
-const int TYPES_OF_FOOD = 2;
-const int TYPES_OF_ARMOR = 2;
-const int TYPES_OF_WEAPONS = 6;
-const int TYPES_OF_AMMO = 2;
-const int TYPES_OF_SCROLLS = 2;
-const int TYPES_OF_POTIONS = 5;
-const int TYPES_OF_TOOLS = 1;
-
-const int FOOD_COUNT = 10;
-const int ARMOR_COUNT = 4;
-const int WEAPON_COUNT = 25; /* JUST FOR !DEBUG!!*/
-const int AMMO_COUNT = 25;
-const int SCROLL_COUNT = 15; /* JUST FOR !DEBUG!!*/
-const int POTION_COUNT = 25; /* IT TOO */
-const int TOOL_COUNT = 5; /* AND IT */
-
-#define BANDOLIER TYPES_OF_AMMO
-#define MAX_USABLE_INV_SIZE 53
-#define MAX_TOTAL_INV_SIZE 54+BANDOLIER
-#define FIELD_DEPTH 11
-#define MAX_CARTRIDGE_SIZE 10
+using Coord = Vec2i;
 
 enum ItemType {
 	ItemFood = 1 << 0,
 	ItemArmor = 1 << 1,
-	ItemEmpty = 1 << 2,
-	ItemWeapon = 1 << 3,
-	ItemAmmo = 1 << 4,
-	ItemScroll = 1 << 5,
-	ItemPotion = 1 << 6,
-	ItemTools = 1 << 7
+	ItemWeapon = 1 << 2,
+	ItemAmmo = 1 << 3,
+	ItemScroll = 1 << 4,
+	ItemPotion = 1 << 5,
+	ItemTools = 1 << 6
 };
 
 class Item {
@@ -48,8 +28,7 @@ public:
 	Item();
 	virtual ~Item();
 
-	int posH;
-	int posL;
+    Coord pos;
 	int symbol;
 	char inventorySymbol;
 	int weight;
@@ -66,25 +45,14 @@ public:
     virtual Item::Ptr clone() const = 0;
 };
 
-class EmptyItem: public Item {
-public:
-	EmptyItem();
-	~EmptyItem();
-
-    ItemType getType() const override {
-        return ItemEmpty;
-    }
-
-    Item::Ptr clone() const override {
-        return std::make_unique<EmptyItem>(*this);
-    }
-};
-
 class Food: public Item {
 public:	
+    static const int TYPES_COUNT = 2;
+    static const int COUNT = 10;
+
 	Food(int FoodType);
 	
-	int FoodHeal;
+	int nutritionalValue;
 	bool isRotten;
 
 	Food();
@@ -101,6 +69,9 @@ public:
 
 class Armor: public Item {
 public:
+    static const int TYPES_COUNT = 2;
+    static const int COUNT = 4;
+
 	Armor(int ArmorType);
 
 	int defence;
@@ -120,11 +91,13 @@ public:
 
 class Ammo: public Item {
 public:
+    static const int TYPES_COUNT = 2;
+    static const int COUNT = 25;
+
 	Ammo(int AmmoType);
 
 	int range;
 	int damage;
-	//int count;
 
 	Ammo();
 	~Ammo();
@@ -140,18 +113,20 @@ public:
 
 class Weapon: public Item {
 public:
+    static const int TYPES_COUNT = 6;
+    static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
+    static const int MAX_CARTRIDGE_SIZE = 10;
+
 	Weapon(int WeaponType);
 	
 	int damage;
-
 	int range; 									// Ranged bullets have additional effect on this paramether
 	int damageBonus;								// And on this too
-	bool Ranged;
-	int cartridgeSize;
-	int currentCS;
+	bool isRanged;
+	int maxCartridgeSize;
+	int currCartridgeSize;
 	
     std::unique_ptr<Ammo> cartridge[MAX_CARTRIDGE_SIZE];
-//	vector<Ammo> cartridge;
 
 	Weapon();
 	
@@ -172,11 +147,14 @@ public:
 
 class Scroll: public Item {
 public:
-	Scroll(int s);
-	int effect;
+    static const int TYPES_COUNT = 2;
+    static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
 	Scroll();
+	Scroll(int s);
 	~Scroll();
+
+	int effect;
 
     ItemType getType() const override {
         return ItemScroll;
@@ -189,12 +167,16 @@ public:
 
 class Potion: public Item {
 public:
-	Potion(int p);
-    std::string getPotionName() const;
-	int effect;
+    static const int TYPES_COUNT = 5;
+    static const int COUNT = 25; /* IT TOO */
 
 	Potion();
+	Potion(int p);
 	~Potion();
+
+    std::string getPotionName() const;
+
+	int effect;
 
     ItemType getType() const override {
         return ItemPotion;
@@ -209,18 +191,20 @@ std::string getPotionName(int sym);
 
 class Tools: public Item {
 public:
-	Tools(int t);
-	int possibility;
-	int uses;
-
-	int damage;									// It is nedlectful to use weapon's attributes on tools
-
-	int range; 									// Ranged bullets have add effect on this paramether
-	bool Ranged;
-	int cooldown;									// The end of using attributes
+    static const int TYPES_COUNT = 1;
+    static const int COUNT = 5; /* AND IT */
 
 	Tools();
+	Tools(int t);
 	~Tools();
+
+	int possibility;
+	int uses;
+	int damage;									// It is nedlectful to use weapon's attributes on tools
+	int range; 									// Ranged bullets have add effect on this paramether
+	bool isRanged;
+	int cooldown;									// The end of using attributes
+
 
     ItemType getType() const override {
         return ItemTools;
@@ -231,8 +215,13 @@ public:
     }
 };
 
+const int BANDOLIER = Ammo::TYPES_COUNT;
+const int MAX_USABLE_INV_SIZE = 53;
+const int MAX_TOTAL_INV_SIZE = MAX_USABLE_INV_SIZE + BANDOLIER;
+
 using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
+
 extern ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
 extern Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
@@ -245,7 +234,7 @@ extern std::vector<Potion> potionTypes;
 extern std::vector<Tools> toolTypes;
 extern std::vector<bool> potionTypeKnown;
 
-ItemPileIter findItemAtCell(int row, int col, int sym);
+ItemPileIter findItemAt(Coord cell, int sym);
 bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>
@@ -261,7 +250,7 @@ void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const
     }
 }
 
-void drop(Item::Ptr item, int row, int col);
+void drop(Item::Ptr item, Coord to);
 
 #endif // ITEM_HPP
 

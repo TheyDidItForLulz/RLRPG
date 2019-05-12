@@ -133,12 +133,12 @@ void updateAI() {
             if (not unitMap[i][j] or unitMap[i][j]->getType() != UnitEnemy)
                 continue;
             auto & enemy = dynamic_cast<Enemy &>(*unitMap[i][j]);
-            if (enemy.movedOnTurn == g_turns)
+            if (enemy.lastTurnMoved == g_turns)
                 continue;
 //#                ifdef DEBUG
             //message += "{{{}|{}|{}|{}}}"_format(i, j, unitMap[i][j].unit.uEnemy.symbol, unitMap[i][j].getUnit().health);
 //#                endif
-            if (g_mode == 2 && g_turns % 200 == 0) {
+            if (g_mode == 2 and g_turns % 200 == 0) {
                 enemy.heal(1);
             }
             enemy.updatePosition();
@@ -147,34 +147,33 @@ void updateAI() {
 }
 
 void setItems() {
-    randomlySelectAndSetOnMap(foodTypes, FOOD_COUNT);
-    randomlySelectAndSetOnMap(armorTypes, ARMOR_COUNT, [&] (const auto & types) {
+    randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [&] (const auto & types) {
         Armor item = types[std::rand() % types.size()];
         if (std::rand() % 500 < g_hero->luck) {
             item.mdf = 2;
         }
         return item;
     });
-    randomlySelectAndSetOnMap(weaponTypes, WEAPON_COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, AMMO_COUNT, [&] (const auto & types) {
+    randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [&] (const auto & types) {
         Ammo ammo = types[std::rand() % types.size()];
         ammo.count = std::rand() % g_hero->luck + 1;
         return ammo;
     });
-    randomlySelectAndSetOnMap(scrollTypes, SCROLL_COUNT);
-    randomlySelectAndSetOnMap(potionTypes, POTION_COUNT);
-    randomlySelectAndSetOnMap(toolTypes, TOOL_COUNT);
+    randomlySelectAndSetOnMap(scrollTypes, Scroll::COUNT);
+    randomlySelectAndSetOnMap(potionTypes, Potion::COUNT);
+    randomlySelectAndSetOnMap(toolTypes, Tools::COUNT);
 }
 
 void spawnUnits() {
     for (int i = 0; i < 1; i++) {
         int h = std::rand() % FIELD_ROWS;
         int l = std::rand() % FIELD_COLS;
-        if (map[h][l] == 1 && not unitMap[h][l]) {
+        if (map[h][l] == 1 and not unitMap[h][l]) {
             auto hero = std::make_unique<Hero>();
             g_hero = hero.get();
-            g_hero->posH = h;
-            g_hero->posL = l;
+            g_hero->pos.set(l, h);
             unitMap[h][l] = std::move(hero);
             break;
         } else {
@@ -184,11 +183,10 @@ void spawnUnits() {
     for (int i = 0; i < ENEMIESCOUNT; i++) {
         int h = std::rand() % FIELD_ROWS;
         int l = std::rand() % FIELD_COLS;
-        if (map[h][l] == 1 && not unitMap[h][l]) {
+        if (map[h][l] == 1 and not unitMap[h][l]) {
             int p = std::rand() % Enemy::TYPES_COUNT;
             auto enemy = std::make_unique<Enemy>(enemyTypes[p]);
-            enemy->posH = h;
-            enemy->posL = l;
+            enemy->pos.set(l, h);
             unitMap[h][l] = std::move(enemy);
         } else {
             i--;
@@ -270,7 +268,8 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
 
 std::optional<CellRenderData> cachedMap[FIELD_ROWS][FIELD_COLS];
 
-std::optional<CellRenderData> getRenderData(int row, int col) {
+std::optional<CellRenderData> getRenderData(Coord cell) {
+    auto[ col, row ] = cell;
 #ifndef DEBUG
     if (not seenUpdated[row][col]) {
         return {};
@@ -311,8 +310,8 @@ void clearCachedMap() {
     }
 }
 
-void cache(int row, int col, const CellRenderData & renderData) {
-    cachedMap[row][col] = renderData.forCache();
+void cache(Coord cell, const CellRenderData & renderData) {
+    cachedMap[cell.y][cell.x] = renderData.forCache();
 }
 
 void drawMap(){
@@ -323,10 +322,11 @@ void drawMap(){
 
     for (int i = 0; i < FIELD_ROWS; i++) {
         for (int j = 0; j < FIELD_COLS; j++) {
-            auto cell = getRenderData(i, j);
+            Coord c{ j, i };
+            auto cell = getRenderData(c);
 
             if (cell)
-                cache(i, j, *cell);
+                cache(c, *cell);
             else if (cachedMap[i][j])
                 cell = cachedMap[i][j];
 
@@ -398,7 +398,7 @@ void mSettingsMap() {
         .setCursorPosition(Vec2i{})
         .put("Do you want to load map from file?");
     char inpChar = termRead.readChar();
-    if (inpChar == 'y' || inpChar == 'Y') {
+    if (inpChar == 'y' or inpChar == 'Y') {
         g_generateMap = false;
     }
     termRend.clear();
@@ -462,8 +462,8 @@ void mainMenu() {
 }
 
 void setRandomPotionEffects() {
-    for (int i = 0; i < TYPES_OF_POTIONS; i++) {
-        int rv = rand() % TYPES_OF_POTIONS;
+    for (int i = 0; i < Potion::TYPES_COUNT; i++) {
+        int rv = rand() % Potion::TYPES_COUNT;
         if (potionTypes[rv].effect == 0) {
             potionTypes[rv].effect = i + 1;
         } else {
@@ -504,10 +504,10 @@ void draw() {
     if (g_hero->weapon != nullptr) {
         weaponBar = "";
         weaponBar += g_hero->weapon->getName();
-        if (g_hero->weapon->Ranged) {
+        if (g_hero->weapon->isRanged) {
             weaponBar += "[";
-            for (int i = 0; i < g_hero->weapon->cartridgeSize; i++) {
-                if (i < g_hero->weapon->currentCS && (g_hero->weapon->cartridge[i]->symbol == 450 ||
+            for (int i = 0; i < g_hero->weapon->maxCartridgeSize; i++) {
+                if (i < g_hero->weapon->currCartridgeSize and (g_hero->weapon->cartridge[i]->symbol == 450 or
                     g_hero->weapon->cartridge[i]->symbol == 451)) {
                     weaponBar += "i";
                 } else {
@@ -524,7 +524,7 @@ void draw() {
         .put(fmt::sprintf("%- 190s", weaponBar))
         .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
         .put(fmt::sprintf("%- 190s", message))
-        .setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
+        .setCursorPosition(g_hero->pos);
 }
 
 int main() {
@@ -533,7 +533,7 @@ int main() {
     initialize();
     
     mainMenu();
-    if (g_exit) {     
+    if (g_exit) { 
         return 0;
     }
 
@@ -641,19 +641,17 @@ int main() {
             return 0;
         }
 
-        termRend.setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
+        termRend.setCursorPosition(g_hero->pos);
 
         char inp = termRead.readChar();
-    
-        g_hero->moveHero(inp);
+        g_hero->processInput(inp);
 
         if (!g_stop) {
-
             updateAI();
             
             ++g_turns;
 
-            if (g_turns % 25 == 0 && g_turns != 0 && g_mode == 1) {
+            if (g_turns % 25 == 0 and g_turns != 0 and g_mode == 1) {
                 g_hero->heal(1);
             }
 
@@ -680,7 +678,7 @@ int main() {
                     .put("Are you sure you want to exit?\n")
                     .display();
                 char inp = termRead.readChar();
-                if (inp == 'y' || inp == 'Y' || inp == CONTROL_CONFIRM) {
+                if (inp == 'y' or inp == 'Y' or inp == CONTROL_CONFIRM) {
                     return 0;
                 }
                 g_stop = true;
@@ -688,7 +686,7 @@ int main() {
     
             g_hero->tryLevelUp();
 
-            termRend.setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
+            termRend.setCursorPosition(g_hero->pos);
         } else {
             draw();
             g_stop = false;

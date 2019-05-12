@@ -29,9 +29,7 @@ Unit::Ptr unitMap[FIELD_ROWS][FIELD_COLS];
 Unit::Unit(const Unit & other)
     : health(other.health)
     , maxHealth(other.maxHealth)
-    , inventoryVol(other.inventoryVol)
-    , posH(other.posH)
-    , posL(other.posL)
+    , pos(other.pos)
     , symbol(other.symbol)
     , vision(other.vision)
     , weapon(), armor() {
@@ -43,9 +41,7 @@ Unit & Unit::operator =(const Unit & other) {
     }
     health = other.health;
     maxHealth = other.maxHealth;
-    inventoryVol = other.inventoryVol;
-    posH = other.posH;
-    posL = other.posL;
+    pos = other.pos;
     symbol = other.symbol;
     vision = other.vision;
     weapon = nullptr;
@@ -64,19 +60,18 @@ std::string Unit::getName() {
     }
 }
 
-bool Unit::linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const {
-    double dx = toX - fromX;
-    double dy = toY - fromY;
-    bool steep = std::abs(dx) < std::abs(dy);
+bool Unit::linearVisibilityCheck(Vec2d from, Vec2d to) const {
+    Vec2d d = to - from;
+    bool steep = std::abs(d.x) < std::abs(d.y);
     if (steep) {
-        std::swap(dx, dy);
-        std::swap(fromX, fromY);
+        std::swap(d.x, d.y);
+        std::swap(from.x, from.y);
     }
-    double k = dy / dx;
-    int s = sgn(dx);
-    for (int i = 0; i * s < dx * s; i += s) {
-        int x = fromX + i;
-        int y = fromY + i * k;
+    double k = d.y / d.x;
+    int s = sgn(d.x);
+    for (int i = 0; i * s < d.x * s; i += s) {
+        int x = from.x + i;
+        int y = from.y + i * k;
         if (steep)
             std::swap(x, y);
         if (map[y][x] == 2)
@@ -89,22 +84,21 @@ void Unit::heal(int hp) {
     health = std::min(health + hp, maxHealth);
 }
 
-bool Unit::canSeeCell(int h, int l) const {
+bool Unit::canSee(Coord cell) const {
     double offset = 1. / VISION_PRECISION;
-    return
-        linearVisibilityCheck(posL + .5, posH + .5, l + offset, h + offset) ||
-        linearVisibilityCheck(posL + .5, posH + .5, l + offset, h + 1 - offset) ||
-        linearVisibilityCheck(posL + .5, posH + .5, l + 1 - offset, h + offset) ||
-        linearVisibilityCheck(posL + .5, posH + .5, l + 1 - offset, h + 1 - offset);
+    Vec2d celld{ cell };
+    return linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ offset, offset })
+        or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ offset, 1 - offset })
+        or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, offset })
+        or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, 1 - offset });
 }
 
-void Unit::move(int row, int col) {
-    if (map[row][col] == 2 or unitMap[row][col] or posH == row and posL == col)
+void Unit::setTo(Coord cell) {
+    if (map[cell.y][cell.x] == 2 or unitMap[cell.y][cell.x] or pos == cell)
         return;
 
-    unitMap[row][col] = std::move(unitMap[posH][posL]);
-    posH = row;
-    posL = col;
+    unitMap[cell.y][cell.x] = std::move(unitMap[pos.y][pos.x]);
+    pos = cell;
 }
 
 void Unit::dealDamage(int damage) {
@@ -124,10 +118,9 @@ Enemy::Enemy(int eType) {
             inventory[0] = std::make_unique<Food>(foodTypes[0]);
             inventory[1] = std::make_unique<Weapon>(weaponTypes[0]);
             weapon = dynamic_cast<Weapon *>(inventory[1].get());
-            inventoryVol = 2;
             symbol = 201;
             vision = 16;
-            xpIncreasing = 3;
+            xpCost = 3;
             break;
         }
         case 1: {
@@ -135,10 +128,9 @@ Enemy::Enemy(int eType) {
             maxHealth = 10;
             inventory[0] = std::make_unique<Weapon>(weaponTypes[3]);
             weapon = dynamic_cast<Weapon *>(inventory[0].get());
-            inventoryVol = 1;
             symbol = 202;
             vision = 10;
-            xpIncreasing = 2;
+            xpCost = 2;
             break;
         }
         case 2: {
@@ -149,24 +141,15 @@ Enemy::Enemy(int eType) {
             weapon = dynamic_cast<Weapon *>(inventory[0].get());
             ammo = dynamic_cast<Ammo *>(inventory[1].get());
             ammo->count = std::rand() % 30 + 4;
-            inventoryVol = 2;
             symbol = 203;
             vision = 16;
-            xpIncreasing = 5;
+            xpCost = 5;
             break;
         }
     }
 }
 
 Enemy::Enemy(const Enemy & other)
-    /*: health(other.health)
-    , maxHealth(other.maxHealth)
-    , inventoryVol(other.inventoryVol)
-    , posH(other.posH)
-    , posL(other.posL)
-    , symbol(other.symbol)
-    , vision(other.vision)
-    , weapon(), armor() {*/
     : Unit(other) {
     for (int i = 0; i < MAX_INV_SIZE; ++i) {
         if (not other.inventory[i])
@@ -208,7 +191,7 @@ void Enemy::dropInventory() {
     armor = nullptr;
     ammo = nullptr;
     for (int i = 0; i < MAX_INV_SIZE; i++) {
-        drop(std::move(inventory[i]), posH, posL);
+        drop(std::move(inventory[i]), pos);
     }
 }
 
@@ -230,22 +213,21 @@ void Enemy::shoot() {
     if (weapon == nullptr or ammo == nullptr)
         return;
 
-    auto dir = directionFrom(Vec2i{ g_hero->posL - posL, g_hero->posH - posH }).value();
+    auto dir = directionFrom(g_hero->pos - pos).value();
     Vec2i offset = toVec2i(dir);
     char sym = getProjectileSymbol(dir);
     for (int i = 1; i < weapon->range + ammo->range; i++) {
-        int row = posH + offset.y * i;
-        int col = posL + offset.x * i;
+        Coord cell = pos + offset * i;
 
-        if (map[row][col] == 2)
+        if (map[cell.y][cell.x] == 2)
             break;
 
-        if (unitMap[row][col] and unitMap[row][col]->getType() == UnitHero) {
+        if (unitMap[cell.y][cell.x] and unitMap[cell.y][cell.x]->getType() == UnitHero) {
             g_hero->dealDamage(ammo->damage + weapon->damageBonus);
             break;
         }
         termRend
-            .setCursorPosition(Vec2i{ col, row })
+            .setCursorPosition(cell)
             .put(sym)
             .display();
         sleep(DELAY / 3);
@@ -262,15 +244,18 @@ void Enemy::shoot() {
     }
 }
 
-int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
-    if (targetH == h and targetL == l) {
-        return -1;
-    }
-    int depth = 2 + std::abs(targetH - h) + std::abs(targetL - l);                        // <- smth a little bit strange
-    std::queue<Vec2i> q;
-    q.push(Vec2i{ l, h });
+std::optional<Coord> Enemy::searchForShortestPath(Coord to) const {
+    if (to == pos)
+        return std::nullopt;
+
+    int maxDepth = 2 + std::abs(to.x - pos.x) + std::abs(to.y - pos.y);
+
+    std::queue<Coord> q;
+    q.push(pos);
+
     int used[FIELD_ROWS][FIELD_COLS] = {};
-    used[h][l] = 1;
+    used[pos.y][pos.x] = 1;
+
     std::vector<Vec2i> dirs = {
         toVec2i(Direction::Up),
         toVec2i(Direction::Down),
@@ -283,13 +268,15 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
         dirs.push_back(toVec2i(Direction::DownRight));
         dirs.push_back(toVec2i(Direction::DownLeft));
     }
+
     while (not q.empty()) {
-        auto v = q.front();
-        if (v.y == targetH && v.x == targetL)
+        Coord v = q.front();
+        if (v == to)
             break;
-        if (used[v.y][v.x] > depth) {
-            return -1;
-        }
+
+        if (used[v.y][v.x] > maxDepth)
+            return std::nullopt;
+
         q.pop();
 
         for (auto dir : dirs) {
@@ -303,10 +290,10 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
         }
     }
 
-    if (!used[targetH][targetL]) {
-        return -1;
-    }
-    Vec2i v{ targetL, targetH };
+    if (not used[to.y][to.x])
+        return std::nullopt;
+
+    Coord v = to;
     while (used[v.y][v.x] > 2) {
         for (auto dir : dirs) {
             auto tv = v - dir;
@@ -318,36 +305,29 @@ int bfs(int targetH, int targetL, int h, int l, int &posH, int &posL) {
         }
     }
 
-    posH = v.y;
-    posL = v.x;
-    return depth - 2;
+    return v;
 }
 
 void Enemy::updatePosition() {
-    movedOnTurn = g_turns;
+    lastTurnMoved = g_turns;
 
     bool canSeeHero =
         not g_hero->isInvisible()
-        and distSquared(Vec2i{ posL, posH }, Vec2i{ g_hero->posL, g_hero->posH }) < sqr(vision)
-        and canSeeCell(g_hero->posH, g_hero->posL);
-    
-    int pH = 1, pL = 1;
+        and distSquared(pos, g_hero->pos) < sqr(vision)
+        and canSee(g_hero->pos);
 
     if (canSeeHero) {
-        if ((posH == g_hero->posH or posL == g_hero->posL or std::abs(g_hero->posH - posH) == std::abs(g_hero->posL - posL))
-                and weapon and weapon->Ranged and ammo
-                and weapon->range + ammo->range >= std::abs(g_hero->posH - posH) + std::abs(g_hero->posL - posL)) {
+        if ((pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or std::abs(g_hero->pos.y - pos.y) == std::abs(g_hero->pos.x - pos.x))
+                and weapon and weapon->isRanged and ammo
+                and weapon->range + ammo->range >= std::abs(g_hero->pos.y - pos.y) + std::abs(g_hero->pos.x - pos.x)) {
             shoot();
         } else {
-            targetH = g_hero->posH;
-            targetL = g_hero->posL;
+            target = g_hero->pos;
 
-            if (bfs(g_hero->posH, g_hero->posL, posH, posL, pH, pL) == -1) {
-                canSeeHero = false;
-            } else {
-                if (unitMap[pH][pL] and unitMap[pH][pL]->getType() == UnitEnemy) {
+            if (auto next = searchForShortestPath(g_hero->pos)) {
+                if (unitMap[next->y][next->x] and unitMap[next->y][next->x]->getType() == UnitEnemy) {
                     return;
-                } else if (weapon and unitMap[pH][pL] and unitMap[pH][pL]->getType() == UnitHero) {
+                } else if (weapon and unitMap[next->y][next->x] and unitMap[next->y][next->x]->getType() == UnitHero) {
                     //if (weapon->getType() == ItemWeapon or unitweapon->type) {
                     if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {
                         g_hero->dealDamage(weapon->damage);
@@ -363,24 +343,24 @@ void Enemy::updatePosition() {
                         }
                     }*/
                     if (health <= 0) {
-                        unitMap[posH][posL].reset();
+                        unitMap[pos.y][pos.x].reset();
                         return;
                     }
                 } else {
-                    move(pH, pL);
+                    setTo(*next);
                     return;
                 }
+            } else {
+                canSeeHero = false;
             }
         }
     }
     if (not canSeeHero) {
         bool needRandDir = false;
-        if (targetH != -1 and (targetH != posH or targetL != posL)) {
-            if (bfs(targetH, targetL, posH, posL, pH, pL) == -1) {
-                needRandDir = true;
-            } else {
-                if (pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
-                    if (weapon and unitMap[pH][pL] and unitMap[pH][pL]->getType() == UnitHero) {
+        if (target != pos) {
+            if (auto next = searchForShortestPath(*target)) {
+                if (next->y < FIELD_ROWS and next->y > 0 and next->x < FIELD_COLS and next->x > 0) {
+                    if (weapon and unitMap[next->y][next->x] and unitMap[next->y][next->x]->getType() == UnitHero) {
                         //if (weapon->type == ItemWeapon) {
                         if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {
                             g_hero->dealDamage(weapon->damage);
@@ -395,49 +375,44 @@ void Enemy::updatePosition() {
                             }
                         }*/
                         if (health <= 0) {
-                            unitMap[posH][posL].reset();
+                            unitMap[pos.y][pos.x].reset();
                             return;
                         }
                     } else {
-                        move(pH, pL);
+                        setTo(*next);
                         return;
                     }
                 }
+            } else {
+                needRandDir = true;
             }
         } else {
             needRandDir = true;
         }
         if (needRandDir) {
-            std::vector<int> visionArrayH;
-            std::vector<int> visionArrayL;
+            std::vector<Coord> visibleCells;
 
-            for (int i = std::max(posH - vision, 0); i < std::min(FIELD_ROWS, posH + vision); i++) {
-                for (int j = std::max(posL - vision, 0); j < std::min(posL + vision, FIELD_COLS); j++) {
-                    if ((i != posH or j != posL) and map[i][j] != 2
-                            and distSquared(Vec2i{ posL, posH }, Vec2{ j, i }) < sqr(vision)
-                            and not unitMap[i][j] and canSeeCell(i, j)) {
-                        visionArrayH.push_back(i);
-                        visionArrayL.push_back(j);
+            for (int i = std::max(pos.y - vision, 0); i < std::min(FIELD_ROWS, pos.y + vision); i++) {
+                for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, FIELD_COLS); j++) {
+                    Vec2i cell{ j, i };
+                    if (cell != pos and map[i][j] != 2
+                            and distSquared(pos, cell) < sqr(vision)
+                            and not unitMap[i][j] and canSee(cell)) {
+                        visibleCells.push_back(cell);
                     }
                 }    
             }
             int attempts = 15;
-            bool stepped = false;
+            std::optional<Coord> next;
             for (int i = 0; i < attempts; ++i) {
-                int r = std::rand() % visionArrayH.size(); 
-                int rposH = visionArrayH[r];
-                int rposL = visionArrayL[r];
-                
-                targetH = rposH;
-                targetL = rposL;
+                target = visibleCells[std::rand() % visibleCells.size()];
 
-                if (bfs(targetH, targetL, posH, posL, pH, pL) != -1) {
-                    stepped = true;
+                if (next = searchForShortestPath(*target)) {
                     break;
                 }
             }
-            if (stepped && pH < FIELD_ROWS && pH > 0 && pL < FIELD_COLS && pL > 0) {
-                if (weapon and unitMap[pH][pL] and unitMap[pH][pL]->getType() == UnitHero) {
+            if (next and next->y < FIELD_ROWS and next->y > 0 and next->x < FIELD_COLS and next->x > 0) {
+                if (weapon and unitMap[next->y][next->x] and unitMap[next->y][next->x]->getType() == UnitHero) {
                     //if (weapon->type == ItemWeapon) {
                     if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {
                         g_hero->dealDamage(weapon->damage);
@@ -452,15 +427,11 @@ void Enemy::updatePosition() {
                         }
                     }*/
                     if (health <= 0) {
-                        unitMap[posH][posL].reset();
+                        unitMap[pos.y][pos.x].reset();
                         return;
                     }
                 } else {
-                    /*unitMap[pH][pL] = unitMap[posH][posL];
-                    unitMap[pH][pL].getUnit().posH = pH;
-                    unitMap[pH][pL].getUnit().posL = pL;
-                    unitMap[posH][posL].type = UnitEmpty;*/
-                    move(pH, pL);
+                    setTo(*next);
                     return;
                 }
             }
@@ -516,8 +487,9 @@ void Hero::checkVisibleCells() {
     for (int i = 0; i < FIELD_ROWS; i++) {
         for (int j = 0; j < FIELD_COLS; j++) {
             seenUpdated[i][j] = 0;
-            if (sqr(posH - i) + sqr(posL - j) < sqr(g_vision)) {
-                seenUpdated[i][j] = canSeeCell(i, j);
+            Vec2i cell{ j, i };
+            if (distSquared(pos, cell) < sqr(g_vision)) {
+                seenUpdated[i][j] = canSee(cell);
             }
         }
     }
@@ -561,7 +533,7 @@ void Hero::printList(const std::vector<Item *> & items, std::string_view msg, in
         case 1: {
             for (int i = 0; i < items.size(); i++) {
                 termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
-                if (items[i]->showMdf == true && items[i]->count == 1) {
+                if (items[i]->showMdf == true and items[i]->count == 1) {
                     if (items[i]->attribute == 100) {
                         termRend.put("[{}] {} {{{}}}. "_format(
                                 items[i]->inventorySymbol,
@@ -699,10 +671,10 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {                                  
                     Item::Ptr & ammo = *ammoIter;
                     if (inventory[AMMO_SLOT + choice] == nullptr) {
                         inventory[AMMO_SLOT + choice] = std::move(ammo);
-                        itemsMap[posH][posL].erase(ammoIter);
+                        itemsMap[pos.y][pos.x].erase(ammoIter);
                     } else if (inventory[AMMO_SLOT + choice]->symbol == ammo->symbol) {
                         inventory[AMMO_SLOT + choice]->count += ammo->count;
-                        itemsMap[posH][posL].erase(ammoIter);
+                        itemsMap[pos.y][pos.x].erase(ammoIter);
                     } else {
                         std::swap(ammo, inventory[AMMO_SLOT + choice]);
                     }
@@ -716,12 +688,12 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {                                  
 }
 
 void Hero::pickUp() {
-    if (itemsMap[posH][posL].empty()) {
+    if (itemsMap[pos.y][pos.x].empty()) {
         message += "There is nothing here to pick up. ";
         g_stop = true;
         return;
-    } else if (itemsMap[posH][posL].size() == 1) {
-        auto it = itemsMap[posH][posL].begin();
+    } else if (itemsMap[pos.y][pos.x].size() == 1) {
+        auto it = itemsMap[pos.y][pos.x].begin();
         auto & itemToPick = *it;
         message += "You picked up {}. "_format(itemToPick->getName());
 
@@ -737,7 +709,7 @@ void Hero::pickUp() {
                 if (inventory[i] and inventory[i]->symbol == itemToPick->symbol) {
                     canStack = true;
                     inventory[i]->count += itemToPick->count;
-                    itemsMap[posH][posL].pop_back();
+                    itemsMap[pos.y][pos.x].pop_back();
                 }
             }
         }
@@ -747,15 +719,13 @@ void Hero::pickUp() {
             if (eic != 101010) {
                 inventory[eic] = std::move(itemToPick);
                 inventory[eic]->inventorySymbol = eic + 'a';
-                //log("Item: {} '{}'", inventory[eic].getItem().getName(), inventory[eic].getItem().inventorySymbol);
-                itemsMap[posH][posL].pop_back();
-                inventoryVol++;
+                itemsMap[pos.y][pos.x].pop_back();
             } else {
                 message += "Your inventory is full, motherfuck'a! ";
             }
         }
 
-        if (getInventoryItemsWeight() > g_maxBurden && !isBurdened) {
+        if (getInventoryItemsWeight() > g_maxBurden and !isBurdened) {
             message += "You're burdened. ";
             isBurdened = true;
         }
@@ -764,7 +734,7 @@ void Hero::pickUp() {
     }
     
     std::vector<Item *> list;
-    for (const auto & item : itemsMap[posH][posL])
+    for (const auto & item : itemsMap[pos.y][pos.x])
         list.push_back(item.get());
 
     printList(list, "What do you want to pick up? ", 2);
@@ -776,11 +746,11 @@ void Hero::pickUp() {
             return;
 
         intch = choice - 'a';
-        if (intch >= 0 or intch < itemsMap[posH][posL].size())
+        if (intch >= 0 or intch < itemsMap[pos.y][pos.x].size())
             break;
     }
 
-    auto itemIter = std::begin(itemsMap[posH][posL]);
+    auto itemIter = std::begin(itemsMap[pos.y][pos.x]);
     std::advance(itemIter, intch);
     auto & item = *itemIter;
     
@@ -798,7 +768,7 @@ void Hero::pickUp() {
             if (inventory[i] and inventory[i]->symbol == item->symbol) {
                 canStack = true;
                 inventory[i]->count += item->count;
-                itemsMap[posH][posL].erase(itemIter);
+                itemsMap[pos.y][pos.x].erase(itemIter);
             }
         }
     }
@@ -808,14 +778,13 @@ void Hero::pickUp() {
         if (eic != 101010) {
             inventory[eic] = std::move(item);
             inventory[eic]->inventorySymbol = eic + 'a';
-            itemsMap[posH][posL].erase(itemIter);
-            inventoryVol++;
+            itemsMap[pos.y][pos.x].erase(itemIter);
         } else {
             message += "Your inventory is full, motherfuck'a! ";
         }
     }
 
-    if (getInventoryItemsWeight() > g_maxBurden && !isBurdened) {
+    if (getInventoryItemsWeight() > g_maxBurden and !isBurdened) {
         message += "You're burdened. ";
         isBurdened = true;
     }
@@ -871,7 +840,7 @@ void Hero::eat() {
     }
 }
 
-void Hero::moveHero(char inp) {
+void Hero::processInput(char inp) {
     switch (inp) {
         case CONTROL_UP:
         case CONTROL_DOWN:
@@ -882,7 +851,7 @@ void Hero::moveHero(char inp) {
         case CONTROL_DOWNLEFT:
         case CONTROL_DOWNRIGHT: {
             auto offset = toVec2i(*getDirectionByControl(inp));
-            moveHeroImpl(posH + offset.y, posL + offset.x);
+            moveTo(pos + offset);
             break;
         }
         case CONTROL_PICKUP: {
@@ -965,7 +934,7 @@ void Hero::moveHero(char inp) {
             break;
         }
         case CONTROL_RELOAD: {
-            if (weapon == nullptr or not weapon->Ranged) {
+            if (weapon == nullptr or not weapon->isRanged) {
                 message += "You have no ranged weapon in hands. ";
                 g_stop = true;
             } else if (findAmmoInInventory() != 101010) {
@@ -1061,11 +1030,11 @@ void Hero::showInventory(char inp) {
             if (item and item->getType() == ItemFood) {
                 int prob = rand() % g_hero->luck;
                 if (prob == 0) {
-                    hunger += dynamic_cast<Food &>(*item).FoodHeal / 3;
+                    hunger += dynamic_cast<Food &>(*item).nutritionalValue / 3;
                     health --;
                     message += "Fuck! This food was rotten! ";
                 } else {
-                    hunger += dynamic_cast<Food &>(*item).FoodHeal;
+                    hunger += dynamic_cast<Food &>(*item).nutritionalValue;
                 }
                 if (item->count == 1) {
                     item.reset();
@@ -1115,7 +1084,7 @@ void Hero::showInventory(char inp) {
             if (not item)
                 break;
             if (not item->isStackable or item->count == 1) {
-                drop(std::move(item), posH, posL);
+                drop(std::move(item), pos);
             } else {
                 clearRightPane();
                 termRend
@@ -1124,12 +1093,12 @@ void Hero::showInventory(char inp) {
 
                 int dropCount = clamp(1, termRead.readChar() - '0', item->count);
 
-                auto iter = findItemAtCell(posH, posL, item->symbol);
-                if (iter != end(itemsMap[posH][posL])) {        
+                auto iter = findItemAt(pos, item->symbol);
+                if (iter != end(itemsMap[pos.y][pos.x])) {        
                     (*iter)->count += dropCount;
                 } else {            
-                    itemsMap[posH][posL].push_back(item->clone());
-                    itemsMap[posH][posL].back()->count = dropCount;
+                    itemsMap[pos.y][pos.x].push_back(item->clone());
+                    itemsMap[pos.y][pos.x].back()->count = dropCount;
                 }
                 item->count -= dropCount;
                 if (item->count == 0) {
@@ -1137,7 +1106,7 @@ void Hero::showInventory(char inp) {
                 }
             }
 
-            if (getInventoryItemsWeight() <= g_maxBurden && isBurdened) {
+            if (getInventoryItemsWeight() <= g_maxBurden and isBurdened) {
                 message += "You are burdened no more. ";
                 isBurdened = false;
             }
@@ -1246,10 +1215,8 @@ void Hero::showInventory(char inp) {
                         for (int i = 0; i < 1; i++) {
                             int l = rand() % FIELD_COLS;
                             int h = rand() % FIELD_ROWS;
-                            if (map[h][l] != 2 && not unitMap[h][l]) {
-                                unitMap[h][l] = std::move(unitMap[posH][posL]);
-                                posH = h;
-                                posL = l;
+                            if (map[h][l] != 2 and not unitMap[h][l]) {
+                                setTo(Coord{ l, h });
                                 checkVisibleCells();
                             } else {
                                 i--;
@@ -1397,7 +1364,7 @@ void Hero::showInventory(char inp) {
                 .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
                 .put("Now you can load your weapon");
             while (true) {
-                for (int i = 0; i < weapon->cartridgeSize; i++) {
+                for (int i = 0; i < weapon->maxCartridgeSize; i++) {
                     TextStyle style{ TerminalColor{} };
                     char symbol = 'i';
                     if (weapon->cartridge[i]) {
@@ -1452,15 +1419,15 @@ void Hero::showInventory(char inp) {
                     return;
 
                 if (in == 'u') {
-                    if (weapon->currentCS == 0) {
+                    if (weapon->currCartridgeSize == 0) {
                         continue;
                     }
                     bool found = false;
                     for (int j = 0; j < BANDOLIER; j++) {
                         auto & item = inventory[AMMO_SLOT + j];
-                        if (item and item->symbol == weapon->cartridge[weapon->currentCS - 1]->symbol) {
-                            weapon->cartridge[weapon->currentCS - 1].reset();
-                            weapon->currentCS--;
+                        if (item and item->symbol == weapon->cartridge[weapon->currCartridgeSize - 1]->symbol) {
+                            weapon->cartridge[weapon->currCartridgeSize - 1].reset();
+                            weapon->currCartridgeSize--;
                             item->count++;
                             found = true;
                             break;
@@ -1471,25 +1438,25 @@ void Hero::showInventory(char inp) {
                     for (int j = 0; j < BANDOLIER; j++) {
                         auto & item = inventory[AMMO_SLOT + j];
                         if (not item) {
-                            item = std::move(weapon->cartridge[weapon->currentCS - 1]);
-                            weapon->currentCS--;
+                            item = std::move(weapon->cartridge[weapon->currCartridgeSize - 1]);
+                            weapon->currCartridgeSize--;
                             found = true;
                             break;
                         }
                     }
                     if (found)
                         continue;
-                    drop(std::move(weapon->cartridge[weapon->currentCS - 1]), posH, posL);
-                    weapon->currentCS--;
+                    drop(std::move(weapon->cartridge[weapon->currCartridgeSize - 1]), pos);
+                    weapon->currCartridgeSize--;
                 } else {
                     int intin = in - '1';
                     auto & item = inventory[AMMO_SLOT + intin];
                     if (item) {
-                        if (weapon->currentCS >= weapon->cartridgeSize) {
+                        if (weapon->currCartridgeSize >= weapon->maxCartridgeSize) {
                             message += "Weapon is loaded ";
                             return;
                         }
-                        auto & slot = weapon->cartridge[weapon->currentCS];
+                        auto & slot = weapon->cartridge[weapon->currCartridgeSize];
                         if (item->count > 1) {
                             slot = std::make_unique<Ammo>(dynamic_cast<Ammo &>(*item));
                             slot->count = 1;
@@ -1497,7 +1464,7 @@ void Hero::showInventory(char inp) {
                         } else {
                             slot.reset(dynamic_cast<Ammo *>(item.release()));
                         }
-                        weapon->currentCS++;
+                        weapon->currCartridgeSize++;
                     }
                 }
             }
@@ -1506,18 +1473,18 @@ void Hero::showInventory(char inp) {
     }
 }
 
-void Hero::attackEnemy(int row, int col) {
-    auto & enemy = dynamic_cast<Enemy &>(*unitMap[row][col]);
+void Hero::attackEnemy(Coord cell) {
+    auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell.y][cell.x]);
     if (weapon) {
         enemy.dealDamage(weapon->damage);
     }
     //} else if (weapon->type == ItemTools) {
-        //unitMap[posH + a1][posL + a2].getUnit().health -= weapon->item.invTools.damage;
+        //unitMap[pos.y + a1][pos.x + a2].getUnit().health -= weapon->item.invTools.damage;
     //}
     if (enemy.health <= 0) {
         enemy.dropInventory();
-        xp += enemy.xpIncreasing;
-        unitMap[row][col].reset();
+        xp += enemy.xpCost;
+        unitMap[cell.y][cell.x].reset();
     }
 }
 
@@ -1526,8 +1493,9 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
     auto offset = toVec2i(direction);
     char sym = getProjectileSymbol(direction);
     for (int i = 0; i < 12 - item->weight / 3; i++) {                        // 12 is "strength"
-        int row = posH + offset.y * (i + 1);
-        int col = posL + offset.x * (i + 1);
+        auto[ col, row ] = pos + offset * (i + 1);
+        //int row = pos.y + offset.y * (i + 1);
+        //int col = pos.x + offset.x * (i + 1);
 
         if (map[row][col] == 2)
             break;
@@ -1537,7 +1505,7 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
             if (unitMap[row][col]->health <= 0) {
                 auto & enemy = dynamic_cast<Enemy &>(*unitMap[row][col]);
                 enemy.dropInventory();
-                xp += enemy.xpIncreasing;
+                xp += enemy.xpCost;
                 unitMap[row][col].reset();
             }
             break;
@@ -1549,15 +1517,15 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
         throwDist++;
         sleep(DELAY);
     }
-    drop(std::move(item), posH + offset.y * throwDist, posL + offset.x * throwDist);
+    drop(std::move(item), pos + offset * throwDist);
 }
 
 void Hero::shoot() {
-    if (weapon == nullptr or not weapon->Ranged) {
+    if (weapon == nullptr or not weapon->isRanged) {
         message += "You have no ranged weapon in hands. ";
         return;
     }
-    if (weapon->currentCS == 0) {
+    if (weapon->currCartridgeSize == 0) {
         message += "You have no bullets. ";
         g_stop = true;
         return;
@@ -1575,11 +1543,12 @@ void Hero::shoot() {
     auto direction = *optdir;
     auto offset = toVec2i(direction);
     char sym = getProjectileSymbol(direction);
-    int bulletPower = weapon->cartridge[weapon->currentCS - 1]->damage + g_hero->weapon->damageBonus;
+    int bulletPower = weapon->cartridge[weapon->currCartridgeSize - 1]->damage + g_hero->weapon->damageBonus;
 
-    for (int i = 1; i < weapon->range + weapon->cartridge[weapon->currentCS - 1]->range; i++) {
-        int row = posH + offset.y * i;
-        int col = posL + offset.x * i; 
+    for (int i = 1; i < weapon->range + weapon->cartridge[weapon->currCartridgeSize - 1]->range; i++) {
+        auto[ col, row ] = pos + offset * i;
+        //int row = pos.y + offset.y * i;
+        //int col = pos.x + offset.x * i; 
 
         if (map[row][col] == 2)
             break;
@@ -1589,7 +1558,7 @@ void Hero::shoot() {
             if (unitMap[row][col]->health <= 0) {
                 auto & enemy = dynamic_cast<Enemy &>(*unitMap[row][col]);
                 enemy.dropInventory();
-                xp += enemy.xpIncreasing;
+                xp += enemy.xpCost;
                 unitMap[row][col].reset();
             }
         }
@@ -1599,23 +1568,20 @@ void Hero::shoot() {
             .display();
         sleep(DELAY / 3);
     }
-    weapon->cartridge[weapon->currentCS - 1].reset();
-    weapon->currentCS--;
+    weapon->cartridge[weapon->currCartridgeSize - 1].reset();
+    weapon->currCartridgeSize--;
 }
 
-void Hero::moveHeroImpl(int row, int col) {
-    if (row < 0 or row >= FIELD_ROWS or col < 0 or col >= FIELD_COLS)
+void Hero::moveTo(Coord cell) {
+    if (cell.y < 0 or cell.y >= FIELD_ROWS or cell.x < 0 or cell.x >= FIELD_COLS)
         return;
-    if (map[row][col] != 2 || canMoveThroughWalls) {
-        if (unitMap[row][col] and unitMap[row][col]->getType() == UnitEnemy) {
-            attackEnemy(row, col);
-        } else if (not unitMap[row][col]) {
-            move(row, col);
-            //unitMap[row][col] = std::move(unitMap[posH][posL]);
-            //posH = row;
-            //posL = col;
+    if (map[cell.y][cell.x] != 2 || canMoveThroughWalls) {
+        if (unitMap[cell.y][cell.x] and unitMap[cell.y][cell.x]->getType() == UnitEnemy) {
+            attackEnemy(cell);
+        } else if (not unitMap[cell.y][cell.x]) {
+            setTo(cell);
         }
-    } else if (map[row][col] == 2) {
+    } else if (map[cell.y][cell.x] == 2) {
         /*if (weapon->type == ItemTools) {
             if (weapon->item.invTools.possibility == 1) {
                 termRend

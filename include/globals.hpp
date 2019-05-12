@@ -4,6 +4,8 @@
 #include<string>
 #include<termlib/termlib.hpp>
 
+using Coord = Vec2i;
+
 #include<unit.hpp>
 
 extern std::string message;
