@@ -125,20 +125,23 @@ std::string message = "";
 std::string bar = "";
 std::string weaponBar = "";
 
-Hero g_hero;
+Hero * g_hero;
 
 void updateAI() {
     for (int i = 0; i < FIELD_ROWS; i++) {
         for (int j = 0; j < FIELD_COLS; j++) {
-            if (unitMap[i][j].type == UnitEnemy && unitMap[i][j].unit.uEnemy.movedOnTurn != g_turns) {
-#                ifdef DEBUG
-                message += "{{{}|{}|{}|{}}}"_format(i, j, unitMap[i][j].unit.uEnemy.symbol, unitMap[i][j].getUnit().health);
-#                endif
-                if (g_mode == 2 && g_turns % 200 == 0) {
-                    unitMap[i][j].getUnit().heal(1);
-                }
-                unitMap[i][j].unit.uEnemy.updatePosition();
+            if (not unitMap[i][j] or unitMap[i][j]->getType() != UnitEnemy)
+                continue;
+            auto & enemy = dynamic_cast<Enemy &>(*unitMap[i][j]);
+            if (enemy.movedOnTurn == g_turns)
+                continue;
+//#                ifdef DEBUG
+            //message += "{{{}|{}|{}|{}}}"_format(i, j, unitMap[i][j].unit.uEnemy.symbol, unitMap[i][j].getUnit().health);
+//#                endif
+            if (g_mode == 2 && g_turns % 200 == 0) {
+                enemy.heal(1);
             }
+            enemy.updatePosition();
         }
     }
 }
@@ -147,7 +150,7 @@ void setItems() {
     randomlySelectAndSetOnMap(foodTypes, FOOD_COUNT);
     randomlySelectAndSetOnMap(armorTypes, ARMOR_COUNT, [&] (const auto & types) {
         Armor item = types[std::rand() % types.size()];
-        if (std::rand() % 500 < g_hero.luck) {
+        if (std::rand() % 500 < g_hero->luck) {
             item.mdf = 2;
         }
         return item;
@@ -155,7 +158,7 @@ void setItems() {
     randomlySelectAndSetOnMap(weaponTypes, WEAPON_COUNT);
     randomlySelectAndSetOnMap(ammoTypes, AMMO_COUNT, [&] (const auto & types) {
         Ammo ammo = types[std::rand() % types.size()];
-        ammo.count = std::rand() % g_hero.luck + 1;
+        ammo.count = std::rand() % g_hero->luck + 1;
         return ammo;
     });
     randomlySelectAndSetOnMap(scrollTypes, SCROLL_COUNT);
@@ -165,25 +168,28 @@ void setItems() {
 
 void spawnUnits() {
     for (int i = 0; i < 1; i++) {
-        int h = rand() % FIELD_ROWS;
-        int l = rand() % FIELD_COLS;
-        if (map[h][l] == 1 && unitMap[h][l].type == UnitEmpty) {
-            unitMap[h][l] = g_hero;
-            g_hero.posH = h;
-            g_hero.posL = l;
+        int h = std::rand() % FIELD_ROWS;
+        int l = std::rand() % FIELD_COLS;
+        if (map[h][l] == 1 && not unitMap[h][l]) {
+            auto hero = std::make_unique<Hero>();
+            g_hero = hero.get();
+            g_hero->posH = h;
+            g_hero->posL = l;
+            unitMap[h][l] = std::move(hero);
             break;
         } else {
             i--;
         }
     }
     for (int i = 0; i < ENEMIESCOUNT; i++) {
-        int h = rand() % FIELD_ROWS;
-        int l = rand() % FIELD_COLS;
-        if (map[h][l] == 1 && unitMap[h][l].type == UnitEmpty) {
-            int p = rand() % Enemy::TYPES_COUNT;
-            unitMap[h][l] = differentEnemies[p];
-            unitMap[h][l].getUnit().posH = h;
-            unitMap[h][l].getUnit().posL = l;
+        int h = std::rand() % FIELD_ROWS;
+        int l = std::rand() % FIELD_COLS;
+        if (map[h][l] == 1 && not unitMap[h][l]) {
+            int p = std::rand() % Enemy::TYPES_COUNT;
+            auto enemy = std::make_unique<Enemy>(enemyTypes[p]);
+            enemy->posH = h;
+            enemy->posL = l;
+            unitMap[h][l] = std::move(enemy);
         } else {
             i--;
         }
@@ -249,11 +255,11 @@ SymbolRenderData getRenderData(const Item::Ptr & item) {
     }
 }
 
-SymbolRenderData getRenderData(const PossibleUnit & unit) {
-    switch (unit.type) {
+SymbolRenderData getRenderData(const Unit::Ptr & unit) {
+    switch (unit->getType()) {
         case UnitHero: return { '@', { Color::Green } };
         case UnitEnemy:
-            switch (unit.getUnit().symbol) {
+            switch (unit->symbol) {
                 case 201: return { '@', { Color::Yellow } };
                 case 202: return { '@', { TextStyle::Bold, Color::Green } };
                 case 203: return { '@', { TextStyle::Bold, Color::Black } };
@@ -271,7 +277,7 @@ std::optional<CellRenderData> getRenderData(int row, int col) {
     }
 #endif
     CellRenderData renderData;
-    if (unitMap[row][col].type != UnitEmpty) {
+    if (unitMap[row][col]) {
         renderData.unit = getRenderData(unitMap[row][col]);
     }
     if (itemsMap[row][col].size() == 1) {
@@ -312,7 +318,7 @@ void cache(int row, int col, const CellRenderData & renderData) {
 void drawMap(){
     termRend.setCursorPosition(Vec2i{});
 
-    if (g_mode == 2 and not g_hero.isMapInInventory())
+    if (g_mode == 2 and not g_hero->isMapInInventory())
         clearCachedMap();
 
     for (int i = 0; i < FIELD_ROWS; i++) {
@@ -455,23 +461,6 @@ void mainMenu() {
     }
 }
 
-int getLevelUpXP(int level) {
-    return level * level + 4;
-}
-
-int g_levelUpXP = getLevelUpXP(g_hero.level);
-
-void getXP() {
-    if (g_hero.xp > g_levelUpXP) {
-        g_hero.level++;
-        message += fmt::format("Now you are level {}. ", g_hero.level);
-        g_maxBurden += g_maxBurden / 4;
-        g_hero.maxHealth += g_hero.maxHealth / 4;
-        g_hero.health = g_hero.maxHealth;
-        g_levelUpXP = getLevelUpXP(g_hero.level * g_hero.level + 4);
-    }
-}
-
 void setRandomPotionEffects() {
     for (int i = 0; i < TYPES_OF_POTIONS; i++) {
         int rv = rand() % TYPES_OF_POTIONS;
@@ -486,15 +475,15 @@ void setRandomPotionEffects() {
 void draw() {
     drawMap();
 
-    int defence = g_hero.heroArmor ? g_hero.heroArmor->defence : 0;
-    int damage = g_hero.heroWeapon ? g_hero.heroWeapon->damage : 0;
+    int defence = g_hero->armor ? g_hero->armor->defence : 0;
+    int damage = g_hero->weapon ? g_hero->weapon->damage : 0;
     bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
-            g_hero.health,
-            g_hero.hunger,
+            g_hero->health,
+            g_hero->hunger,
             defence,
             damage,
-            g_hero.level, g_hero.xp,
-            g_hero.luck);
+            g_hero->level, g_hero->xp,
+            g_hero->luck);
 
     bar += "Bul: |";
     for (int i = 0; i < BANDOLIER; i++) {
@@ -505,21 +494,21 @@ void draw() {
         }
     }
     bar += " ";
-    if (g_hero.isBurdened)
+    if (g_hero->isBurdened)
         bar += "Burdened. ";
 
-    if (g_hero.hunger < 75) {    
+    if (g_hero->hunger < 75) {    
         bar += "Hungry. ";
     }
 
-    if (g_hero.heroWeapon != nullptr) {
+    if (g_hero->weapon != nullptr) {
         weaponBar = "";
-        weaponBar += g_hero.heroWeapon->getName();
-        if (g_hero.heroWeapon->Ranged) {
+        weaponBar += g_hero->weapon->getName();
+        if (g_hero->weapon->Ranged) {
             weaponBar += "[";
-            for (int i = 0; i < g_hero.heroWeapon->cartridgeSize; i++) {
-                if (i < g_hero.heroWeapon->currentCS && (g_hero.heroWeapon->cartridge[i]->symbol == 450 ||
-                    g_hero.heroWeapon->cartridge[i]->symbol == 451)) {
+            for (int i = 0; i < g_hero->weapon->cartridgeSize; i++) {
+                if (i < g_hero->weapon->currentCS && (g_hero->weapon->cartridge[i]->symbol == 450 ||
+                    g_hero->weapon->cartridge[i]->symbol == 451)) {
                     weaponBar += "i";
                 } else {
                     weaponBar += "_";
@@ -535,7 +524,7 @@ void draw() {
         .put(fmt::sprintf("%- 190s", weaponBar))
         .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
         .put(fmt::sprintf("%- 190s", message))
-        .setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
+        .setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
 }
 
 int main() {
@@ -562,14 +551,6 @@ int main() {
     Armor LeatherChestplate(1);
     armorTypes = { ChainChestplate, LeatherChestplate };
 
-    inventory[0] = std::make_unique<Armor>(LeatherChestplate);
-    inventory[0]->inventorySymbol = 'a';
-
-    g_hero.heroArmor = dynamic_cast<Armor *>(inventory[0].get());
-    g_hero.heroArmor->attribute = 201;
-    if (rand() % (500 / g_hero.luck) == 0)
-        g_hero.heroArmor->mdf = 2;
-    
     Weapon CopperShortsword(0);
     Weapon BronzeSpear(1);
     Weapon Musket(2);
@@ -615,15 +596,15 @@ int main() {
     Enemy Barbarian(0);
     Enemy Zombie(1);
     Enemy Guardian(2);
-    differentEnemies[0] = Barbarian;
-    differentEnemies[1] = Zombie;
-    differentEnemies[2] = Guardian;
-
-    setItems();
+    enemyTypes[0] = Barbarian;
+    enemyTypes[1] = Zombie;
+    enemyTypes[2] = Guardian;
 
     spawnUnits();
 
-    g_hero.checkVisibleCells();
+    setItems();
+
+    g_hero->checkVisibleCells();
 
     int TurnsCounter = 0;
 
@@ -640,18 +621,18 @@ int main() {
     
         bool died = false;
 
-        if (g_hero.hunger < 1) {
+        if (g_hero->hunger < 1) {
             message += "You died from starvation. Press any key to exit. ";
             died = true;
         }
 
-        if (g_hero.health < 1) {
+        if (g_hero->health < 1) {
             message += "You died. Press any key to exit. ";
             died = true;
         }
 
         if (died) {
-            g_hero.health = 0;
+            g_hero->health = 0;
             termRend
                 .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
                 .put(fmt::sprintf("%- 190s", message))
@@ -660,11 +641,11 @@ int main() {
             return 0;
         }
 
-        termRend.setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
+        termRend.setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
 
         char inp = termRead.readChar();
     
-        g_hero.moveHero(inp);
+        g_hero->moveHero(inp);
 
         if (!g_stop) {
 
@@ -673,23 +654,23 @@ int main() {
             ++g_turns;
 
             if (g_turns % 25 == 0 && g_turns != 0 && g_mode == 1) {
-                g_hero.heal(1);
+                g_hero->heal(1);
             }
 
-            g_hero.hunger--;
+            g_hero->hunger--;
             
-            if (g_hero.turnsInvisible > 0)
-                g_hero.turnsInvisible--;
+            if (g_hero->turnsInvisible > 0)
+                g_hero->turnsInvisible--;
 
-            if (g_hero.turnsBlind > 1) {
-                if (g_hero.turnsBlind == 1) {
+            if (g_hero->turnsBlind > 1) {
+                if (g_hero->turnsBlind == 1) {
                     g_vision = DEFAULT_VISION;
                 }
-                g_hero.turnsBlind --;
+                g_hero->turnsBlind --;
             }
         
-            if (g_hero.isBurdened)
-                g_hero.hunger--;
+            if (g_hero->isBurdened)
+                g_hero->hunger--;
 
             draw();
             
@@ -705,9 +686,9 @@ int main() {
                 g_stop = true;
             }    
     
-            getXP();
+            g_hero->tryLevelUp();
 
-            termRend.setCursorPosition(Vec2i{ g_hero.posL, g_hero.posH });
+            termRend.setCursorPosition(Vec2i{ g_hero->posL, g_hero->posH });
         } else {
             draw();
             g_stop = false;

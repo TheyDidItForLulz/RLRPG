@@ -12,7 +12,7 @@ extern int g_turns;
 extern int g_mode;
 extern TerminalRenderer termRend;
 extern TerminalReader termRead;
-extern Hero g_hero;
+extern Hero * g_hero;
 
 #endif // GLOBALS_HPP
 

@@ -15,19 +15,24 @@
 extern int g_vision;
 extern int g_maxBurden;
 
+enum UnitType {
+    UnitEmpty,
+    UnitHero,
+    UnitEnemy
+};
+
 class Unit {
 public:
+    using Ptr = std::unique_ptr<Unit>;
+
 	Unit() {}
     Unit(const Unit &);
 	~Unit() {}
 
     Unit & operator=(const Unit &);
 
-    Item::Ptr unitInventory[UNITINVENTORY];
-
-	Weapon* unitWeapon = nullptr;
-	Armor* unitArmor = nullptr;
-	Ammo* unitAmmo = nullptr;
+	Weapon* weapon = nullptr;
+	Armor* armor = nullptr;
 
 	int health;
     int maxHealth;
@@ -40,46 +45,61 @@ public:
     std::string getName();
 	bool linearVisibilityCheck(double fromX, double fromY, double toX, double toY) const;
 	bool canSeeCell(int h, int l) const;
-    void dropInventory();
     void move(int row, int col);
     void heal(int hp);
     void dealDamage(int damage);
+
+    virtual UnitType getType() const = 0;
 };
 
 class EmptyUnit: public Unit {
 public:
 	EmptyUnit() {}
 	~EmptyUnit() {}
+
+    UnitType getType() const override {
+        return UnitEmpty;
+    }
 };
 
 class Enemy: public Unit {
 public:
     static const int TYPES_COUNT = 3;
+    static const int MAX_INV_SIZE = 4;
+
+    Item::Ptr inventory[MAX_INV_SIZE];
+
 	Direction dir;
-	int dist;
+	int dist = 0;
 	int movedOnTurn = 0;
 	int xpIncreasing;
-	int targetH;
-	int targetL;
+	int targetH = -1;
+	int targetL = -1;
+	Ammo* ammo = nullptr;
 
 	Enemy() {}
 	Enemy(int eType);
+    Enemy(const Enemy &);
+
+    Enemy & operator =(const Enemy &);
 
 	~Enemy() {}
 
 	void shoot();
     void updatePosition();
+    void dropInventory();
+
+    UnitType getType() const override {
+        return UnitEnemy;
+    }
 };
 
-extern Enemy differentEnemies[Enemy::TYPES_COUNT];
+extern Enemy enemyTypes[Enemy::TYPES_COUNT];
 
 class Hero: public Unit {
 public:
     static const int MAX_LUCK = 20;
     static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
-
-	Armor* heroArmor = nullptr;
-	Weapon* heroWeapon = nullptr;
 
 	int hunger = 900;
 	int xp = 0;
@@ -119,77 +139,20 @@ public:
 
 	int getInventoryItemsWeight() const;
 
+    int getLevelUpXP() const;
+    bool tryLevelUp(); // returns true if reaches new level
+
+    UnitType getType() const override {
+        return UnitHero;
+    }
+
 private:
 	void pickUpAmmo(ItemPileIter ammo);
 	void moveHeroImpl(int row, int col);
+
+    void levelUp();
 };
 
-enum UnitType {
-    UnitEmpty,
-    UnitHero,
-    UnitEnemy
-};
-
-union UnitedUnits {
-    EmptyUnit uEmpty;
-    Hero uHero;
-    Enemy uEnemy;
-
-    UnitedUnits(EmptyUnit e) {
-        uEmpty = e;
-    }
-
-    UnitedUnits(Hero h) {
-        uHero = h;
-    }
-
-    UnitedUnits(Enemy en) {
-        uEnemy = en;
-    }
-
-    UnitedUnits(const UnitedUnits& u) = delete;
-    UnitedUnits& operator=(const UnitedUnits& u) = delete;
-
-    UnitedUnits() {
-        uEmpty = EmptyUnit();
-    }
-
-    ~UnitedUnits(){}
-};
-
-struct PossibleUnit {
-    UnitedUnits unit;
-    UnitType type;
-
-    PossibleUnit(UnitedUnits u, UnitType t);
-
-    PossibleUnit() {
-        type = UnitEmpty;
-    }
-
-    void operator=(const Hero& h) {
-        type = UnitHero;
-        unit.uHero = h;
-    }
-
-    void operator=(const EmptyUnit& e) {
-        type = UnitEmpty;
-        unit.uEmpty = e;
-    }
-
-    void operator=(const Enemy& en) {
-        type = UnitEnemy;
-        unit.uEnemy = en;
-    }
-
-    PossibleUnit(const PossibleUnit& p);
-
-    PossibleUnit& operator=(const PossibleUnit& p);
-
-    Unit & getUnit();
-    const Unit & getUnit() const;
-};
-
-extern PossibleUnit unitMap[FIELD_ROWS][FIELD_COLS];
+extern Unit::Ptr unitMap[FIELD_ROWS][FIELD_COLS];
 
 #endif // UNIT_HPP
