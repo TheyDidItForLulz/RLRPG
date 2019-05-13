@@ -9,9 +9,11 @@ class Hero: public Unit {
 public:
     static const int MAX_LUCK = 20;
     static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
+    static const int DEFAULT_VISION = 16;
 
 	int hunger = 900;
 	int xp = 0;
+    int maxBurden = 25;
 	int level = 1;
     int turnsBlind = 0;
     int turnsInvisible = 0;
@@ -32,7 +34,7 @@ public:
 	bool isMapInInventory() const;
 	bool isFoodInInventory() const;
 	bool isArmorInInventory() const;
-	bool isWeaponOrToolsInInventory() const;
+	bool isWeaponInInventory() const;
 	bool isPotionInInventory() const;
 
 	int findEmptyInventoryCell() const;

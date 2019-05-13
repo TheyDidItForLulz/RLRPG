@@ -222,16 +222,12 @@ void Enemy::moveTo(Coord cell) {
 void Enemy::updatePosition() {
     lastTurnMoved = g_turns;
 
-    bool canSeeHero =
-        not g_hero->isInvisible()
-        and distSquared(pos, g_hero->pos) < sqr(vision)
-        and canSee(g_hero->pos);
-
-    if (canSeeHero) {
+    if (not g_hero->isInvisible() and canSee(g_hero->pos)) {
         bool onDiagLine = std::abs(g_hero->pos.y - pos.y) == std::abs(g_hero->pos.x - pos.x);
-        if ((pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or onDiagLine)
+        bool canShootHero =(pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or onDiagLine)
                 and weapon and weapon->isRanged and ammo
-                and weapon->range + ammo->range >= std::abs(g_hero->pos.y - pos.y) + std::abs(g_hero->pos.x - pos.x)) {
+                and weapon->range + ammo->range >= std::abs(g_hero->pos.y - pos.y) + std::abs(g_hero->pos.x - pos.x);
+        if (canShootHero) {
             shoot();
         } else {
             target = g_hero->pos;
@@ -239,39 +235,33 @@ void Enemy::updatePosition() {
             if (auto next = searchForShortestPath(g_hero->pos)) {
                 moveTo(*next);
                 return;
-            } else {
-                throw std::logic_error("Can see hero, but can't see him (?)");
-                canSeeHero = false;
             }
         }
     }
-    if (not canSeeHero) {
+    if (auto next = searchForShortestPath(*target)) {
+        moveTo(*next);
+        return;
+    }
+
+    std::vector<Coord> visibleCells;
+
+    for (int i = std::max(pos.y - vision, 0); i < std::min(FIELD_ROWS, pos.y + vision); i++) {
+        for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, FIELD_COLS); j++) {
+            Vec2i cell{ j, i };
+            if (cell != pos and map[i][j] != 2
+                    and not unitMap[i][j] and canSee(cell)) {
+                visibleCells.push_back(cell);
+            }
+        }    
+    }
+
+    int attempts = 15;
+    for (int i = 0; i < attempts; ++i) {
+        target = visibleCells[std::rand() % visibleCells.size()];
+
         if (auto next = searchForShortestPath(*target)) {
             moveTo(*next);
             return;
-        } else {
-            std::vector<Coord> visibleCells;
-
-            for (int i = std::max(pos.y - vision, 0); i < std::min(FIELD_ROWS, pos.y + vision); i++) {
-                for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, FIELD_COLS); j++) {
-                    Vec2i cell{ j, i };
-                    if (cell != pos and map[i][j] != 2
-                            and distSquared(pos, cell) < sqr(vision)
-                            and not unitMap[i][j] and canSee(cell)) {
-                        visibleCells.push_back(cell);
-                    }
-                }    
-            }
-
-            int attempts = 15;
-            for (int i = 0; i < attempts; ++i) {
-                target = visibleCells[std::rand() % visibleCells.size()];
-
-                if (auto next = searchForShortestPath(*target)) {
-                    moveTo(*next);
-                    return;
-                }
-            }
         }
     }
 }

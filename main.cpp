@@ -17,6 +17,7 @@
                                                 '/'(Stick) == 403
                                                 '/'(Shotgun) == 404
                                                 '/'(Pistol) == 405
+                                                '\'(Pickaxe) == 406
                                                 ','(Steel bullets) == 450
                                                 ','(Shotgun shells) == 451
                                                 '~'(Map) == 500
@@ -26,7 +27,6 @@
                                                 '!'(Dark potion) == 602
                                                 '!'(Magenta potion) == 603
                                                 '!'(Yellow potion) == 604
-                                                '\'(Pickaxe) == 700
 */
 ////////////////////////////////////////////////// Modificators ///////////////////////////////////////////////////////////
 /* 1 - Nothing
@@ -164,7 +164,6 @@ void setItems() {
     });
     randomlySelectAndSetOnMap(scrollTypes, Scroll::COUNT);
     randomlySelectAndSetOnMap(potionTypes, Potion::COUNT);
-    randomlySelectAndSetOnMap(toolTypes, Tools::COUNT);
 }
 
 void spawnUnits() {
@@ -240,6 +239,7 @@ SymbolRenderData getRenderData(const Item::Ptr & item) {
         case 403: return { '/', { TextStyle::Bold, Color::Yellow } };
         case 404: return { '/', { TextStyle::Bold, Color::Black } };
         case 405: return '/';
+        case 406: return { '\\', { Color::Yellow } };
         case 450: return { ',', { TextStyle::Bold, Color::Black } };
         case 451: return { ',', { TextStyle::Bold, Color::Red } };
         case 500: return { '~', { TextStyle::Bold, Color::Yellow } };
@@ -249,7 +249,6 @@ SymbolRenderData getRenderData(const Item::Ptr & item) {
         case 602: return { '!', { TextStyle::Bold, Color::Black } };
         case 603: return { '!', { TextStyle::Bold, Color::Magenta } };
         case 604: return { '!', { Color::Yellow } };
-        case 700: return { '\\', { Color::Yellow } };
         default: return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
     }
 }
@@ -558,17 +557,16 @@ int main() {
     Weapon Stick(3);
     Weapon Shotgun(4);
     Weapon Pistol(5);
+    Weapon Pickaxe(6);
     weaponTypes = {
         CopperShortsword,
         BronzeSpear,
         Musket,
         Stick,
         Shotgun,
-        Pistol
+        Pistol,
+        Pickaxe
     };
-    
-    Tools Pickaxe(0);
-    toolTypes = { Pickaxe };
 
     Ammo SteelBullets(0);
     Ammo ShotgunShells(1);
@@ -664,7 +662,7 @@ int main() {
 
             if (g_hero->turnsBlind > 1) {
                 if (g_hero->turnsBlind == 1) {
-                    g_vision = DEFAULT_VISION;
+                    g_hero->vision = Hero::DEFAULT_VISION;
                 }
                 g_hero->turnsBlind --;
             }

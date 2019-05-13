@@ -7,8 +7,7 @@
 
 #include<queue>
 
-int g_vision = 16;
-int g_maxBurden = 25;                                
+static const int VISION_PRECISION = 256;
 
 Unit::Ptr unitMap[FIELD_ROWS][FIELD_COLS];
 
@@ -71,12 +70,13 @@ void Unit::heal(int hp) {
 }
 
 bool Unit::canSee(Coord cell) const {
-    double offset = 1. / VISION_PRECISION;
+    double offset = 1.0 / VISION_PRECISION;
     Vec2d celld{ cell };
-    return linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ offset, offset })
+    return distSquared(pos, cell) < sqr(vision)
+        and (linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ offset, offset })
         or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ offset, 1 - offset })
         or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, offset })
-        or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, 1 - offset });
+        or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, 1 - offset }));
 }
 
 void Unit::setTo(Coord cell) {

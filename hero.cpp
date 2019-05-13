@@ -11,6 +11,7 @@ Hero::Hero() {
     maxHealth = 15;
     health = 15;
     symbol = 200;
+    vision = DEFAULT_VISION;
 
     inventory[0] = std::make_unique<Armor>(armorTypes[1]);
     inventory[0]->inventorySymbol = 'a';
@@ -35,7 +36,7 @@ bool Hero::tryLevelUp() {
 void Hero::levelUp() {
     level++;
     message += fmt::format("Now you are level {}. ", level);
-    g_maxBurden += g_maxBurden / 4;
+    maxBurden += maxBurden / 4;
     maxHealth += maxHealth / 4;
     health = maxHealth;
 }
@@ -54,11 +55,7 @@ bool Hero::isInvisible() const {
 void Hero::checkVisibleCells() {
     for (int i = 0; i < FIELD_ROWS; i++) {
         for (int j = 0; j < FIELD_COLS; j++) {
-            seenUpdated[i][j] = 0;
-            Vec2i cell{ j, i };
-            if (distSquared(pos, cell) < sqr(g_vision)) {
-                seenUpdated[i][j] = canSee(cell);
-            }
+            seenUpdated[i][j] = canSee(Coord{ j, i });
         }
     }
 }
@@ -293,7 +290,7 @@ void Hero::pickUp() {
             }
         }
 
-        if (getInventoryItemsWeight() > g_maxBurden and !isBurdened) {
+        if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
             message += "You're burdened. ";
             isBurdened = true;
         }
@@ -352,7 +349,7 @@ void Hero::pickUp() {
         }
     }
 
-    if (getInventoryItemsWeight() > g_maxBurden and !isBurdened) {
+    if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
         message += "You're burdened. ";
         isBurdened = true;
     }
@@ -374,9 +371,9 @@ bool Hero::isArmorInInventory() const {
     return false;
 }
 
-bool Hero::isWeaponOrToolsInInventory() const {
+bool Hero::isWeaponInInventory() const {
     for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and (inventory[i]->getType() == ItemWeapon or inventory[i]->getType() == ItemTools))
+        if (inventory[i] and inventory[i]->getType() == ItemWeapon)
             return true;
     }
     return false;
@@ -450,7 +447,7 @@ void Hero::processInput(char inp) {
 
         }
         case CONTROL_WIELD: {
-            if (isWeaponOrToolsInInventory()) {
+            if (isWeaponInInventory()) {
                 showInventory(CONTROL_WIELD);
             } else {
                 message += "You don't have anything to wield. ";
@@ -674,7 +671,7 @@ void Hero::showInventory(char inp) {
                 }
             }
 
-            if (getInventoryItemsWeight() <= g_maxBurden and isBurdened) {
+            if (getInventoryItemsWeight() <= maxBurden and isBurdened) {
                 message += "You are burdened no more. ";
                 isBurdened = false;
             }
@@ -693,10 +690,6 @@ void Hero::showInventory(char inp) {
                 if (inventory[i] and inventory[i]->getType() == ItemWeapon)
                     list.push_back(inventory[i].get());
 
-            /*for (auto & item : list) {
-                log("Offering item '{}' '{}'", item.getItem().inventorySymbol, (int) item.getItem().inventorySymbol);
-            }*/
-
             printList(list, "What do you want to wield?", 1);
             
             char choice = termRead.readChar();
@@ -704,7 +697,6 @@ void Hero::showInventory(char inp) {
                 return;
             int intch = choice - 'a';
             auto & item = inventory[intch];
-            //if (inventory[intch].type == ItemWeapon or inventory[intch].type == ItemTools) {
             if (item and item->getType() == ItemWeapon) {
                 message += "You wield {}. "_format(item->getName());
 
@@ -796,7 +788,7 @@ void Hero::showInventory(char inp) {
                         break;
                     }
                     case 5: {
-                        g_vision = 1;
+                        vision = 1;
                         g_hero->turnsBlind = 50;
                         message += "My eyes!! ";
                         break;
@@ -1044,9 +1036,6 @@ void Hero::attackEnemy(Coord cell) {
     if (weapon) {
         enemy.dealDamage(weapon->damage);
     }
-    //} else if (weapon->type == ItemTools) {
-        //unitMap[pos.y + a1][pos.x + a2].getUnit().health -= weapon->item.invTools.damage;
-    //}
     if (enemy.health <= 0) {
         enemy.dropInventory();
         xp += enemy.xpCost;
@@ -1144,24 +1133,22 @@ void Hero::moveTo(Coord cell) {
             setTo(cell);
         }
     } else if (map[cell.y][cell.x] == 2) {
-        /*if (weapon->type == ItemTools) {
-            if (weapon->item.invTools.possibility == 1) {
-                termRend
-                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
-                    .put("Do you want to dig this wall? [yn]");
+        if (weapon != nullptr and weapon->canDig) {
+            termRend
+                .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+                .put("Do you want to dig this wall? [yn]");
 
-                char inpChar = termRead.readChar();
-                if (inpChar == 'y' or inpChar == 'Y') {
-                    map[row][col] = 1;
-                    weapon->item.invTools.uses--;
-                    if (weapon->item.invTools.uses <= 0) {
-                        message += "Your {} is broken. "_format(weapon->getItem().getName());
-                        weapon->type = ItemEmpty;
-                    }
-                    return;
+            char inpChar = termRead.readChar();
+            if (inpChar == 'y' or inpChar == 'Y') {
+                map[cell.y][cell.x] = 1;
+                if (std::rand() % 100 <= Hero::MAX_LUCK - luck) {
+                    message += "You've broken your {}. "_format(weapon->getName());
+                    inventory[weapon->inventorySymbol - 'a'].reset();
+                    weapon = nullptr;
                 }
+                return;
             }
-        }*/
+        }
         message += "The wall is the way. ";
         g_stop = true;
     }

@@ -6,12 +6,7 @@
 
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
-#define DEFAULT_VISION 16
-#define VISION_PRECISION 256
 #define AMMO_SLOT 53
-
-extern int g_vision;
-extern int g_maxBurden;
 
 enum UnitType {
     UnitHero,

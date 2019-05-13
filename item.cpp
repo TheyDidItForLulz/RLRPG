@@ -35,8 +35,9 @@ std::string Item::getName() const {
 		case 403: return "a stick";
 		case 404: return "a shotgun";
 		case 405: return "a pistol";
-		case 450: return "a steel bullets";
-		case 451: return "a shotgun shells";
+        case 406: return "a pickaxe";
+		case 450: return "steel bullets";
+		case 451: return "shotgun shells";
 		case 500: return "a map";
 		case 501: return "an identify scroll";
 		case 600:
@@ -44,7 +45,6 @@ std::string Item::getName() const {
 		case 602:
 		case 603:
 		case 604: return getPotionName(symbol);
-		case 700: return "pickaxe";
 	}
     throw std::logic_error("Unknown item id");
 }
@@ -171,6 +171,12 @@ Weapon::Weapon(int WeaponType) {
 			damageBonus = 2;
 			maxCartridgeSize = 10;
 			break;
+        case 6:
+			symbol = 406;
+			damage = 2;
+			weight = 5;
+			isRanged = false;
+            canDig = true;
 	}
 	isStackable = false;
 };
@@ -184,6 +190,7 @@ Weapon::Weapon(const Weapon& other) {
 	isRanged = other.isRanged;
 	range = other.range;
 	damageBonus = other.damageBonus;
+    canDig = other.canDig;
 	maxCartridgeSize = other.maxCartridgeSize;
 	currCartridgeSize = other.currCartridgeSize;
 	if (isRanged) {
@@ -199,6 +206,7 @@ Weapon& Weapon::operator=(const Weapon& other) {
 	damage = other.damage;
 	weight = other.weight;
 	isRanged = other.isRanged;
+    canDig = other.canDig;
 	range = other.range;
 	damageBonus = other.damageBonus;
 	maxCartridgeSize = other.maxCartridgeSize;
@@ -262,28 +270,6 @@ Potion::Potion(int p) {
 Potion::Potion(){}
 Potion::~Potion(){}
 
-////////////////////////////////
-// Tools
-Tools::Tools(int t) {
-	switch (t) {
-		case 0:
-			symbol = 700;
-			weight = 4;
-			damage = 2;
-			possibility = 1;
-			isRanged = false;
-			range = 1;
-			break;
-	}
-	isStackable = false;
-}
-
-Tools::Tools(){}
-Tools::~Tools(){}
-
-////////////////////////////////
-// InventoryItem
-
 ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
 
 Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
@@ -294,7 +280,6 @@ std::vector<Weapon> weaponTypes;
 std::vector<Ammo> ammoTypes;
 std::vector<Scroll> scrollTypes;
 std::vector<Potion> potionTypes;
-std::vector<Tools> toolTypes;
 std::vector<bool> potionTypeKnown;
 
 std::string getPotionName(int sym) {

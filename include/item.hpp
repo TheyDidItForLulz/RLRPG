@@ -19,7 +19,6 @@ enum ItemType {
 	ItemAmmo = 1 << 3,
 	ItemScroll = 1 << 4,
 	ItemPotion = 1 << 5,
-	ItemTools = 1 << 6
 };
 
 class Item {
@@ -123,9 +122,10 @@ public:
 	int damage;
 	int range; 									// Ranged bullets have additional effect on this paramether
 	int damageBonus;								// And on this too
-	bool isRanged;
+	bool isRanged = false;
+    bool canDig = false;
 	int maxCartridgeSize;
-	int currCartridgeSize;
+	int currCartridgeSize = 0;
 	
     std::unique_ptr<Ammo> cartridge[MAX_CARTRIDGE_SIZE];
 
@@ -190,10 +190,11 @@ public:
 
 std::string getPotionName(int sym);
 
+/*
 class Tools: public Item {
 public:
     static const int TYPES_COUNT = 1;
-    static const int COUNT = 5; /* AND IT */
+    static const int COUNT = 5;
 
 	Tools();
 	Tools(int t);
@@ -214,7 +215,7 @@ public:
     Item::Ptr clone() const override {
         return std::make_unique<Tools>(*this);
     }
-};
+};*/
 
 const int BANDOLIER = Ammo::TYPES_COUNT;
 const int MAX_USABLE_INV_SIZE = 53;
@@ -232,7 +233,6 @@ extern std::vector<Weapon> weaponTypes;
 extern std::vector<Ammo> ammoTypes;
 extern std::vector<Scroll> scrollTypes;
 extern std::vector<Potion> potionTypes;
-extern std::vector<Tools> toolTypes;
 extern std::vector<bool> potionTypeKnown;
 
 ItemPileIter findItemAt(Coord cell, int sym);
