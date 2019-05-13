@@ -98,13 +98,14 @@
 
 using namespace fmt::literals;
 
-#include"include/colors.hpp"
-#include"include/controls.hpp"
-#include"include/level.hpp"
-#include"include/item.hpp"
-#include"include/gen_map.hpp"
-#include"include/unit.hpp"
-#include"include/utils.hpp"
+#include<unit.hpp>
+#include<hero.hpp>
+#include<enemy.hpp>
+#include<controls.hpp>
+#include<level.hpp>
+#include<item.hpp>
+#include<gen_map.hpp>
+#include<utils.hpp>
 
 // !COMMENT! // Enemies must move at first turn
 int g_mode = 1;    
@@ -645,6 +646,7 @@ int main() {
 
         char inp = termRead.readChar();
         g_hero->processInput(inp);
+        g_hero->checkVisibleCells();
 
         if (!g_stop) {
             updateAI();

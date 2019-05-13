@@ -6,7 +6,7 @@
 
 using Coord = Vec2i;
 
-#include<unit.hpp>
+class Hero;
 
 extern std::string message;
 extern bool g_stop;

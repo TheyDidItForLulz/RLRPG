@@ -1,12 +1,13 @@
 #ifndef ITEM_HPP
 #define ITEM_HPP
 
-#include"level.hpp"
 #include<vector>
 #include<string>
 #include<optional>
 #include<list>
 #include<memory>
+
+#include<level.hpp>
 #include<termlib/vec2.hpp>
 
 using Coord = Vec2i;

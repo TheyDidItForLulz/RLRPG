@@ -2,7 +2,7 @@ CC=g++ -std=c++17
 DEBUG_COMPILE_FLAGS=-DDEBUG -g
 LIBS=-lncurses -lfmt
 OBJ_DIR=obj/
-SOURCES=main unit utils item level gen_map log termlib/default_window_provider
+SOURCES=main unit enemy hero utils item level gen_map log termlib/default_window_provider
 #OBJS=$(OBJ_DIR)main.o $(OBJ_DIR)unit.o $(OBJ_DIR)item.o $(OBJ_DIR)gen_map.o $(OBJ_DIR)log.o
 OBJS=$(patsubst %,obj/%.o,$(SOURCES))
 #OBJS_DEBUG=$(OBJ_DIR)_main.o $(OBJ_DIR)_unit.o $(OBJ_DIR)_item.o $(OBJ_DIR)_gen_map.o $(OBJ_DIR)_log.o
