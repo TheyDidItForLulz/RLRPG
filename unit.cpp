@@ -4,12 +4,13 @@
 #include<unit.hpp>
 #include<utils.hpp>
 #include<globals.hpp>
+#include<array2d.hpp>
 
 #include<queue>
 
 static const int VISION_PRECISION = 256;
 
-Unit::Ptr unitMap[FIELD_ROWS][FIELD_COLS];
+Array2D<Unit::Ptr, LEVEL_ROWS, LEVEL_COLS> unitMap;
 
 Unit::Unit(const Unit & other)
     : health(other.health)
@@ -55,11 +56,10 @@ bool Unit::linearVisibilityCheck(Vec2d from, Vec2d to) const {
     double k = d.y / d.x;
     int s = sgn(d.x);
     for (int i = 0; i * s < d.x * s; i += s) {
-        int x = from.x + i;
-        int y = from.y + i * k;
+        Vec2i c = from + Vec2d{ i, i * k };
         if (steep)
-            std::swap(x, y);
-        if (map[y][x] == 2)
+            std::swap(c.x, c.y);
+        if (level[c] == 2)
             return false;
     }
     return true;
@@ -69,7 +69,7 @@ void Unit::heal(int hp) {
     health = std::min(health + hp, maxHealth);
 }
 
-bool Unit::canSee(Coord cell) const {
+bool Unit::canSee(Coord2i cell) const {
     double offset = 1.0 / VISION_PRECISION;
     Vec2d celld{ cell };
     return distSquared(pos, cell) < sqr(vision)
@@ -79,11 +79,11 @@ bool Unit::canSee(Coord cell) const {
         or linearVisibilityCheck(Vec2d{ pos } + 0.5, celld + Vec2d{ 1 - offset, 1 - offset }));
 }
 
-void Unit::setTo(Coord cell) {
-    if (map[cell.y][cell.x] == 2 or unitMap[cell.y][cell.x] or pos == cell)
+void Unit::setTo(Coord2i cell) {
+    if (level[cell] == 2 or unitMap[cell] or pos == cell)
         return;
 
-    unitMap[cell.y][cell.x] = std::move(unitMap[pos.y][pos.x]);
+    unitMap[cell] = std::move(unitMap[pos]);
     pos = cell;
 }
 

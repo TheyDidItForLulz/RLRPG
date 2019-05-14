@@ -19,12 +19,12 @@ public:
         endwin();
     }
 
-    void setCursorPosition(Vec2i position) override {
+    void setCursorPosition(Coord2i position) override {
         wmove(pWin, position.y, position.x);
     }
 
-    Vec2i getCursorPosition() const override {
-        Vec2i pos;
+    Coord2i getCursorPosition() const override {
+        Coord2i pos;
         getyx(pWin, pos.y, pos.x);
         return pos;
     }
@@ -63,8 +63,8 @@ public:
         }
     }
 
-    Vec2i getSize() const override {
-        Vec2i size;
+    Size2i getSize() const override {
+        Size2i size;
         getmaxyx(pWin, size.y, size.x);
         return size;
     }

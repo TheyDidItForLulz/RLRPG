@@ -270,7 +270,7 @@ Potion::Potion(int p) {
 Potion::Potion(){}
 Potion::~Potion(){}
 
-ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
+Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
 
 Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
@@ -305,8 +305,8 @@ std::string getPotionName(int sym) {
     throw std::logic_error("Unknown potion id");
 }
 
-ItemPileIter findItemAt(Coord c, int sym) {
-    auto & pile = itemsMap[c.y][c.x];
+ItemPileIter findItemAt(Coord2i cell, int sym) {
+    auto & pile = itemsMap[cell];
     return std::find_if(begin(pile), end(pile), [sym] (const Item::Ptr & item) {
         return item->symbol == sym;
     });
@@ -316,11 +316,10 @@ bool randomlySetOnMap(Item::Ptr item) {
     const int attemts = 32;
 
     for (int i = 0; i < attemts; ++i) {
-        int row = std::rand() % FIELD_ROWS;
-        int col = std::rand() % FIELD_COLS;
+        Coord2i cell{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
 
-        if (map[row][col] == 1) {
-            drop(std::move(item), Coord{ col, row });
+        if (level[cell] == 1) {
+            drop(std::move(item), cell);
             return true;
         }
     }
@@ -328,21 +327,19 @@ bool randomlySetOnMap(Item::Ptr item) {
     return false;
 }
 
-void drop(Item::Ptr item, Coord cell) {
-    if (cell.y < 0 or cell.x < 0 or cell.y >= FIELD_ROWS or cell.x >= FIELD_COLS)
-        throw std::logic_error("Trying to drop an item outside of the map");
-    if (map[cell.y][cell.x] == 2)
+void drop(Item::Ptr item, Coord2i cell) {
+    if (level[cell] == 2)
         throw std::logic_error("Trying to drop an item in a wall");
     if (not item)
         return;
     item->pos = cell;
     if (item->isStackable) {
         auto it = findItemAt(cell, item->symbol);
-        if (it != end(itemsMap[cell.y][cell.x])) {
+        if (it != end(itemsMap[cell])) {
             (*it)->count += item->count;
             return;
         }
     }
-    itemsMap[cell.y][cell.x].push_back(std::move(item));
+    itemsMap[cell].push_back(std::move(item));
 }
 

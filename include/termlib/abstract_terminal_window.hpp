@@ -11,13 +11,13 @@ class AbstractTerminalWindow {
 public:
     virtual ~AbstractTerminalWindow() {};
 
-    virtual void setCursorPosition(Vec2i position) = 0;
+    virtual void setCursorPosition(Coord2i position) = 0;
 
     virtual void moveCursor(Vec2i offset) {
         setCursorPosition(getCursorPosition() + offset);
     };
 
-    virtual Vec2i getCursorPosition() const = 0;
+    virtual Coord2i getCursorPosition() const = 0;
 
     virtual void put(char ch) = 0;
 
@@ -38,7 +38,7 @@ public:
         return echoing;
     }
 
-    virtual Vec2i getSize() const = 0;
+    virtual Size2i getSize() const = 0;
 
     virtual void clear(Color background = Color::Black) = 0;
 

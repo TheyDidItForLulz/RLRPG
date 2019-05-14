@@ -2,23 +2,19 @@
 
 #include<fstream>
 
-int map[FIELD_ROWS][FIELD_COLS];                                            
-bool seenUpdated[FIELD_ROWS][FIELD_COLS];                                        // <- visible array
+Array2D<int, LEVEL_ROWS, LEVEL_COLS> level;
+Array2D<bool, LEVEL_ROWS, LEVEL_COLS> seenUpdated;
 
 void initField() {
-    for (int i = 0; i < FIELD_ROWS; ++i) { 
-        for (int j = 0; j < FIELD_COLS; ++j) { 
-            map[i][j] = 1; 
-        }
-    }
+    level.forEach([] (int & cell) {
+        cell = 1;
+    });
 }
 
 void readMap() {
     std::ifstream file{ "map.me" };
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            file >> map[i][j];
-        }
-    }
+    level.forEach([&] (int & cell) {
+        file >> cell;
+    });
 }
 

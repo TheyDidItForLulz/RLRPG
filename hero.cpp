@@ -53,11 +53,14 @@ bool Hero::isInvisible() const {
 }
 
 void Hero::checkVisibleCells() {
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            seenUpdated[i][j] = canSee(Coord{ j, i });
+    seenUpdated.forEach([this] (Coord2i pos, bool & see) {
+        see = canSee(pos);
+    });
+    /*for (int i = 0; i < LEVEL_ROWS; i++) {
+        for (int j = 0; j < LEVEL_COLS; j++) {
+            seenUpdated[i][j] = canSee(Coord2i{ j, i });
         }
-    }
+    }*/
 }
 
 bool Hero::isInventoryEmpty() const {
@@ -90,14 +93,14 @@ void Hero::printList(const std::vector<Item *> & items, std::string_view msg, in
     int num = 0;
 
     termRend
-        .setCursorPosition(Vec2i{ FIELD_COLS + 10, num })
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, num })
         .put(msg);
 
     num ++;
     switch (mode) {
         case 1: {
             for (int i = 0; i < items.size(); i++) {
-                termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
+                termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
                 if (items[i]->showMdf == true and items[i]->count == 1) {
                     if (items[i]->attribute == 100) {
                         termRend.put("[{}] {} {{{}}}. "_format(
@@ -141,7 +144,7 @@ void Hero::printList(const std::vector<Item *> & items, std::string_view msg, in
         case 2: {
             for (int i = 0; i < items.size(); i++)
             {
-                termRend.setCursorPosition(Vec2i{ FIELD_COLS + 10, num });
+                termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
                 if (items[i]->showMdf == true) {
                     termRend.put("[{}] {} ({}) {{{}}}. "_format(
                             char(i + 'a'),
@@ -192,14 +195,14 @@ int Hero::findScrollInInventory() const {
 void Hero::pickUpAmmo(ItemPileIter ammoIter) {
     clearRightPane();
     termRend
-        .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put("In what slot do you want to pull your ammo?");
     int choice = 0;
     int num = 0;
     while (true) {
         num = 0;
         for (int i = 0; i < BANDOLIER; i++) {
-            termRend.setCursorPosition(Vec2i{ FIELD_COLS + num + 12, 1 });
+            termRend.setCursorPosition(Coord2i{ LEVEL_COLS + num + 12, 1 });
             num += 2;
             char symbol = '-';
             TextStyle style{ TerminalColor{} };
@@ -236,10 +239,10 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {
                     Item::Ptr & ammo = *ammoIter;
                     if (inventory[AMMO_SLOT + choice] == nullptr) {
                         inventory[AMMO_SLOT + choice] = std::move(ammo);
-                        itemsMap[pos.y][pos.x].erase(ammoIter);
+                        itemsMap[pos].erase(ammoIter);
                     } else if (inventory[AMMO_SLOT + choice]->symbol == ammo->symbol) {
                         inventory[AMMO_SLOT + choice]->count += ammo->count;
-                        itemsMap[pos.y][pos.x].erase(ammoIter);
+                        itemsMap[pos].erase(ammoIter);
                     } else {
                         std::swap(ammo, inventory[AMMO_SLOT + choice]);
                     }
@@ -253,12 +256,12 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {
 }
 
 void Hero::pickUp() {
-    if (itemsMap[pos.y][pos.x].empty()) {
+    if (itemsMap[pos].empty()) {
         message += "There is nothing here to pick up. ";
         g_stop = true;
         return;
-    } else if (itemsMap[pos.y][pos.x].size() == 1) {
-        auto it = itemsMap[pos.y][pos.x].begin();
+    } else if (itemsMap[pos].size() == 1) {
+        auto it = itemsMap[pos].begin();
         auto & itemToPick = *it;
         message += "You picked up {}. "_format(itemToPick->getName());
 
@@ -274,7 +277,7 @@ void Hero::pickUp() {
                 if (inventory[i] and inventory[i]->symbol == itemToPick->symbol) {
                     canStack = true;
                     inventory[i]->count += itemToPick->count;
-                    itemsMap[pos.y][pos.x].pop_back();
+                    itemsMap[pos].pop_back();
                 }
             }
         }
@@ -284,7 +287,7 @@ void Hero::pickUp() {
             if (eic != 101010) {
                 inventory[eic] = std::move(itemToPick);
                 inventory[eic]->inventorySymbol = eic + 'a';
-                itemsMap[pos.y][pos.x].pop_back();
+                itemsMap[pos].pop_back();
             } else {
                 message += "Your inventory is full, motherfuck'a! ";
             }
@@ -299,7 +302,7 @@ void Hero::pickUp() {
     }
     
     std::vector<Item *> list;
-    for (const auto & item : itemsMap[pos.y][pos.x])
+    for (const auto & item : itemsMap[pos])
         list.push_back(item.get());
 
     printList(list, "What do you want to pick up? ", 2);
@@ -311,11 +314,11 @@ void Hero::pickUp() {
             return;
 
         intch = choice - 'a';
-        if (intch >= 0 or intch < itemsMap[pos.y][pos.x].size())
+        if (intch >= 0 or intch < itemsMap[pos].size())
             break;
     }
 
-    auto itemIter = std::begin(itemsMap[pos.y][pos.x]);
+    auto itemIter = std::begin(itemsMap[pos]);
     std::advance(itemIter, intch);
     auto & item = *itemIter;
     
@@ -333,7 +336,7 @@ void Hero::pickUp() {
             if (inventory[i] and inventory[i]->symbol == item->symbol) {
                 canStack = true;
                 inventory[i]->count += item->count;
-                itemsMap[pos.y][pos.x].erase(itemIter);
+                itemsMap[pos].erase(itemIter);
             }
         }
     }
@@ -343,7 +346,7 @@ void Hero::pickUp() {
         if (eic != 101010) {
             inventory[eic] = std::move(item);
             inventory[eic]->inventorySymbol = eic + 'a';
-            itemsMap[pos.y][pos.x].erase(itemIter);
+            itemsMap[pos].erase(itemIter);
         } else {
             message += "Your inventory is full, motherfuck'a! ";
         }
@@ -391,7 +394,7 @@ void Hero::clearRightPane() const {
     for (int i = 0; i < 100; i++) {
         for (int j = 0; j < 50; j++) {
             termRend
-                .setCursorPosition(Vec2i{ FIELD_COLS + j + 10, i })
+                .setCursorPosition(Coord2i{ LEVEL_COLS + j + 10, i })
                 .put(' ');
         }
     }
@@ -549,7 +552,7 @@ void Hero::processInput(char inp) {
                         canMoveThroughWalls = false;
                     }
                 } else {
-                    itemsMap[1][1].push_back(std::make_unique<Food>(foodTypes[0]));
+                    itemsMap.at(1, 1).push_back(std::make_unique<Food>(foodTypes[0]));
                 }
             } else if (hv == 'k') {
                 if (termRead.readChar() == 'i') {
@@ -653,17 +656,17 @@ void Hero::showInventory(char inp) {
             } else {
                 clearRightPane();
                 termRend
-                    .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                     .put("How much items do you want to drop? [1-9]");
 
                 int dropCount = clamp(1, termRead.readChar() - '0', item->count);
 
                 auto iter = findItemAt(pos, item->symbol);
-                if (iter != end(itemsMap[pos.y][pos.x])) {        
+                if (iter != end(itemsMap[pos])) {        
                     (*iter)->count += dropCount;
                 } else {            
-                    itemsMap[pos.y][pos.x].push_back(item->clone());
-                    itemsMap[pos.y][pos.x].back()->count = dropCount;
+                    itemsMap[pos].push_back(item->clone());
+                    itemsMap[pos].back()->count = dropCount;
                 }
                 item->count -= dropCount;
                 if (item->count == 0) {
@@ -732,7 +735,7 @@ void Hero::showInventory(char inp) {
             if (item) {
                 clearRightPane();
                 termRend
-                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
                     .put("In what direction?");
                 char secondChoise = termRead.readChar();
 
@@ -773,10 +776,9 @@ void Hero::showInventory(char inp) {
                     }
                     case 3: {
                         while (true) {
-                            int col = rand() % FIELD_COLS;
-                            int row = rand() % FIELD_ROWS;
-                            if (map[row][col] != 2 and not unitMap[row][col]) {
-                                setTo(Coord{ row, col });
+                            Coord2i pos = { std::rand() % LEVEL_ROWS, std::rand() % LEVEL_COLS };
+                            if (::level[pos] != 2 and not unitMap[pos]) {
+                                setTo(pos);
                                 break;
                             }
                         }
@@ -825,7 +827,7 @@ void Hero::showInventory(char inp) {
                     case 2: {
                         clearRightPane();
                         termRend
-                            .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                            .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                             .put("What do you want to identify?");
 
                         char in = termRead.readChar();
@@ -853,7 +855,7 @@ void Hero::showInventory(char inp) {
         case CONTROL_OPENBANDOLIER: {
             clearRightPane();
             termRend
-                .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                 .put("Here is your ammo.");
             int choice = 0;
             std::optional<int> takenFrom;
@@ -881,7 +883,7 @@ void Hero::showInventory(char inp) {
                         style += TextStyle::Underlined;
 
                     termRend
-                        .setCursorPosition(Vec2i{ FIELD_COLS + num + 12, 1 })
+                        .setCursorPosition(Coord2i{ LEVEL_COLS + num + 12, 1 })
                         .put(symbol, style);
                 }
                 char input = termRead.readChar();
@@ -919,7 +921,7 @@ void Hero::showInventory(char inp) {
                 return;
             }
             termRend
-                .setCursorPosition(Vec2i{ FIELD_COLS + 10 })
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                 .put("Now you can load your weapon");
             while (true) {
                 for (int i = 0; i < weapon->maxCartridgeSize; i++) {
@@ -940,7 +942,7 @@ void Hero::showInventory(char inp) {
                         symbol = '_';
                     }
                     termRend
-                        .setCursorPosition(Vec2i{ FIELD_COLS + i + 10, 1 })
+                        .setCursorPosition(Coord2i{ LEVEL_COLS + i + 10, 1 })
                         .put(symbol, style);
                 }
                 
@@ -969,7 +971,7 @@ void Hero::showInventory(char inp) {
                 loadString += "   [u] - unload ";
                 
                 termRend
-                    .setCursorPosition(Vec2i{ FIELD_COLS + 10, 2 })
+                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 2 })
                     .put(loadString);
                 
                 char in = termRead.readChar();
@@ -1031,15 +1033,15 @@ void Hero::showInventory(char inp) {
     }
 }
 
-void Hero::attackEnemy(Coord cell) {
-    auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell.y][cell.x]);
+void Hero::attackEnemy(Coord2i cell) {
+    auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
     if (weapon) {
         enemy.dealDamage(weapon->damage);
     }
     if (enemy.health <= 0) {
         enemy.dropInventory();
         xp += enemy.xpCost;
-        unitMap[cell.y][cell.x].reset();
+        unitMap[cell].reset();
     }
 }
 
@@ -1048,23 +1050,23 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
     for (int i = 0; i < 12 - item->weight / 3; i++) {                        // 12 is "strength"
-        auto[ col, row ] = pos + offset * (i + 1);
+        auto cell = pos + offset * (i + 1);
 
-        if (map[row][col] == 2)
+        if (::level[cell] == 2)
             break;
 
-        if (unitMap[row][col]) {
-            unitMap[row][col]->dealDamage(item->weight / 2);
-            if (unitMap[row][col]->health <= 0) {
-                auto & enemy = dynamic_cast<Enemy &>(*unitMap[row][col]);
+        if (unitMap[cell]) {
+            unitMap[cell]->dealDamage(item->weight / 2);
+            if (unitMap[cell]->health <= 0) {
+                auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
                 enemy.dropInventory();
                 xp += enemy.xpCost;
-                unitMap[row][col].reset();
+                unitMap[cell].reset();
             }
             break;
         }
         termRend
-            .setCursorPosition(Vec2i{ col, row })
+            .setCursorPosition(cell)
             .put(sym)
             .display();
         throwDist++;
@@ -1084,7 +1086,7 @@ void Hero::shoot() {
         return;
     }
     termRend
-        .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put("In what direction? ");
 
     char choice = termRead.readChar();
@@ -1099,22 +1101,22 @@ void Hero::shoot() {
     int bulletPower = weapon->cartridge[weapon->currCartridgeSize - 1]->damage + g_hero->weapon->damageBonus;
 
     for (int i = 1; i < weapon->range + weapon->cartridge[weapon->currCartridgeSize - 1]->range; i++) {
-        auto[ col, row ] = pos + offset * i;
+        auto cell = pos + offset * i;
 
-        if (map[row][col] == 2)
+        if (::level[cell] == 2)
             break;
 
-        if (unitMap[row][col]) {
-            unitMap[row][col]->dealDamage(bulletPower - i / 3);
-            if (unitMap[row][col]->health <= 0) {
-                auto & enemy = dynamic_cast<Enemy &>(*unitMap[row][col]);
+        if (unitMap[cell]) {
+            unitMap[cell]->dealDamage(bulletPower - i / 3);
+            if (unitMap[cell]->health <= 0) {
+                auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
                 enemy.dropInventory();
                 xp += enemy.xpCost;
-                unitMap[row][col].reset();
+                unitMap[cell].reset();
             }
         }
         termRend
-            .setCursorPosition(Vec2i{ col, row })
+            .setCursorPosition(cell)
             .put(sym)
             .display();
         sleep(DELAY / 3);
@@ -1123,24 +1125,24 @@ void Hero::shoot() {
     weapon->currCartridgeSize--;
 }
 
-void Hero::moveTo(Coord cell) {
-    if (cell.y < 0 or cell.y >= FIELD_ROWS or cell.x < 0 or cell.x >= FIELD_COLS)
+void Hero::moveTo(Coord2i cell) {
+    if (not ::level.isIndex(cell))
         return;
-    if (map[cell.y][cell.x] != 2 or canMoveThroughWalls) {
-        if (unitMap[cell.y][cell.x] and unitMap[cell.y][cell.x]->getType() == UnitEnemy) {
+    if (::level[cell] != 2 or canMoveThroughWalls) {
+        if (unitMap[cell] and unitMap[cell]->getType() == UnitEnemy) {
             attackEnemy(cell);
-        } else if (not unitMap[cell.y][cell.x]) {
+        } else if (not unitMap[cell]) {
             setTo(cell);
         }
-    } else if (map[cell.y][cell.x] == 2) {
+    } else if (::level[cell] == 2) {
         if (weapon != nullptr and weapon->canDig) {
             termRend
-                .setCursorPosition(Vec2i{ FIELD_COLS + 10, 0 })
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
                 .put("Do you want to dig this wall? [yn]");
 
             char inpChar = termRead.readChar();
             if (inpChar == 'y' or inpChar == 'Y') {
-                map[cell.y][cell.x] = 1;
+                ::level[cell] = 1;
                 if (std::rand() % 100 <= Hero::MAX_LUCK - luck) {
                     message += "You've broken your {}. "_format(weapon->getName());
                     inventory[weapon->inventorySymbol - 'a'].reset();

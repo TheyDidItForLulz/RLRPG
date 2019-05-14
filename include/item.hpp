@@ -6,11 +6,11 @@
 #include<optional>
 #include<list>
 #include<memory>
+#include<functional>
 
 #include<level.hpp>
+#include<array2d.hpp>
 #include<termlib/vec2.hpp>
-
-using Coord = Vec2i;
 
 enum ItemType {
 	ItemFood = 1 << 0,
@@ -28,7 +28,7 @@ public:
 	Item();
 	virtual ~Item();
 
-    Coord pos;
+    Coord2i pos;
 	int symbol;
 	char inventorySymbol;
 	int weight;
@@ -224,7 +224,7 @@ const int MAX_TOTAL_INV_SIZE = MAX_USABLE_INV_SIZE + BANDOLIER;
 using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
 
-extern ItemPile itemsMap[FIELD_ROWS][FIELD_COLS];
+extern Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
 extern Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
 extern std::vector<Food> foodTypes;
@@ -235,7 +235,7 @@ extern std::vector<Scroll> scrollTypes;
 extern std::vector<Potion> potionTypes;
 extern std::vector<bool> potionTypeKnown;
 
-ItemPileIter findItemAt(Coord cell, int sym);
+ItemPileIter findItemAt(Coord2i cell, int sym);
 bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>
@@ -243,15 +243,18 @@ ItemType selectOne(const std::vector<ItemType> & types) {
     return types[std::rand() % types.size()];
 }
 
-template<class ItemType, class Fn = decltype(selectOne<ItemType>)>
-void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const Fn & itemSelector = selectOne<ItemType>) {
+template<class ItemType>
+using ItemSelector = std::function<ItemType(const std::vector<ItemType> &)>;
+
+template<class ItemType>
+void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const ItemSelector<ItemType> & selector = selectOne<ItemType>) {
     for (int i = 0; i < n; ++i) {
-        Item::Ptr item = std::make_unique<ItemType>(itemSelector(types));
+        Item::Ptr item = std::make_unique<ItemType>(selector(types));
         randomlySetOnMap(std::move(item));
     }
 }
 
-void drop(Item::Ptr item, Coord to);
+void drop(Item::Ptr item, Coord2i to);
 
 #endif // ITEM_HPP
 

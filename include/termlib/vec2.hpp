@@ -2,7 +2,7 @@
 #define VEC_2_HPP
 
 template<class T>
-class Vec2 { public:
+struct Vec2 {
 	T x, y;
 
 	Vec2(): x(0), y(0) {}
@@ -99,9 +99,11 @@ class Vec2 { public:
 	}
 };
 
-typedef Vec2<int> Vec2i;
-typedef Vec2<float> Vec2f;
-typedef Vec2<double> Vec2d;
+using Vec2i = Vec2<int>;
+using Vec2f = Vec2<float>;
+using Vec2d = Vec2<double>;
+using Coord2i = Vec2i;
+using Size2i = Vec2i;
 
 #endif // VEC_2_HPP
 

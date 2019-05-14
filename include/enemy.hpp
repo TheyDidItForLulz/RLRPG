@@ -11,7 +11,7 @@ public:
     Item::Ptr inventory[MAX_INV_SIZE];
 
 	Ammo* ammo = nullptr;
-    std::optional<Coord> target;
+    std::optional<Coord2i> target;
 	int lastTurnMoved = 0;
 	int xpCost;
 
@@ -32,8 +32,8 @@ public:
     }
 
 private:
-    std::optional<Coord> searchForShortestPath(Coord to) const; // returns next cell in the path if path exists
-    void moveTo(Coord cell);
+    std::optional<Coord2i> searchForShortestPath(Coord2i to) const; // returns next cell in the path if path exists
+    void moveTo(Coord2i cell);
 };
 
 extern Enemy enemyTypes[Enemy::TYPES_COUNT];

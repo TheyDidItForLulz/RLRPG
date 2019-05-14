@@ -1,12 +1,14 @@
 #ifndef LEVEL_HPP
 #define LEVEL_HPP
 
+#include<array2d.hpp>
+
 // Should be odd numbers
-const int FIELD_COLS = 81;
-const int FIELD_ROWS = 21;
-															//
-extern int map[FIELD_ROWS][FIELD_COLS];											//
-extern bool seenUpdated[FIELD_ROWS][FIELD_COLS];
+const int LEVEL_COLS = 81;
+const int LEVEL_ROWS = 21;
+
+extern Array2D<int, LEVEL_ROWS, LEVEL_COLS> level;
+extern Array2D<bool, LEVEL_ROWS, LEVEL_COLS> seenUpdated;
 
 void initField();
 void readMap();

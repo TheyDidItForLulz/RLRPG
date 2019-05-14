@@ -21,7 +21,7 @@ public:
         return win;
     }
 
-    TerminalRenderer & setCursorPosition(Vec2i position) {
+    TerminalRenderer & setCursorPosition(Coord2i position) {
         win.setCursorPosition(position);
         return *this;
     }
@@ -31,7 +31,7 @@ public:
         return *this;
     }
 
-    Vec2i getCursorPosition() const {
+    Coord2i getCursorPosition() const {
         return win.getCursorPosition();
     }
 

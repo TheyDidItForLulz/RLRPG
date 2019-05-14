@@ -51,7 +51,7 @@ public:
     }
 
 private:
-	void attackEnemy(Coord cell);
+	void attackEnemy(Coord2i cell);
 	void throwAnimated(Item::Ptr item, Direction direction);
 	void shoot();
 	void eat();
@@ -61,7 +61,7 @@ private:
 	void printList(const std::vector<Item *> & items, std::string_view msg, int mode) const;
 
 	void pickUpAmmo(ItemPileIter ammo);
-	void moveTo(Coord cell);
+	void moveTo(Coord2i cell);
 
     void levelUp();
 };

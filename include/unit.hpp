@@ -2,6 +2,7 @@
 #define UNIT_HPP
 
 #include<item.hpp>
+#include<array2d.hpp>
 #include<termlib/vec2.hpp>
 
 #define DELAY 0.07
@@ -26,15 +27,15 @@ public:
 	Weapon* weapon = nullptr;
 	Armor* armor = nullptr;
 
-    Coord pos = {-1, -1};
+    Coord2i pos = {-1, -1};
 	int health;
     int maxHealth;
 	int symbol;
 	int vision;
 
     std::string getName();
-	bool canSee(Coord cell) const;
-    void setTo(Coord cell);
+	bool canSee(Coord2i cell) const;
+    void setTo(Coord2i cell);
     void heal(int hp);
     void dealDamage(int damage);
 
@@ -44,6 +45,6 @@ protected:
 	bool linearVisibilityCheck(Vec2d from, Vec2d to) const;
 };
 
-extern Unit::Ptr unitMap[FIELD_ROWS][FIELD_COLS];
+extern Array2D<Unit::Ptr, LEVEL_ROWS, LEVEL_COLS> unitMap;
 
 #endif // UNIT_HPP

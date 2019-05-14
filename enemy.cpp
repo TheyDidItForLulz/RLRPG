@@ -101,12 +101,12 @@ void Enemy::shoot() {
     Vec2i offset = toVec2i(dir);
     char sym = toChar(dir);
     for (int i = 1; i < weapon->range + ammo->range; i++) {
-        Coord cell = pos + offset * i;
+        Coord2i cell = pos + offset * i;
 
-        if (map[cell.y][cell.x] == 2)
+        if (level[cell] == 2)
             break;
 
-        if (unitMap[cell.y][cell.x] and unitMap[cell.y][cell.x]->getType() == UnitHero) {
+        if (unitMap[cell] and unitMap[cell]->getType() == UnitHero) {
             g_hero->dealDamage(ammo->damage + weapon->damageBonus);
             break;
         }
@@ -128,17 +128,17 @@ void Enemy::shoot() {
     }
 }
 
-std::optional<Coord> Enemy::searchForShortestPath(Coord to) const {
+std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
     if (to == pos)
         return std::nullopt;
 
     int maxDepth = 2 + std::abs(to.x - pos.x) + std::abs(to.y - pos.y);
 
-    std::queue<Coord> q;
+    std::queue<Coord2i> q;
     q.push(pos);
 
-    int used[FIELD_ROWS][FIELD_COLS] = {};
-    used[pos.y][pos.x] = 1;
+    Array2D<int, LEVEL_ROWS, LEVEL_COLS> used;
+    used[pos] = 1;
 
     std::vector<Vec2i> dirs = {
         toVec2i(Direction::Up),
@@ -154,35 +154,34 @@ std::optional<Coord> Enemy::searchForShortestPath(Coord to) const {
     }
 
     while (not q.empty()) {
-        Coord v = q.front();
+        Coord2i v = q.front();
         if (v == to)
             break;
 
-        if (used[v.y][v.x] > maxDepth)
+        if (used[v] > maxDepth)
             return std::nullopt;
 
         q.pop();
 
         for (auto dir : dirs) {
             auto tv = v + dir;
-            if (tv.x >= 0 and tv.y >= 0 and tv.x < FIELD_COLS - 1 and tv.y < FIELD_ROWS - 1
-                    and (not unitMap[tv.y][tv.x] or unitMap[tv.y][tv.x]->getType() == UnitHero)
-                    and map[tv.y][tv.x] != 2 and used[tv.y][tv.x] == 0) {
+            if (unitMap.isIndex(tv)
+                    and (not unitMap[tv] or unitMap[tv]->getType() == UnitHero)
+                    and level[tv] != 2 and used[tv] == 0) {
                 q.push(tv);
-                used[tv.y][tv.x] = 1 + used[v.y][v.x];
+                used[tv] = 1 + used[v];
             }
         }
     }
 
-    if (not used[to.y][to.x])
+    if (not used[to])
         return std::nullopt;
 
-    Coord v = to;
-    while (used[v.y][v.x] > 2) {
+    Coord2i v = to;
+    while (used[v] > 2) {
         for (auto dir : dirs) {
             auto tv = v - dir;
-            if (tv.x >= 0 and tv.y >= 0 and tv.x < FIELD_COLS - 1 and tv.y < FIELD_ROWS - 1
-                    and used[tv.y][tv.x] + 1 == used[v.y][v.x]) {
+            if (used.isIndex(tv) and used[tv] + 1 == used[v]) {
                 v = tv;
                 break;
             }
@@ -192,19 +191,16 @@ std::optional<Coord> Enemy::searchForShortestPath(Coord to) const {
     return v;
 }
 
-void Enemy::moveTo(Coord cell) {
-    if (cell.x < 0 or cell.y < 0 or cell.y >= FIELD_ROWS or cell.x >= FIELD_COLS)
-        throw std::logic_error("Trying to move an enemy away from the map");
-
-    if (map[cell.y][cell.x] == 2)
+void Enemy::moveTo(Coord2i cell) {
+    if (level[cell] == 2)
         throw std::logic_error("Trying to move an enemy into a wall");
 
-    if (not unitMap[cell.y][cell.x]) {
+    if (not unitMap[cell]) {
         setTo(cell);
         return;
     }
 
-    if (unitMap[cell.y][cell.x]->getType() == UnitEnemy or weapon == nullptr)
+    if (unitMap[cell]->getType() == UnitEnemy or weapon == nullptr)
         return;
 
     if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {
@@ -214,7 +210,7 @@ void Enemy::moveTo(Coord cell) {
     }
 
     if (health <= 0) {
-        unitMap[pos.y][pos.x].reset();
+        unitMap[pos].reset();
         return;
     }
 }
@@ -224,7 +220,7 @@ void Enemy::updatePosition() {
 
     if (not g_hero->isInvisible() and canSee(g_hero->pos)) {
         bool onDiagLine = std::abs(g_hero->pos.y - pos.y) == std::abs(g_hero->pos.x - pos.x);
-        bool canShootHero =(pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or onDiagLine)
+        bool canShootHero = (pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or onDiagLine)
                 and weapon and weapon->isRanged and ammo
                 and weapon->range + ammo->range >= std::abs(g_hero->pos.y - pos.y) + std::abs(g_hero->pos.x - pos.x);
         if (canShootHero) {
@@ -238,22 +234,28 @@ void Enemy::updatePosition() {
             }
         }
     }
-    if (auto next = searchForShortestPath(*target)) {
+    std::optional<Coord2i> next;
+    if (target.has_value() and (next = searchForShortestPath(*target))) {
         moveTo(*next);
         return;
     }
 
-    std::vector<Coord> visibleCells;
+    std::vector<Coord2i> visibleCells;
 
-    for (int i = std::max(pos.y - vision, 0); i < std::min(FIELD_ROWS, pos.y + vision); i++) {
-        for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, FIELD_COLS); j++) {
-            Vec2i cell{ j, i };
-            if (cell != pos and map[i][j] != 2
+    unitMap.forEach([&] (Coord2i cell, const Unit::Ptr & unit) {
+        if (cell != pos and level[cell] != 2 and not unit and canSee(cell)) {
+            visibleCells.push_back(cell);
+        }
+    });
+    /*for (int i = std::max(pos.y - vision, 0); i < std::min(LEVEL_ROWS, pos.y + vision); i++) {
+        for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, LEVEL_COLS); j++) {
+            Coord2i cell{ j, i };
+            if (cell != pos and level[i][j] != 2
                     and not unitMap[i][j] and canSee(cell)) {
                 visibleCells.push_back(cell);
             }
         }    
-    }
+    }*/
 
     int attempts = 15;
     for (int i = 0; i < attempts; ++i) {

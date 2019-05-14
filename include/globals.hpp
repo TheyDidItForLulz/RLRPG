@@ -4,8 +4,6 @@
 #include<string>
 #include<termlib/termlib.hpp>
 
-using Coord = Vec2i;
-
 class Hero;
 
 extern std::string message;

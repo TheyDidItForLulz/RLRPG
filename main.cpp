@@ -129,8 +129,21 @@ std::string weaponBar = "";
 Hero * g_hero;
 
 void updateAI() {
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
+    unitMap.forEach([&] (Unit::Ptr & unit) {
+        if (not unit or unit->getType() != UnitEnemy)
+            return;
+
+        auto & enemy = dynamic_cast<Enemy &>(*unit);
+        if (enemy.lastTurnMoved == g_turns)
+            return;
+        if (g_mode == 2 and g_turns % 200 == 0) {
+            enemy.heal(1);
+        }
+        enemy.updatePosition();
+    });
+    /*
+    for (int i = 0; i < LEVEL_ROWS; i++) {
+        for (int j = 0; j < LEVEL_COLS; j++) {
             if (not unitMap[i][j] or unitMap[i][j]->getType() != UnitEnemy)
                 continue;
             auto & enemy = dynamic_cast<Enemy &>(*unitMap[i][j]);
@@ -144,50 +157,48 @@ void updateAI() {
             }
             enemy.updatePosition();
         }
-    }
+    }*/
 }
 
 void setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
-    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [&] (const auto & types) {
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, ItemSelector<Armor>([&] (const std::vector<Armor> & types) {
         Armor item = types[std::rand() % types.size()];
         if (std::rand() % 500 < g_hero->luck) {
             item.mdf = 2;
         }
         return item;
-    });
+    }));
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [&] (const auto & types) {
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, ItemSelector<Ammo>([&] (const std::vector<Ammo> & types) {
         Ammo ammo = types[std::rand() % types.size()];
         ammo.count = std::rand() % g_hero->luck + 1;
         return ammo;
-    });
+    }));
     randomlySelectAndSetOnMap(scrollTypes, Scroll::COUNT);
     randomlySelectAndSetOnMap(potionTypes, Potion::COUNT);
 }
 
 void spawnUnits() {
     for (int i = 0; i < 1; i++) {
-        int h = std::rand() % FIELD_ROWS;
-        int l = std::rand() % FIELD_COLS;
-        if (map[h][l] == 1 and not unitMap[h][l]) {
+        Coord2i pos{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+        if (level[pos] == 1 and not unitMap[pos]) {
             auto hero = std::make_unique<Hero>();
             g_hero = hero.get();
-            g_hero->pos.set(l, h);
-            unitMap[h][l] = std::move(hero);
+            g_hero->pos = pos;
+            unitMap[pos] = std::move(hero);
             break;
         } else {
             i--;
         }
     }
     for (int i = 0; i < ENEMIESCOUNT; i++) {
-        int h = std::rand() % FIELD_ROWS;
-        int l = std::rand() % FIELD_COLS;
-        if (map[h][l] == 1 and not unitMap[h][l]) {
+        Coord2i pos{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+        if (level[pos] == 1 and not unitMap[pos]) {
             int p = std::rand() % Enemy::TYPES_COUNT;
             auto enemy = std::make_unique<Enemy>(enemyTypes[p]);
-            enemy->pos.set(l, h);
-            unitMap[h][l] = std::move(enemy);
+            enemy->pos = pos;
+            unitMap[pos] = std::move(enemy);
         } else {
             i--;
         }
@@ -198,7 +209,6 @@ struct SymbolRenderData {
     TextStyle style;
     char symbol;
     
-
     SymbolRenderData(char symbol, TextStyle style = {})
         : symbol(symbol)
         , style(style) {}
@@ -266,34 +276,34 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Yellow, Color::Blue } } }; 
 }
 
-std::optional<CellRenderData> cachedMap[FIELD_ROWS][FIELD_COLS];
+Array2D<std::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
+//std::optional<CellRenderData> cachedMap[LEVEL_ROWS][LEVEL_COLS];
 
-std::optional<CellRenderData> getRenderData(Coord cell) {
-    auto[ col, row ] = cell;
+std::optional<CellRenderData> getRenderData(Coord2i cell) {
 #ifndef DEBUG
-    if (not seenUpdated[row][col]) {
+    if (not seenUpdated[cell]) {
         return {};
     }
 #endif
     CellRenderData renderData;
-    if (unitMap[row][col]) {
-        renderData.unit = getRenderData(unitMap[row][col]);
+    if (unitMap[cell]) {
+        renderData.unit = getRenderData(unitMap[cell]);
     }
-    if (itemsMap[row][col].size() == 1) {
-        renderData.item = getRenderData(itemsMap[row][col].front());
-    } else if (itemsMap[row][col].size() > 1) {
+    if (itemsMap[cell].size() == 1) {
+        renderData.item = getRenderData(itemsMap[cell].front());
+    } else if (itemsMap[cell].size() > 1) {
         renderData.item = SymbolRenderData{ '^', { TextStyle::Bold, TerminalColor{ Color::Black, Color::White } } };
     }
-    switch (map[row][col]) {
+    switch (level[cell]) {
         case 1:
-            if (seenUpdated[row][col]) {
+            if (seenUpdated[cell]) {
                 renderData.level = '.';
             } else {
                 renderData.level = ' ';
             }
             break;
         case 2:
-            if (seenUpdated[row][col]) {
+            if (seenUpdated[cell]) {
                 renderData.level = SymbolRenderData{ '#', { TextStyle::Bold } };
             } else {
                 renderData.level = '#';
@@ -303,26 +313,43 @@ std::optional<CellRenderData> getRenderData(Coord cell) {
 }
 
 void clearCachedMap() {
-    for (int r = 0; r < FIELD_ROWS; ++r) {
-        for (int c = 0; c < FIELD_COLS; ++c) {
+    cachedMap.forEach([] (std::optional<CellRenderData> & cell) {
+        cell = std::nullopt;
+    });
+    /*for (int r = 0; r < LEVEL_ROWS; ++r) {
+        for (int c = 0; c < LEVEL_COLS; ++c) {
             cachedMap[r][c] = {};
         }
-    }
+    }*/
 }
 
-void cache(Coord cell, const CellRenderData & renderData) {
-    cachedMap[cell.y][cell.x] = renderData.forCache();
+void cache(Coord2i cell, const CellRenderData & renderData) {
+    cachedMap[cell] = renderData.forCache();
 }
 
 void drawMap(){
-    termRend.setCursorPosition(Vec2i{});
+    termRend.setCursorPosition(Coord2i{});
 
     if (g_mode == 2 and not g_hero->isMapInInventory())
         clearCachedMap();
 
-    for (int i = 0; i < FIELD_ROWS; i++) {
-        for (int j = 0; j < FIELD_COLS; j++) {
-            Coord c{ j, i };
+    cachedMap.forEach([&] (Coord2i pos, std::optional<CellRenderData> & cellCache) {
+        auto cell = getRenderData(pos);
+
+        if (cell)
+            cellCache = cell->forCache();
+        else if (cellCache)
+            cell = cellCache;
+
+        auto rendData = cell->get().value_or(' ');
+
+        termRend
+            .setCursorPosition(pos)
+            .put(rendData.symbol, rendData.style);
+    });
+    /*for (int i = 0; i < LEVEL_ROWS; i++) {
+        for (int j = 0; j < LEVEL_COLS; j++) {
+            Coord2i c{ j, i };
             auto cell = getRenderData(c);
 
             if (cell)
@@ -335,7 +362,7 @@ void drawMap(){
             termRend.put(symbol.symbol, symbol.style);
         }
         termRend.put('\n');
-    }
+    }*/
 }
 
 void printMenu(const std::vector<std::string_view> & items, int active) {
@@ -344,7 +371,7 @@ void printMenu(const std::vector<std::string_view> & items, int active) {
     itemStyles[active - 1] = activeItemStyle;
     for (int i = 1; i <= items.size(); ++i) {
         termRend
-            .setCursorPosition(Vec2i{ 0, i })
+            .setCursorPosition(Coord2i{ 0, i })
             .put("{} {}"_format(i, items[i - 1]), itemStyles[i - 1]);
     }
 }
@@ -355,7 +382,7 @@ std::optional<std::string> processMenu(std::string_view title, const std::vector
     while (true) {
         termRend
             .clear()
-            .setCursorPosition(Vec2i{})
+            .setCursorPosition(Coord2i{})
             .put(title);
 
         printMenu(items, selected);
@@ -395,7 +422,7 @@ void mSettingsMode() {
 void mSettingsMap() {
     termRend
         .clear()
-        .setCursorPosition(Vec2i{})
+        .setCursorPosition(Coord2i{})
         .put("Do you want to load map from file?");
     char inpChar = termRead.readChar();
     if (inpChar == 'y' or inpChar == 'Y') {
@@ -473,6 +500,7 @@ void setRandomPotionEffects() {
 }
 
 void draw() {
+    termRend.clear();
     drawMap();
 
     int defence = g_hero->armor ? g_hero->armor->defence : 0;
@@ -518,11 +546,11 @@ void draw() {
         }
     }
     termRend
-        .setCursorPosition(Vec2i{ 0, FIELD_ROWS })
+        .setCursorPosition(Coord2i{ 0, LEVEL_ROWS })
         .put(fmt::sprintf("%- 190s", bar))
-        .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 1 })
+        .setCursorPosition(Coord2i{ 0, LEVEL_ROWS + 1 })
         .put(fmt::sprintf("%- 190s", weaponBar))
-        .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
+        .setCursorPosition(Coord2i{ 0, LEVEL_ROWS + 2 })
         .put(fmt::sprintf("%- 190s", message))
         .setCursorPosition(g_hero->pos);
 }
@@ -538,7 +566,7 @@ int main() {
     }
 
     if (g_generateMap) {
-        generate_maze();
+        generateMaze();
     } else {
         readMap();
     }
@@ -633,7 +661,7 @@ int main() {
         if (died) {
             g_hero->health = 0;
             termRend
-                .setCursorPosition(Vec2i{ 0, FIELD_ROWS + 2 })
+                .setCursorPosition(Coord2i{ 0, LEVEL_ROWS + 2 })
                 .put(fmt::sprintf("%- 190s", message))
                 .display();
             termRead.readChar();
@@ -674,7 +702,7 @@ int main() {
             
             if (inp == '\033') {    
                 termRend
-                    .setCursorPosition(Vec2i{ 0, FIELD_ROWS })
+                    .setCursorPosition(Coord2i{ 0, LEVEL_ROWS })
                     .put("Are you sure you want to exit?\n")
                     .display();
                 char inp = termRead.readChar();
