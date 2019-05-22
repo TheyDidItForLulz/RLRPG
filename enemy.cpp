@@ -12,9 +12,9 @@ Enemy::Enemy(int eType) {
         case 0: {
             health = 7;
             maxHealth = 7;
-            inventory[0] = std::make_unique<Food>(foodTypes[0]);
-            inventory[1] = std::make_unique<Weapon>(weaponTypes[0]);
-            weapon = dynamic_cast<Weapon *>(inventory[1].get());
+            inventory.add(std::make_unique<Food>(foodTypes[0]));
+            inventory.add(std::make_unique<Weapon>(weaponTypes[0]));
+            weapon = dynamic_cast<Weapon *>(&inventory['b']);
             symbol = 201;
             vision = 16;
             xpCost = 3;
@@ -23,8 +23,8 @@ Enemy::Enemy(int eType) {
         case 1: {
             health = 10;
             maxHealth = 10;
-            inventory[0] = std::make_unique<Weapon>(weaponTypes[3]);
-            weapon = dynamic_cast<Weapon *>(inventory[0].get());
+            inventory.add(std::make_unique<Weapon>(weaponTypes[3]));
+            weapon = dynamic_cast<Weapon *>(&inventory['a']);
             symbol = 202;
             vision = 10;
             xpCost = 2;
@@ -33,10 +33,10 @@ Enemy::Enemy(int eType) {
         case 2: {
             health = 5;
             maxHealth = 5;
-            inventory[0] = std::make_unique<Weapon>(weaponTypes[5]);
-            inventory[1] = std::make_unique<Ammo>(ammoTypes[0]);
-            weapon = dynamic_cast<Weapon *>(inventory[0].get());
-            ammo = dynamic_cast<Ammo *>(inventory[1].get());
+            inventory.add(std::make_unique<Weapon>(weaponTypes[5]));
+            inventory.add(std::make_unique<Ammo>(ammoTypes[0]));
+            weapon = dynamic_cast<Weapon *>(&inventory['a']);
+            ammo = dynamic_cast<Ammo *>(&inventory['b']);
             ammo->count = std::rand() % 30 + 4;
             symbol = 203;
             vision = 16;
@@ -48,16 +48,10 @@ Enemy::Enemy(int eType) {
 
 Enemy::Enemy(const Enemy & other)
     : Unit(other) {
-    for (int i = 0; i < MAX_INV_SIZE; ++i) {
-        if (not other.inventory[i])
-            continue;
-        inventory[i] = other.inventory[i]->clone();
-        if (other.inventory[i].get() == other.weapon)
-            weapon = dynamic_cast<Weapon *>(inventory[i].get());
-        if (other.inventory[i].get() == other.armor)
-            armor = dynamic_cast<Armor *>(inventory[i].get());
-        if (other.inventory[i].get() == other.ammo)
-            ammo = dynamic_cast<Ammo *>(inventory[i].get());
+    if (other.ammo == nullptr) {
+        ammo = nullptr;
+    } else {
+        ammo = dynamic_cast<Ammo *>(&inventory[other.ammo->inventorySymbol]);
     }
 }
 
@@ -66,31 +60,17 @@ Enemy & Enemy::operator =(const Enemy & other) {
         return *this;
     }
     Unit::operator =(other);
-    weapon = nullptr;
-    armor = nullptr;
-    ammo = nullptr;
-    for (int i = 0; i < MAX_INV_SIZE; ++i) {
-        inventory[i].reset();
-        if (not other.inventory[i])
-            continue;
-        inventory[i] = other.inventory[i]->clone();
-        if (other.inventory[i].get() == other.weapon)
-            weapon = dynamic_cast<Weapon *>(inventory[i].get());
-        if (other.inventory[i].get() == other.armor)
-            armor = dynamic_cast<Armor *>(inventory[i].get());
-        if (other.inventory[i].get() == other.ammo)
-            ammo = dynamic_cast<Ammo *>(inventory[i].get());
+    if (other.ammo == nullptr) {
+        ammo = nullptr;
+    } else {
+        ammo = dynamic_cast<Ammo *>(&inventory[other.ammo->inventorySymbol]);
     }
     return *this;
 }
 
 void Enemy::dropInventory() {
-    weapon = nullptr;
-    armor = nullptr;
     ammo = nullptr;
-    for (int i = 0; i < MAX_INV_SIZE; i++) {
-        drop(std::move(inventory[i]), pos);
-    }
+    Unit::dropInventory();
 }
 
 void Enemy::shoot() {
@@ -119,12 +99,8 @@ void Enemy::shoot() {
 
     ammo->count--;
     if (ammo->count <= 0) {
-        for (int i = 0; i < MAX_INV_SIZE; ++i) {
-            if (inventory[i].get() == ammo) {
-                inventory[i].reset();
-                ammo = nullptr;
-            }
-        }
+        inventory.remove(ammo->inventorySymbol);
+        ammo = nullptr;
     }
 }
 
@@ -247,15 +223,6 @@ void Enemy::updatePosition() {
             visibleCells.push_back(cell);
         }
     });
-    /*for (int i = std::max(pos.y - vision, 0); i < std::min(LEVEL_ROWS, pos.y + vision); i++) {
-        for (int j = std::max(pos.x - vision, 0); j < std::min(pos.x + vision, LEVEL_COLS); j++) {
-            Coord2i cell{ j, i };
-            if (cell != pos and level[i][j] != 2
-                    and not unitMap[i][j] and canSee(cell)) {
-                visibleCells.push_back(cell);
-            }
-        }    
-    }*/
 
     int attempts = 15;
     for (int i = 0; i < attempts; ++i) {
@@ -267,4 +234,3 @@ void Enemy::updatePosition() {
         }
     }
 }
-

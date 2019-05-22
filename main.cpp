@@ -141,23 +141,6 @@ void updateAI() {
         }
         enemy.updatePosition();
     });
-    /*
-    for (int i = 0; i < LEVEL_ROWS; i++) {
-        for (int j = 0; j < LEVEL_COLS; j++) {
-            if (not unitMap[i][j] or unitMap[i][j]->getType() != UnitEnemy)
-                continue;
-            auto & enemy = dynamic_cast<Enemy &>(*unitMap[i][j]);
-            if (enemy.lastTurnMoved == g_turns)
-                continue;
-//#                ifdef DEBUG
-            //message += "{{{}|{}|{}|{}}}"_format(i, j, unitMap[i][j].unit.uEnemy.symbol, unitMap[i][j].getUnit().health);
-//#                endif
-            if (g_mode == 2 and g_turns % 200 == 0) {
-                enemy.heal(1);
-            }
-            enemy.updatePosition();
-        }
-    }*/
 }
 
 void setItems() {
@@ -277,7 +260,6 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
 }
 
 Array2D<std::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
-//std::optional<CellRenderData> cachedMap[LEVEL_ROWS][LEVEL_COLS];
 
 std::optional<CellRenderData> getRenderData(Coord2i cell) {
 #ifndef DEBUG
@@ -316,11 +298,6 @@ void clearCachedMap() {
     cachedMap.forEach([] (std::optional<CellRenderData> & cell) {
         cell = std::nullopt;
     });
-    /*for (int r = 0; r < LEVEL_ROWS; ++r) {
-        for (int c = 0; c < LEVEL_COLS; ++c) {
-            cachedMap[r][c] = {};
-        }
-    }*/
 }
 
 void cache(Coord2i cell, const CellRenderData & renderData) {
@@ -347,22 +324,6 @@ void drawMap(){
             .setCursorPosition(pos)
             .put(rendData.symbol, rendData.style);
     });
-    /*for (int i = 0; i < LEVEL_ROWS; i++) {
-        for (int j = 0; j < LEVEL_COLS; j++) {
-            Coord2i c{ j, i };
-            auto cell = getRenderData(c);
-
-            if (cell)
-                cache(c, *cell);
-            else if (cachedMap[i][j])
-                cell = cachedMap[i][j];
-
-            auto symbol = cell->get().value_or(' ');
-
-            termRend.put(symbol.symbol, symbol.style);
-        }
-        termRend.put('\n');
-    }*/
 }
 
 void printMenu(const std::vector<std::string_view> & items, int active) {

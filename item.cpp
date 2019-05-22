@@ -183,10 +183,8 @@ Weapon::Weapon(int WeaponType) {
 
 Weapon::Weapon() {}
 
-Weapon::Weapon(const Weapon& other) {
-	symbol = other.symbol;
+Weapon::Weapon(const Weapon& other): Item(other) {
 	damage = other.damage;
-	weight = other.weight;
 	isRanged = other.isRanged;
 	range = other.range;
 	damageBonus = other.damageBonus;
@@ -202,9 +200,8 @@ Weapon::Weapon(const Weapon& other) {
 }
 
 Weapon& Weapon::operator=(const Weapon& other) {
-	symbol = other.symbol;
+	Item::operator=(other);
 	damage = other.damage;
-	weight = other.weight;
 	isRanged = other.isRanged;
     canDig = other.canDig;
 	range = other.range;

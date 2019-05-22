@@ -6,9 +6,6 @@
 class Enemy: public Unit {
 public:
     static const int TYPES_COUNT = 3;
-    static const int MAX_INV_SIZE = 4;
-
-    Item::Ptr inventory[MAX_INV_SIZE];
 
 	Ammo* ammo = nullptr;
     std::optional<Coord2i> target;
@@ -25,7 +22,7 @@ public:
 
 	void shoot();
     void updatePosition();
-    void dropInventory();
+    void dropInventory() override;
 
     UnitType getType() const override {
         return UnitEnemy;

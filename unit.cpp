@@ -1,12 +1,12 @@
 #include<ctime>
 #include<thread>
+#include<queue>
+#include<cassert>
 
 #include<unit.hpp>
 #include<utils.hpp>
 #include<globals.hpp>
 #include<array2d.hpp>
-
-#include<queue>
 
 static const int VISION_PRECISION = 256;
 
@@ -18,7 +18,14 @@ Unit::Unit(const Unit & other)
     , pos(other.pos)
     , symbol(other.symbol)
     , vision(other.vision)
+    , inventory(other.inventory)
     , weapon(), armor() {
+    if (other.weapon != nullptr) {
+        weapon = dynamic_cast<Weapon *>(&inventory[other.weapon->inventorySymbol]);
+    }
+    if (other.armor != nullptr) {
+        armor = dynamic_cast<Armor *>(&inventory[other.armor->inventorySymbol]);
+    }
 }
 
 Unit & Unit::operator =(const Unit & other) {
@@ -30,8 +37,17 @@ Unit & Unit::operator =(const Unit & other) {
     pos = other.pos;
     symbol = other.symbol;
     vision = other.vision;
-    weapon = nullptr;
-    armor = nullptr;
+    inventory = other.inventory;
+    if (other.weapon == nullptr) {
+        weapon = nullptr;
+    } else {
+        weapon = dynamic_cast<Weapon *>(&inventory[other.weapon->inventorySymbol]);
+    }
+    if (other.armor == nullptr) {
+        armor = nullptr;
+    } else {
+        armor = dynamic_cast<Armor *>(&inventory[other.armor->inventorySymbol]);
+    }
     return *this;
 }
 
@@ -94,3 +110,11 @@ void Unit::dealDamage(int damage) {
     health -= damage * (100 - defence) / 100.f;
 }
 
+void Unit::dropInventory() {
+    weapon = nullptr;
+    armor = nullptr;
+    for (auto it = inventory.begin(); it != inventory.end();) {
+        drop(inventory.remove(it->first), pos);
+    }
+    assert(inventory.isEmpty());
+}

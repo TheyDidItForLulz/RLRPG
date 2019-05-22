@@ -11,6 +11,7 @@ public:
     static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
     static const int DEFAULT_VISION = 16;
 
+	Item::Ptr bandolier[BANDOLIER];
 	int hunger = 900;
 	int xp = 0;
     int maxBurden = 25;
@@ -30,16 +31,14 @@ public:
 	void processInput(char inp);
 
     bool isInvisible() const;
-	bool isInventoryEmpty() const;
 	bool isMapInInventory() const;
 	bool isFoodInInventory() const;
 	bool isArmorInInventory() const;
 	bool isWeaponInInventory() const;
 	bool isPotionInInventory() const;
 
-	int findEmptyInventoryCell() const;
 	int findAmmoInInventory() const;
-	int findScrollInInventory() const;
+	char findScrollInInventory() const;
 
 	int getInventoryItemsWeight() const;
 
@@ -58,7 +57,7 @@ private:
 	void pickUp();
 	void showInventory(char inp);
 
-	void printList(const std::vector<Item *> & items, std::string_view msg, int mode) const;
+	void printList(std::vector<Item *> items, std::string_view msg, int mode) const;
 
 	void pickUpAmmo(ItemPileIter ammo);
 	void moveTo(Coord2i cell);

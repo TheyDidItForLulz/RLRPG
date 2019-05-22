@@ -4,6 +4,7 @@
 #include<item.hpp>
 #include<array2d.hpp>
 #include<termlib/vec2.hpp>
+#include<inventory.hpp>
 
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
@@ -24,6 +25,7 @@ public:
 
     Unit & operator=(const Unit &);
 
+    Inventory inventory;
 	Weapon* weapon = nullptr;
 	Armor* armor = nullptr;
 
@@ -40,6 +42,7 @@ public:
     void dealDamage(int damage);
 
     virtual UnitType getType() const = 0;
+    virtual void dropInventory();
 
 protected:
 	bool linearVisibilityCheck(Vec2d from, Vec2d to) const;

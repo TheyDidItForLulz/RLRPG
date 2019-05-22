@@ -13,10 +13,8 @@ Hero::Hero() {
     symbol = 200;
     vision = DEFAULT_VISION;
 
-    inventory[0] = std::make_unique<Armor>(armorTypes[1]);
-    inventory[0]->inventorySymbol = 'a';
-
-    armor = dynamic_cast<Armor *>(inventory[0].get());
+    inventory.add(std::make_unique<Armor>(armorTypes[1]));
+    armor = dynamic_cast<Armor *>(&inventory['a']);
     armor->attribute = 201;
     if (std::rand() % (500 / luck) == 0)
         armor->mdf = 2;
@@ -56,41 +54,22 @@ void Hero::checkVisibleCells() {
     seenUpdated.forEach([this] (Coord2i pos, bool & see) {
         see = canSee(pos);
     });
-    /*for (int i = 0; i < LEVEL_ROWS; i++) {
-        for (int j = 0; j < LEVEL_COLS; j++) {
-            seenUpdated[i][j] = canSee(Coord2i{ j, i });
-        }
-    }*/
-}
-
-bool Hero::isInventoryEmpty() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i])
-            return false;
-    }
-    return true;
-}
-
-int Hero::findEmptyInventoryCell() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (not inventory[i])
-            return i;
-    }
-    return 101010;                                            // Magic constant, means "Inventory is full".
 }
 
 int Hero::getInventoryItemsWeight() const {
     int totalWeight = 0;
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i]) {
-            totalWeight += inventory[i]->weight;
-        }
+    for (const auto & entry : inventory) {
+        totalWeight += entry.second->weight * entry.second->count;
     }
     return totalWeight;
 }
 
-void Hero::printList(const std::vector<Item *> & items, std::string_view msg, int mode) const {
+void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) const {
     int num = 0;
+
+    std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
+        return a->inventorySymbol < b->inventorySymbol;
+    });
 
     termRend
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10, num })
@@ -165,31 +144,26 @@ void Hero::printList(const std::vector<Item *> & items, std::string_view msg, in
 }
 
 bool Hero::isMapInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->symbol == 500)
+    for (const auto & entry : inventory)
+        if (entry.second->symbol == 500)
             return true;
-    }
     return false;
 }
 
 // 101010 something went wrong
 
 int Hero::findAmmoInInventory() const {
-    for (int i = 0; i < BANDOLIER; i++) {
-        if (inventory[AMMO_SLOT + i]) {
+    for (int i = 0; i < BANDOLIER; i++)
+        if (bandolier[i])
             return i;
-        }
-    }
-    return 101010;
+    return -1;
 }
 
-int Hero::findScrollInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->getType() == ItemScroll) {
-            return i;
-        }
-    }
-    return 101010;
+char Hero::findScrollInInventory() const {
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemScroll)
+            return entry.first;
+    return 0;
 }
 
 void Hero::pickUpAmmo(ItemPileIter ammoIter) {
@@ -206,8 +180,8 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {
             num += 2;
             char symbol = '-';
             TextStyle style{ TerminalColor{} };
-            if (inventory[AMMO_SLOT + i]) {
-                switch (inventory[AMMO_SLOT + i]->symbol) {
+            if (bandolier[i]) {
+                switch (bandolier[i]->symbol) {
                     case 450:
                         symbol = ',';
                         style = TextStyle{ TextStyle::Bold, Color::Black };
@@ -237,14 +211,14 @@ void Hero::pickUpAmmo(ItemPileIter ammoIter) {
                 break;
             case CONTROL_CONFIRM: {
                     Item::Ptr & ammo = *ammoIter;
-                    if (inventory[AMMO_SLOT + choice] == nullptr) {
-                        inventory[AMMO_SLOT + choice] = std::move(ammo);
+                    if (bandolier[choice] == nullptr) {
+                        bandolier[choice] = std::move(ammo);
                         itemsMap[pos].erase(ammoIter);
-                    } else if (inventory[AMMO_SLOT + choice]->symbol == ammo->symbol) {
-                        inventory[AMMO_SLOT + choice]->count += ammo->count;
+                    } else if (bandolier[choice]->symbol == ammo->symbol) {
+                        bandolier[choice]->count += ammo->count;
                         itemsMap[pos].erase(ammoIter);
                     } else {
-                        std::swap(ammo, inventory[AMMO_SLOT + choice]);
+                        std::swap(ammo, bandolier[choice]);
                     }
                     return;
                 }
@@ -270,27 +244,14 @@ void Hero::pickUp() {
             return;
         }
 
-        bool canStack = false;
-
-        if (itemToPick->isStackable) {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i) {
-                if (inventory[i] and inventory[i]->symbol == itemToPick->symbol) {
-                    canStack = true;
-                    inventory[i]->count += itemToPick->count;
-                    itemsMap[pos].pop_back();
-                }
-            }
-        }
-
-        if (not canStack) {
-            int eic = findEmptyInventoryCell();
-            if (eic != 101010) {
-                inventory[eic] = std::move(itemToPick);
-                inventory[eic]->inventorySymbol = eic + 'a';
-                itemsMap[pos].pop_back();
-            } else {
-                message += "Your inventory is full, motherfuck'a! ";
-            }
+        auto status = inventory.add(std::move(itemToPick));
+        if (status) {
+            itemsMap[pos].pop_back();
+        } else {
+            status.doIf<AddStatus::FullInvError>([&] (auto & err) {
+                itemToPick = std::move(err.item);
+                message += "Your inventory is full. ";
+            });
         }
 
         if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
@@ -329,27 +290,14 @@ void Hero::pickUp() {
         return;
     }
 
-    bool canStack = false;
-
-    if (item->isStackable) {
-        for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i) {
-            if (inventory[i] and inventory[i]->symbol == item->symbol) {
-                canStack = true;
-                inventory[i]->count += item->count;
-                itemsMap[pos].erase(itemIter);
-            }
-        }
-    }
-
-    if (not canStack) {
-        int eic = findEmptyInventoryCell();
-        if (eic != 101010) {
-            inventory[eic] = std::move(item);
-            inventory[eic]->inventorySymbol = eic + 'a';
-            itemsMap[pos].erase(itemIter);
-        } else {
-            message += "Your inventory is full, motherfuck'a! ";
-        }
+    auto status = inventory.add(std::move(item));
+    if (status) {
+        itemsMap[pos].erase(itemIter);
+    } else {
+        status.doIf<AddStatus::FullInvError>([&] (auto & err) {
+            item = std::move(err.item);
+            message += "Your inventory is full. ";
+        });
     }
 
     if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
@@ -359,34 +307,30 @@ void Hero::pickUp() {
 }
 
 bool Hero::isFoodInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->getType() == ItemFood)
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemFood)
             return true;
-    }
     return false;
 }
 
 bool Hero::isArmorInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->getType() == ItemArmor)
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemArmor)
             return true;
-    }
     return false;
 }
 
 bool Hero::isWeaponInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->getType() == ItemWeapon)
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemWeapon)
             return true;
-    }
     return false;
 }
 
 bool Hero::isPotionInInventory() const {
-    for (int i = 0; i < MAX_USABLE_INV_SIZE; i++) {
-        if (inventory[i] and inventory[i]->getType() == ItemPotion)
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemPotion)
             return true;
-    }
     return false;
 }
 
@@ -431,7 +375,7 @@ void Hero::processInput(char inp) {
             break;
         }
         case CONTROL_SHOWINVENTORY: {
-            if (not isInventoryEmpty()) {
+            if (not inventory.isEmpty()) {
                 showInventory(CONTROL_SHOWINVENTORY);
             } else {
                 message += "Your inventory is empty. ";
@@ -469,14 +413,14 @@ void Hero::processInput(char inp) {
             break;
         }
         case CONTROL_DROP: {
-            if (not isInventoryEmpty()) {
+            if (not inventory.isEmpty()) {
                 showInventory(CONTROL_DROP);
             }
             g_stop = true;
             break;        
         }
         case CONTROL_THROW: {
-            if (not isInventoryEmpty()) {
+            if (not inventory.isEmpty()) {
                 showInventory(CONTROL_THROW);
             }
             break;
@@ -493,7 +437,7 @@ void Hero::processInput(char inp) {
             break;
         }
         case CONTROL_OPENBANDOLIER: {
-            if (findAmmoInInventory() != 101010) {
+            if (findAmmoInInventory() != -1) {
                 showInventory(CONTROL_OPENBANDOLIER);
             } else {
                 message += "Your bandolier is empty. ";
@@ -505,7 +449,7 @@ void Hero::processInput(char inp) {
             if (weapon == nullptr or not weapon->isRanged) {
                 message += "You have no ranged weapon in hands. ";
                 g_stop = true;
-            } else if (findAmmoInInventory() != 101010) {
+            } else if (findAmmoInInventory() != -1) {
                 showInventory(CONTROL_RELOAD);
             } else {
                 message += "You have no bullets to reload. ";
@@ -514,7 +458,7 @@ void Hero::processInput(char inp) {
             break;
         }
         case CONTROL_READ: {
-            if (findScrollInInventory() != 101010) {
+            if (findScrollInInventory() != -1) {
                 showInventory(CONTROL_READ);
             } else {
                 message += "You don't have anything to read. ";
@@ -574,9 +518,8 @@ void Hero::showInventory(char inp) {
     auto listInserter = std::back_inserter(list);
     switch (inp) {
         case CONTROL_SHOWINVENTORY: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i])
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                list.push_back(entry.second);
             
             printList(list, "Here is your inventory.", 1);
             char choice = termRead.readChar();
@@ -585,92 +528,91 @@ void Hero::showInventory(char inp) {
             break;
         }
         case CONTROL_EAT: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i] and inventory[i]->getType() == ItemFood)
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                if (entry.second->getType() == ItemFood)
+                    list.push_back(entry.second);
 
             printList(list, "What do you want to eat?", 1);
             char choice = termRead.readChar();
             if (choice == '\033')
                 return;
-            int intch = choice - 'a';
-            auto & item = inventory[intch];
-            if (item and item->getType() == ItemFood) {
+            auto & item = inventory[choice];
+            if (item.getType() == ItemFood) {
                 int prob = rand() % g_hero->luck;
                 if (prob == 0) {
-                    hunger += dynamic_cast<Food &>(*item).nutritionalValue / 3;
+                    hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
                     health --;
                     message += "Fuck! This food was rotten! ";
                 } else {
-                    hunger += dynamic_cast<Food &>(*item).nutritionalValue;
+                    hunger += dynamic_cast<Food &>(item).nutritionalValue;
                 }
-                if (item->count == 1) {
-                    item.reset();
+                if (item.count == 1) {
+                    inventory.remove(choice);
                 } else {
-                    item->count--;
+                    item.count--;
                 }
             }
             break;
         }    
         case CONTROL_WEAR: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i] and inventory[i]->getType() == ItemArmor)
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                if (entry.second->getType() == ItemArmor)
+                    list.push_back(entry.second);
 
             printList(list, "What do you want to wear?", 1);
             char choice = termRead.readChar();
             if (choice == '\033')
                 return;
-            int intch = choice - 'a';
-            auto & item = inventory[intch];
-            if (item and item->getType() == ItemArmor) {
-                message += "Now you wearing {}. "_format(item->getName());
+            auto & item = inventory[choice];
+            if (item.getType() == ItemArmor) {
+                message += "Now you wearing {}. "_format(item.getName());
 
                 if (armor != nullptr) {
                     armor->attribute = 100;
                 }
-                armor = dynamic_cast<Armor *>(item.get());
-                item->attribute = 201;
+                armor = dynamic_cast<Armor *>(&item);
+                item.attribute = 201;
             }
             break;
         }
         case CONTROL_DROP: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i])
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                list.push_back(entry.second);
 
             printList(list, "What do you want to drop?", 1);
-            char choice = termRead.readChar();
-            if (choice == '\033')
-                return;
-            int intch = choice - 'a';
+            char choice;
+            while (true) {
+                choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                if (inventory.hasID(choice))
+                    break;
+            }
             if (armor != nullptr and choice == armor->inventorySymbol)
                 showInventory(CONTROL_TAKEOFF);
             if (weapon != nullptr and choice == weapon->inventorySymbol)
                 showInventory(CONTROL_UNEQUIP);
-            auto & item = inventory[intch];
-            if (not item)
-                break;
-            if (not item->isStackable or item->count == 1) {
-                drop(std::move(item), pos);
+            auto & item = inventory[choice];
+            if (not item.isStackable or item.count == 1) {
+                drop(inventory.remove(choice), pos);
             } else {
                 clearRightPane();
                 termRend
                     .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                     .put("How much items do you want to drop? [1-9]");
 
-                int dropCount = clamp(1, termRead.readChar() - '0', item->count);
+                int dropCount = clamp(1, termRead.readChar() - '0', item.count);
 
-                auto iter = findItemAt(pos, item->symbol);
+                auto iter = findItemAt(pos, item.symbol);
                 if (iter != end(itemsMap[pos])) {        
                     (*iter)->count += dropCount;
                 } else {            
-                    itemsMap[pos].push_back(item->clone());
+                    itemsMap[pos].push_back(item.clone());
                     itemsMap[pos].back()->count = dropCount;
                 }
-                item->count -= dropCount;
-                if (item->count == 0) {
-                    item.reset();
+                item.count -= dropCount;
+                if (item.count == 0) {
+                    inventory.remove(choice);
                 }
             }
 
@@ -689,25 +631,29 @@ void Hero::showInventory(char inp) {
             break;
         }
         case CONTROL_WIELD: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i] and inventory[i]->getType() == ItemWeapon)
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                if (entry.second->getType() == ItemWeapon)
+                    list.push_back(entry.second);
 
             printList(list, "What do you want to wield?", 1);
             
-            char choice = termRead.readChar();
-            if (choice == '\033')
-                return;
-            int intch = choice - 'a';
-            auto & item = inventory[intch];
-            if (item and item->getType() == ItemWeapon) {
-                message += "You wield {}. "_format(item->getName());
+            char choice;
+            while (true) {
+                choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                if (inventory.hasID(choice))
+                    break;
+            }
+            auto & item = inventory[choice];
+            if (item.getType() == ItemWeapon) {
+                message += "You wield {}. "_format(item.getName());
 
                 if (weapon != nullptr) {
                     weapon->attribute = 100;
                 }
-                weapon = dynamic_cast<Weapon *>(item.get());
-                item->attribute = 301;
+                weapon = dynamic_cast<Weapon *>(&item);
+                item.attribute = 301;
             }
     
             break;
@@ -721,48 +667,66 @@ void Hero::showInventory(char inp) {
             break;
         }
         case CONTROL_THROW: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i])
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                list.push_back(entry.second);
 
             printList(list, "What do you want to throw?", 1);
 
-            char choice = termRead.readChar();
-            if (choice == '\033') return;
-            int intch = choice - 'a';
-
-            auto & item = inventory[intch];
-            if (item) {
-                clearRightPane();
-                termRend
-                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
-                    .put("In what direction?");
-                char secondChoise = termRead.readChar();
-
-                if (armor != nullptr and item->inventorySymbol == armor->inventorySymbol)
-                    showInventory(CONTROL_TAKEOFF);
-                else if (weapon != nullptr and item->inventorySymbol == weapon->inventorySymbol)
-                    showInventory(CONTROL_UNEQUIP);
-
-                throwAnimated(std::move(item), *getDirectionByControl(secondChoise));
+            char choice;
+            while (true) {
+                choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                if (inventory.hasID(choice))
+                    break;
             }
+
+            auto & item = inventory[choice];
+
+            clearRightPane();
+            termRend
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
+                .put("In what direction?");
+            
+            Direction throwDir;
+            while (true) {
+                char choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                auto optdir = getDirectionByControl(choice);
+                if (optdir) {
+                    throwDir = optdir.value();
+                    break;
+                }
+            }
+
+            if (armor != nullptr and item.inventorySymbol == armor->inventorySymbol)
+                showInventory(CONTROL_TAKEOFF);
+            else if (weapon != nullptr and item.inventorySymbol == weapon->inventorySymbol)
+                showInventory(CONTROL_UNEQUIP);
+
+            throwAnimated(inventory.remove(choice), throwDir);
             break;
         }
         case CONTROL_DRINK: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i] and inventory[i]->getType() == ItemPotion)
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                if (entry.second->getType() == ItemPotion)
+                    list.push_back(entry.second);
 
             printList(list, "What do you want to drink?", 1);
 
-            char choice = termRead.readChar();
-            if (choice == '\033')
-                return;
-            int intch = choice - 'a';
+            char choice;
+            while (true) {
+                choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                if (inventory.hasID(choice))
+                    break;
+            }
 
-            auto & item = inventory[intch];
-            if (item and item->getType() == ItemPotion) {
-                auto & potion = dynamic_cast<Potion &>(*item);
+            auto & item = inventory[choice];
+            if (item.getType() == ItemPotion) {
+                auto & potion = dynamic_cast<Potion &>(item);
                 switch (potion.effect) {
                     case 1: {
                         heal(3);
@@ -796,30 +760,34 @@ void Hero::showInventory(char inp) {
                         break;
                     }
                 }
-                potionTypeKnown[item->symbol - 600] = true;
-                if (item->count == 1) {
-                    item.reset();
+                potionTypeKnown[item.symbol - 600] = true;
+                if (item.count == 1) {
+                    inventory.remove(choice);
                 } else {
-                    --item->count;
+                    --item.count;
                 }
             }
             break;
         }
         case CONTROL_READ: {
-            for (int i = 0; i < MAX_USABLE_INV_SIZE; ++i)
-                if (inventory[i] and inventory[i]->getType() == ItemScroll)
-                    list.push_back(inventory[i].get());
+            for (const auto & entry : inventory)
+                if (entry.second->getType() == ItemScroll)
+                    list.push_back(entry.second);
 
             printList(list, "What do you want to read?", 1);
 
-            char choice = termRead.readChar();
-            if (choice == '\033')
-                return;
-            int intch = choice - 'a';
+            char choice;
+            while (true) {
+                choice = termRead.readChar();
+                if (choice == '\033')
+                    return;
+                if (inventory.hasID(choice))
+                    break;
+            }
 
-            auto & item = inventory[intch];
-            if (item and item->getType() == ItemScroll) {
-                switch (dynamic_cast<Scroll &>(*item).effect) {
+            auto & item = inventory[choice];
+            if (item.getType() == ItemScroll) {
+                switch (dynamic_cast<Scroll &>(item).effect) {
                     case 1: {
                         message += "You wrote this map. Why you read it, I don't know. ";
                         break;
@@ -830,21 +798,26 @@ void Hero::showInventory(char inp) {
                             .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                             .put("What do you want to identify?");
 
-                        char in = termRead.readChar();
-                        int intin = in - 'a';
-                        auto & item2 = inventory[intin];
-                        if (item2) {
-                            if (item2->getType() == ItemPotion) {
-                                potionTypeKnown[item2->symbol - 600] = true;
-                            } else {
-                                item2->showMdf = true;
-                            }    
-                        
-                            if (item->count == 1) {
-                                item.reset();
-                            } else {
-                                --item->count;
-                            }
+                        char chToApply;
+                        while (true) {
+                            chToApply = termRead.readChar();
+                            if (chToApply == '\033')
+                                return;
+                            if (inventory.hasID(chToApply))
+                                break;
+                        }
+
+                        auto & item2 = inventory[chToApply];
+                        if (item2.getType() == ItemPotion) {
+                            potionTypeKnown[item2.symbol - 600] = true;
+                        } else {
+                            item2.showMdf = true;
+                        }    
+                    
+                        if (item.count == 1) {
+                            inventory.remove(choice);
+                        } else {
+                            --item.count;
                         }
                         break;
                     }
@@ -867,8 +840,8 @@ void Hero::showInventory(char inp) {
                     TextStyle style = TextStyle{ TerminalColor{} };
                     char symbol = '-';
 
-                    if (inventory[AMMO_SLOT + i]) {
-                        switch (inventory[AMMO_SLOT + i]->symbol) {
+                    if (bandolier[i]) {
+                        switch (bandolier[i]->symbol) {
                             case 450:
                                 style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black } };
                                 symbol = ',';
@@ -900,10 +873,10 @@ void Hero::showInventory(char inp) {
                     }
                     case CONTROL_EXCHANGE: {
                         if (takenFrom) {
-                            std::swap(inventory[*takenFrom], inventory[AMMO_SLOT + choice]);
+                            std::swap(bandolier[*takenFrom], bandolier[choice]);
                             takenFrom = std::nullopt;
-                        } else if (inventory[AMMO_SLOT + choice]) {
-                            takenFrom = AMMO_SLOT + choice;
+                        } else if (bandolier[choice]) {
+                            takenFrom = choice;
                         }
                         break;
                     }
@@ -950,7 +923,7 @@ void Hero::showInventory(char inp) {
                 
                 for (int i = 0; i < BANDOLIER; i++) {
                     loadString += "[{}| "_format(i + 1);
-                    auto & ammo = inventory[AMMO_SLOT + i];
+                    auto & ammo = bandolier[i];
                     if (not ammo) {
                         loadString += "nothing ]";
                         continue;
@@ -984,7 +957,7 @@ void Hero::showInventory(char inp) {
                     }
                     bool found = false;
                     for (int j = 0; j < BANDOLIER; j++) {
-                        auto & item = inventory[AMMO_SLOT + j];
+                        auto & item = bandolier[j];
                         if (item and item->symbol == weapon->cartridge[weapon->currCartridgeSize - 1]->symbol) {
                             weapon->cartridge[weapon->currCartridgeSize - 1].reset();
                             weapon->currCartridgeSize--;
@@ -996,7 +969,7 @@ void Hero::showInventory(char inp) {
                     if (found)
                         continue;
                     for (int j = 0; j < BANDOLIER; j++) {
-                        auto & item = inventory[AMMO_SLOT + j];
+                        auto & item = bandolier[j];
                         if (not item) {
                             item = std::move(weapon->cartridge[weapon->currCartridgeSize - 1]);
                             weapon->currCartridgeSize--;
@@ -1010,7 +983,7 @@ void Hero::showInventory(char inp) {
                     weapon->currCartridgeSize--;
                 } else {
                     int intin = in - '1';
-                    auto & item = inventory[AMMO_SLOT + intin];
+                    auto & item = bandolier[intin];
                     if (item) {
                         if (weapon->currCartridgeSize >= weapon->maxCartridgeSize) {
                             message += "Weapon is loaded ";
@@ -1145,7 +1118,7 @@ void Hero::moveTo(Coord2i cell) {
                 ::level[cell] = 1;
                 if (std::rand() % 100 <= Hero::MAX_LUCK - luck) {
                     message += "You've broken your {}. "_format(weapon->getName());
-                    inventory[weapon->inventorySymbol - 'a'].reset();
+                    inventory.remove(weapon->inventorySymbol);
                     weapon = nullptr;
                 }
                 return;
