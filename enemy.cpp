@@ -47,7 +47,10 @@ Enemy::Enemy(int eType) {
 }
 
 Enemy::Enemy(const Enemy & other)
-    : Unit(other) {
+    : Unit(other)
+    , target(other.target)
+    , lastTurnMoved(other.lastTurnMoved)
+    , xpCost(other.xpCost) {
     if (other.ammo == nullptr) {
         ammo = nullptr;
     } else {
@@ -60,6 +63,9 @@ Enemy & Enemy::operator =(const Enemy & other) {
         return *this;
     }
     Unit::operator =(other);
+    target = other.target;
+    lastTurnMoved = other.lastTurnMoved;
+    xpCost = other.xpCost;
     if (other.ammo == nullptr) {
         ammo = nullptr;
     } else {
