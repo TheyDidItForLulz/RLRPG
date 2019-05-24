@@ -269,8 +269,6 @@ Potion::~Potion(){}
 
 Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
 
-Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
-
 std::vector<Food> foodTypes;
 std::vector<Armor> armorTypes;
 std::vector<Weapon> weaponTypes;

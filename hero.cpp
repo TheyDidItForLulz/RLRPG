@@ -234,68 +234,44 @@ void Hero::pickUp() {
         message += "There is nothing here to pick up. ";
         g_stop = true;
         return;
-    } else if (itemsMap[pos].size() == 1) {
-        auto it = itemsMap[pos].begin();
-        auto & itemToPick = *it;
-        message += "You picked up {}. "_format(itemToPick->getName());
-
-        if (itemToPick->getType() == ItemAmmo) {
-            pickUpAmmo(it);
-            return;
-        }
-
-        auto status = inventory.add(std::move(itemToPick));
-        if (status) {
-            itemsMap[pos].pop_back();
-        } else {
-            status.doIf<AddStatus::FullInvError>([&] (auto & err) {
-                itemToPick = std::move(err.item);
-                message += "Your inventory is full. ";
-            });
-        }
-
-        if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
-            message += "You're burdened. ";
-            isBurdened = true;
-        }
-
-        return;
-    }
-    
-    std::vector<Item *> list;
-    for (const auto & item : itemsMap[pos])
-        list.push_back(item.get());
-
-    printList(list, "What do you want to pick up? ", 2);
-
-    int intch;
-    while (true) {
-        char choice = termRead.readChar();
-        if (choice == '\033')
-            return;
-
-        intch = choice - 'a';
-        if (intch >= 0 or intch < itemsMap[pos].size())
-            break;
     }
 
-    auto itemIter = std::begin(itemsMap[pos]);
-    std::advance(itemIter, intch);
-    auto & item = *itemIter;
-    
-    message += "You picked up {}. "_format(item->getName());
-    
-    if (item->getType() == ItemAmmo) {
-        pickUpAmmo(itemIter);
+    auto it = itemsMap[pos].begin();
+    if (itemsMap[pos].size() > 1) {
+        std::vector<Item *> list;
+        for (const auto & item : itemsMap[pos])
+            list.push_back(item.get());
+
+        printList(list, "What do you want to pick up? ", 2);
+
+        int intch;
+        while (true) {
+            char choice = termRead.readChar();
+            if (choice == '\033')
+                return;
+
+            intch = choice - 'a';
+            if (intch >= 0 or intch < itemsMap[pos].size())
+                break;
+        }
+
+        auto it = std::begin(itemsMap[pos]);
+        std::advance(it, intch);
+    }
+    auto & itemToPick = *it;
+    message += "You picked up {}. "_format(itemToPick->getName());
+
+    if (itemToPick->getType() == ItemAmmo) {
+        pickUpAmmo(it);
         return;
     }
 
-    auto status = inventory.add(std::move(item));
+    auto status = inventory.add(std::move(itemToPick));
     if (status) {
-        itemsMap[pos].erase(itemIter);
+        itemsMap[pos].erase(it);
     } else {
         status.doIf<AddStatus::FullInvError>([&] (auto & err) {
-            item = std::move(err.item);
+            itemToPick = std::move(err.item);
             message += "Your inventory is full. ";
         });
     }
@@ -304,6 +280,8 @@ void Hero::pickUp() {
         message += "You're burdened. ";
         isBurdened = true;
     }
+
+    return;
 }
 
 bool Hero::isFoodInInventory() const {

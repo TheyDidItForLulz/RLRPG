@@ -1,5 +1,7 @@
 log.txt
 .vscode
+obj
+bin
 
 # Prerequisites
 *.d

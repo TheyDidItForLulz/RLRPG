@@ -2,6 +2,7 @@
 #include<thread>
 #include<queue>
 #include<cassert>
+#include<iterator>
 
 #include<unit.hpp>
 #include<utils.hpp>
@@ -110,11 +111,14 @@ void Unit::dealDamage(int damage) {
     health -= damage * (100 - defence) / 100.f;
 }
 
+#include<log.hpp>
+
 void Unit::dropInventory() {
     weapon = nullptr;
     armor = nullptr;
-    for (auto it = inventory.begin(); it != inventory.end();) {
-        drop(inventory.remove(it->first), pos);
+    while (not inventory.isEmpty()) {
+        auto id = inventory.begin()->second->inventorySymbol;
+        drop(inventory.remove(id), pos);
     }
     assert(inventory.isEmpty());
 }

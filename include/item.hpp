@@ -218,14 +218,11 @@ public:
 };*/
 
 const int BANDOLIER = Ammo::TYPES_COUNT;
-const int MAX_USABLE_INV_SIZE = 53;
-const int MAX_TOTAL_INV_SIZE = MAX_USABLE_INV_SIZE + BANDOLIER;
 
 using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
 
 extern Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
-extern Item::Ptr inventory[MAX_TOTAL_INV_SIZE];
 
 extern std::vector<Food> foodTypes;
 extern std::vector<Armor> armorTypes;

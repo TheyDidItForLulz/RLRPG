@@ -476,8 +476,8 @@ void draw() {
 
     bar += "Bul: |";
     for (int i = 0; i < BANDOLIER; i++) {
-        if (inventory[AMMO_SLOT + i]) {
-            bar += fmt::format("{}|", dynamic_cast<Ammo &>(*inventory[AMMO_SLOT + i]).count);
+        if (g_hero->bandolier[i]) {
+            bar += fmt::format("{}|", dynamic_cast<Ammo &>(*g_hero->bandolier[i]).count);
         } else {
             bar += "0|";
         }

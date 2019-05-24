@@ -8,7 +8,6 @@
 class Hero: public Unit {
 public:
     static const int MAX_LUCK = 20;
-    static const int EMPTY_SLOT = MAX_USABLE_INV_SIZE + 1;
     static const int DEFAULT_VISION = 16;
 
 	Item::Ptr bandolier[BANDOLIER];
