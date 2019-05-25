@@ -67,10 +67,6 @@ int Hero::getInventoryItemsWeight() const {
 void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) const {
     int num = 0;
 
-    std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
-        return a->inventorySymbol < b->inventorySymbol;
-    });
-
     termRend
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10, num })
         .put(msg);
@@ -78,6 +74,10 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
     num ++;
     switch (mode) {
         case 1: {
+            std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
+                return a->inventorySymbol < b->inventorySymbol;
+            });
+
             for (int i = 0; i < items.size(); i++) {
                 termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
                 if (items[i]->showMdf == true and items[i]->count == 1) {
@@ -192,7 +192,6 @@ void Hero::pickUp() {
                 break;
         }
 
-        auto it = std::begin(itemsMap[pos]);
         std::advance(it, intch);
     }
     auto & itemToPick = *it;
@@ -704,9 +703,17 @@ void Hero::showInventory(char inp) {
                     }
                     case 2: {
                         clearRightPane();
-                        termRend
-                            .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
-                            .put("What do you want to identify?");
+                        list.clear();
+                        for (const auto & entry : inventory) {
+                            if (entry.second->getType() == ItemPotion) {
+                                if (not potionTypeKnown[entry.second->symbol - 600])
+                                    list.push_back(entry.second);
+                            } else if (not entry.second->showMdf) {
+                                list.push_back(entry.second);
+                            }
+                        }
+
+                        printList(list, "What do you want to identify?", 1);
 
                         char chToApply;
                         while (true) {
