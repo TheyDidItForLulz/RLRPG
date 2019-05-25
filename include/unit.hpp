@@ -10,13 +10,13 @@
 #define ENEMIESCOUNT 17
 #define AMMO_SLOT 53
 
-enum UnitType {
-    UnitHero,
-    UnitEnemy
-};
-
 class Unit {
 public:
+    enum class Type {
+        Hero,
+        Enemy
+    };
+
     using Ptr = std::unique_ptr<Unit>;
 
 	Unit() {}
@@ -41,7 +41,7 @@ public:
     void heal(int hp);
     void dealDamage(int damage);
 
-    virtual UnitType getType() const = 0;
+    virtual Type getType() const = 0;
     virtual void dropInventory();
 
 protected:

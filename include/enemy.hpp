@@ -24,8 +24,8 @@ public:
     void updatePosition();
     void dropInventory() override;
 
-    UnitType getType() const override {
-        return UnitEnemy;
+    Type getType() const override {
+        return Type::Enemy;
     }
 
 private:

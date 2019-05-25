@@ -43,8 +43,8 @@ public:
     int getLevelUpXP() const;
     bool tryLevelUp(); // returns true if reaches new level
 
-    UnitType getType() const override {
-        return UnitHero;
+    Type getType() const override {
+        return Type::Hero;
     }
 
 private:

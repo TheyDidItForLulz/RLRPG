@@ -92,7 +92,7 @@ void Enemy::shoot() {
         if (level[cell] == 2)
             break;
 
-        if (unitMap[cell] and unitMap[cell]->getType() == UnitHero) {
+        if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Hero) {
             g_hero->dealDamage(ammo->damage + weapon->damageBonus);
             break;
         }
@@ -148,7 +148,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
         for (auto dir : dirs) {
             auto tv = v + dir;
             if (unitMap.isIndex(tv)
-                    and (not unitMap[tv] or unitMap[tv]->getType() == UnitHero)
+                    and (not unitMap[tv] or unitMap[tv]->getType() == Unit::Type::Hero)
                     and level[tv] != 2 and used[tv] == 0) {
                 q.push(tv);
                 used[tv] = 1 + used[v];
@@ -182,7 +182,7 @@ void Enemy::moveTo(Coord2i cell) {
         return;
     }
 
-    if (unitMap[cell]->getType() == UnitEnemy or weapon == nullptr)
+    if (unitMap[cell]->getType() == Unit::Type::Enemy or weapon == nullptr)
         return;
 
     if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {

@@ -938,7 +938,7 @@ void Hero::moveTo(Coord2i cell) {
     if (not ::level.isIndex(cell))
         return;
     if (::level[cell] != 2 or canMoveThroughWalls) {
-        if (unitMap[cell] and unitMap[cell]->getType() == UnitEnemy) {
+        if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Enemy) {
             attackEnemy(cell);
         } else if (not unitMap[cell]) {
             setTo(cell);

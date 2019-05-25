@@ -130,7 +130,7 @@ Hero * g_hero;
 
 void updateAI() {
     unitMap.forEach([&] (Unit::Ptr & unit) {
-        if (not unit or unit->getType() != UnitEnemy)
+        if (not unit or unit->getType() != Unit::Type::Enemy)
             return;
 
         auto & enemy = dynamic_cast<Enemy &>(*unit);
@@ -248,8 +248,8 @@ SymbolRenderData getRenderData(const Item::Ptr & item) {
 
 SymbolRenderData getRenderData(const Unit::Ptr & unit) {
     switch (unit->getType()) {
-        case UnitHero: return { '@', { Color::Green } };
-        case UnitEnemy:
+        case Unit::Type::Hero: return { '@', { Color::Green } };
+        case Unit::Type::Enemy:
             switch (unit->symbol) {
                 case 201: return { '@', { Color::Yellow } };
                 case 202: return { '@', { TextStyle::Bold, Color::Green } };
