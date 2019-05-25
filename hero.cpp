@@ -154,14 +154,14 @@ bool Hero::isMapInInventory() const {
 
 std::optional<char> Hero::findAmmoInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemAmmo)
+        if (entry.second->getType() == Item::Type::Ammo)
             return entry.first;
     return std::nullopt;
 }
 
 std::optional<char> Hero::findScrollInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemScroll)
+        if (entry.second->getType() == Item::Type::Scroll)
             return entry.first;
     return std::nullopt;
 }
@@ -217,28 +217,28 @@ void Hero::pickUp() {
 
 bool Hero::isFoodInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemFood)
+        if (entry.second->getType() == Item::Type::Food)
             return true;
     return false;
 }
 
 bool Hero::isArmorInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemArmor)
+        if (entry.second->getType() == Item::Type::Armor)
             return true;
     return false;
 }
 
 bool Hero::isWeaponInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemWeapon)
+        if (entry.second->getType() == Item::Type::Weapon)
             return true;
     return false;
 }
 
 bool Hero::isPotionInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->getType() == ItemPotion)
+        if (entry.second->getType() == Item::Type::Potion)
             return true;
     return false;
 }
@@ -438,7 +438,7 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_EAT: {
             for (const auto & entry : inventory)
-                if (entry.second->getType() == ItemFood)
+                if (entry.second->getType() == Item::Type::Food)
                     list.push_back(entry.second);
 
             printList(list, "What do you want to eat?", 1);
@@ -446,7 +446,7 @@ void Hero::showInventory(char inp) {
             if (choice == '\033')
                 return;
             auto & item = inventory[choice];
-            if (item.getType() == ItemFood) {
+            if (item.getType() == Item::Type::Food) {
                 int prob = rand() % g_hero->luck;
                 if (prob == 0) {
                     hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
@@ -465,7 +465,7 @@ void Hero::showInventory(char inp) {
         }    
         case CONTROL_WEAR: {
             for (const auto & entry : inventory)
-                if (entry.second->getType() == ItemArmor)
+                if (entry.second->getType() == Item::Type::Armor)
                     list.push_back(entry.second);
 
             printList(list, "What do you want to wear?", 1);
@@ -473,7 +473,7 @@ void Hero::showInventory(char inp) {
             if (choice == '\033')
                 return;
             auto & item = inventory[choice];
-            if (item.getType() == ItemArmor) {
+            if (item.getType() == Item::Type::Armor) {
                 message += "Now you wearing {}. "_format(item.getName());
 
                 if (armor != nullptr) {
@@ -541,7 +541,7 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_WIELD: {
             for (const auto & entry : inventory)
-                if (entry.second->getType() == ItemWeapon)
+                if (entry.second->getType() == Item::Type::Weapon)
                     list.push_back(entry.second);
 
             printList(list, "What do you want to wield?", 1);
@@ -555,7 +555,7 @@ void Hero::showInventory(char inp) {
                     break;
             }
             auto & item = inventory[choice];
-            if (item.getType() == ItemWeapon) {
+            if (item.getType() == Item::Type::Weapon) {
                 message += "You wield {}. "_format(item.getName());
 
                 if (weapon != nullptr) {
@@ -619,7 +619,7 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_DRINK: {
             for (const auto & entry : inventory)
-                if (entry.second->getType() == ItemPotion)
+                if (entry.second->getType() == Item::Type::Potion)
                     list.push_back(entry.second);
 
             printList(list, "What do you want to drink?", 1);
@@ -634,7 +634,7 @@ void Hero::showInventory(char inp) {
             }
 
             auto & item = inventory[choice];
-            if (item.getType() == ItemPotion) {
+            if (item.getType() == Item::Type::Potion) {
                 auto & potion = dynamic_cast<Potion &>(item);
                 switch (potion.effect) {
                     case 1: {
@@ -680,7 +680,7 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_READ: {
             for (const auto & entry : inventory)
-                if (entry.second->getType() == ItemScroll)
+                if (entry.second->getType() == Item::Type::Scroll)
                     list.push_back(entry.second);
 
             printList(list, "What do you want to read?", 1);
@@ -695,7 +695,7 @@ void Hero::showInventory(char inp) {
             }
 
             auto & item = inventory[choice];
-            if (item.getType() == ItemScroll) {
+            if (item.getType() == Item::Type::Scroll) {
                 switch (dynamic_cast<Scroll &>(item).effect) {
                     case 1: {
                         message += "You wrote this map. Why you read it, I don't know. ";
@@ -705,7 +705,7 @@ void Hero::showInventory(char inp) {
                         clearRightPane();
                         list.clear();
                         for (const auto & entry : inventory) {
-                            if (entry.second->getType() == ItemPotion) {
+                            if (entry.second->getType() == Item::Type::Potion) {
                                 if (not potionTypeKnown[entry.second->symbol - 600])
                                     list.push_back(entry.second);
                             } else if (not entry.second->showMdf) {
@@ -725,7 +725,7 @@ void Hero::showInventory(char inp) {
                         }
 
                         auto & item2 = inventory[chToApply];
-                        if (item2.getType() == ItemPotion) {
+                        if (item2.getType() == Item::Type::Potion) {
                             potionTypeKnown[item2.symbol - 600] = true;
                         } else {
                             item2.showMdf = true;
@@ -781,7 +781,7 @@ void Hero::showInventory(char inp) {
 
                 int lineY = 2;
                 for (auto entry : inventory) {
-                    if (entry.second->getType() != ItemAmmo)
+                    if (entry.second->getType() != Item::Type::Ammo)
                         continue;
                     
                     std::string line = "{} - {} (x{})"_format(
@@ -819,7 +819,7 @@ void Hero::showInventory(char inp) {
                     }
                 } else {
                     auto & item = inventory[chToLoad];
-                    if (item.getType() == ItemAmmo) {
+                    if (item.getType() == Item::Type::Ammo) {
                         if (weapon->cartridge.isFull()) {
                             message += "Weapon is loaded ";
                             return;

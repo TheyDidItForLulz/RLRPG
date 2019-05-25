@@ -12,18 +12,18 @@
 #include<array2d.hpp>
 #include<termlib/vec2.hpp>
 
-enum ItemType {
-	ItemFood = 1 << 0,
-	ItemArmor = 1 << 1,
-	ItemWeapon = 1 << 2,
-	ItemAmmo = 1 << 3,
-	ItemScroll = 1 << 4,
-	ItemPotion = 1 << 5,
-};
-
 class Item {
 public:
     using Ptr = std::unique_ptr<Item>;
+
+    enum class Type {
+        Food,
+        Armor,
+        Weapon,
+        Ammo,
+        Scroll,
+        Potion
+    };
 
 	Item();
 	virtual ~Item();
@@ -41,7 +41,7 @@ public:
     std::string getMdf() const;
     std::string getAttribute() const;
     std::string getName() const;
-    virtual ItemType getType() const = 0;
+    virtual Type getType() const = 0;
     virtual Item::Ptr clone() const = 0;
 };
 
@@ -58,8 +58,8 @@ public:
 	Food();
 	~Food();
 
-    ItemType getType() const override {
-        return ItemFood;
+    Type getType() const override {
+        return Type::Food;
     }
 
     Item::Ptr clone() const override {
@@ -80,8 +80,8 @@ public:
 	Armor();
 	~Armor();
 
-    ItemType getType() const override {
-        return ItemArmor;
+    Type getType() const override {
+        return Type::Armor;
     }
 
     Item::Ptr clone() const override {
@@ -103,8 +103,8 @@ public:
 	Ammo();
 	~Ammo();
 
-    ItemType getType() const override {
-        return ItemAmmo;
+    Type getType() const override {
+        return Type::Ammo;
     }
 
     Item::Ptr clone() const override {
@@ -163,8 +163,8 @@ public:
 	Weapon& operator=(const Weapon&) = default;
 	~Weapon();
 
-    ItemType getType() const override {
-        return ItemWeapon;
+    Type getType() const override {
+        return Type::Weapon;
     }
 
     Item::Ptr clone() const override {
@@ -183,8 +183,8 @@ public:
 
 	int effect;
 
-    ItemType getType() const override {
-        return ItemScroll;
+    Type getType() const override {
+        return Type::Scroll;
     }
 
     Item::Ptr clone() const override {
@@ -205,8 +205,8 @@ public:
 
 	int effect;
 
-    ItemType getType() const override {
-        return ItemPotion;
+    Type getType() const override {
+        return Type::Potion;
     }
 
     Item::Ptr clone() const override {
