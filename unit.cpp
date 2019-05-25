@@ -111,8 +111,6 @@ void Unit::dealDamage(int damage) {
     health -= damage * (100 - defence) / 100.f;
 }
 
-#include<log.hpp>
-
 void Unit::dropInventory() {
     weapon = nullptr;
     armor = nullptr;

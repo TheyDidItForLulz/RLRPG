@@ -10,7 +10,6 @@ public:
     static const int MAX_LUCK = 20;
     static const int DEFAULT_VISION = 16;
 
-	Item::Ptr bandolier[BANDOLIER];
 	int hunger = 900;
 	int xp = 0;
     int maxBurden = 25;
@@ -36,8 +35,8 @@ public:
 	bool isWeaponInInventory() const;
 	bool isPotionInInventory() const;
 
-	int findAmmoInInventory() const;
-	char findScrollInInventory() const;
+	std::optional<char> findAmmoInInventory() const;
+	std::optional<char> findScrollInInventory() const;
 
 	int getInventoryItemsWeight() const;
 
@@ -58,7 +57,6 @@ private:
 
 	void printList(std::vector<Item *> items, std::string_view msg, int mode) const;
 
-	void pickUpAmmo(ItemPileIter ammo);
 	void moveTo(Coord2i cell);
 
     void levelUp();

@@ -152,81 +152,18 @@ bool Hero::isMapInInventory() const {
 
 // 101010 something went wrong
 
-int Hero::findAmmoInInventory() const {
-    for (int i = 0; i < BANDOLIER; i++)
-        if (bandolier[i])
-            return i;
-    return -1;
+std::optional<char> Hero::findAmmoInInventory() const {
+    for (const auto & entry : inventory)
+        if (entry.second->getType() == ItemAmmo)
+            return entry.first;
+    return std::nullopt;
 }
 
-char Hero::findScrollInInventory() const {
+std::optional<char> Hero::findScrollInInventory() const {
     for (const auto & entry : inventory)
         if (entry.second->getType() == ItemScroll)
             return entry.first;
-    return 0;
-}
-
-void Hero::pickUpAmmo(ItemPileIter ammoIter) {
-    clearRightPane();
-    termRend
-        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
-        .put("In what slot do you want to pull your ammo?");
-    int choice = 0;
-    int num = 0;
-    while (true) {
-        num = 0;
-        for (int i = 0; i < BANDOLIER; i++) {
-            termRend.setCursorPosition(Coord2i{ LEVEL_COLS + num + 12, 1 });
-            num += 2;
-            char symbol = '-';
-            TextStyle style{ TerminalColor{} };
-            if (bandolier[i]) {
-                switch (bandolier[i]->symbol) {
-                    case 450:
-                        symbol = ',';
-                        style = TextStyle{ TextStyle::Bold, Color::Black };
-                        break;
-                    case 451:
-                        symbol = ',';
-                        style = TextStyle{ TextStyle::Bold, Color::Red };
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (choice == i) {
-                style += TextStyle::Underlined;
-            }
-            termRend.put(symbol, style);
-        }
-        char input = termRead.readChar();
-        switch (input) {
-            case CONTROL_LEFT:
-                if (choice > 0)
-                    choice--;
-                break;
-            case CONTROL_RIGHT:
-                if (choice < BANDOLIER - 1)
-                    choice++;
-                break;
-            case CONTROL_CONFIRM: {
-                    Item::Ptr & ammo = *ammoIter;
-                    if (bandolier[choice] == nullptr) {
-                        bandolier[choice] = std::move(ammo);
-                        itemsMap[pos].erase(ammoIter);
-                    } else if (bandolier[choice]->symbol == ammo->symbol) {
-                        bandolier[choice]->count += ammo->count;
-                        itemsMap[pos].erase(ammoIter);
-                    } else {
-                        std::swap(ammo, bandolier[choice]);
-                    }
-                    return;
-                }
-            case '\033':
-                return;
-                break;
-        }
-    }
+    return std::nullopt;
 }
 
 void Hero::pickUp() {
@@ -260,11 +197,6 @@ void Hero::pickUp() {
     }
     auto & itemToPick = *it;
     message += "You picked up {}. "_format(itemToPick->getName());
-
-    if (itemToPick->getType() == ItemAmmo) {
-        pickUpAmmo(it);
-        return;
-    }
 
     auto status = inventory.add(std::move(itemToPick));
     if (status) {
@@ -803,78 +735,22 @@ void Hero::showInventory(char inp) {
             }
             break;
         }
-        case CONTROL_OPENBANDOLIER: {
-            clearRightPane();
-            termRend
-                .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
-                .put("Here is your ammo.");
-            int choice = 0;
-            std::optional<int> takenFrom;
-            while (true) {
-                int num = 0;
-                for (int i = 0; i < BANDOLIER; i++) {
-                    num += 2;
-
-                    TextStyle style = TextStyle{ TerminalColor{} };
-                    char symbol = '-';
-
-                    if (bandolier[i]) {
-                        switch (bandolier[i]->symbol) {
-                            case 450:
-                                style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Black } };
-                                symbol = ',';
-                                break;
-                            case 451:
-                                style = TextStyle{ TextStyle::Bold, TerminalColor{ Color::Red } };
-                                symbol = ',';
-                                break;
-                        }
-                    }
-                    if (choice == i)
-                        style += TextStyle::Underlined;
-
-                    termRend
-                        .setCursorPosition(Coord2i{ LEVEL_COLS + num + 12, 1 })
-                        .put(symbol, style);
-                }
-                char input = termRead.readChar();
-                switch (input) {
-                    case CONTROL_LEFT: {
-                        if (choice > 0)
-                            choice--;
-                        break;
-                    }
-                    case CONTROL_RIGHT: {
-                        if (choice < BANDOLIER - 1)
-                            choice++;
-                        break;
-                    }
-                    case CONTROL_EXCHANGE: {
-                        if (takenFrom) {
-                            std::swap(bandolier[*takenFrom], bandolier[choice]);
-                            takenFrom = std::nullopt;
-                        } else if (bandolier[choice]) {
-                            takenFrom = choice;
-                        }
-                        break;
-                    }
-                    case '\033': {
-                        return;
-                        break;
-                    }
-                }
-            }
-            break;
-        }
         case CONTROL_RELOAD: {
-            clearRightPane();
-            if (weapon == nullptr) {
+            if (weapon == nullptr or not weapon->isRanged or not findAmmoInInventory()) {
                 return;
             }
+
+            clearRightPane();
             termRend
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
                 .put("Now you can load your weapon");
+
             while (true) {
+                clearRightPane();
+                termRend
+                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 1 })
+                    .put('[');
+
                 for (int i = 0; i < weapon->maxCartridgeSize; i++) {
                     TextStyle style{ TerminalColor{} };
                     char symbol = 'i';
@@ -892,88 +768,66 @@ void Hero::showInventory(char inp) {
                     } else {
                         symbol = '_';
                     }
-                    termRend
-                        .setCursorPosition(Coord2i{ LEVEL_COLS + i + 10, 1 })
-                        .put(symbol, style);
+                    termRend.put(symbol, style);
                 }
-                
-                std::string loadString = "";
-                
-                for (int i = 0; i < BANDOLIER; i++) {
-                    loadString += "[{}| "_format(i + 1);
-                    auto & ammo = bandolier[i];
-                    if (not ammo) {
-                        loadString += "nothing ]";
-                        continue;
-                    }
-                    switch (ammo->symbol) {
-                        case 450:
-                            loadString += "steel bullets";
-                            break;
-                        case 451:
-                            loadString += "shotgun shells";
-                            break;
-                        default:
-                            loadString += "omgwth?";
-                    }
-                    loadString += " ]";
-                }
-                
-                loadString += "   [u] - unload ";
-                
-                termRend
-                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 2 })
-                    .put(loadString);
-                
-                char in = termRead.readChar();
-                if (in == '\033')
-                    return;
+                termRend.put(']');
 
-                if (in == 'u') {
+                int lineY = 2;
+                for (auto entry : inventory) {
+                    if (entry.second->getType() != ItemAmmo)
+                        continue;
+                    
+                    std::string line = "{} - {} (x{})"_format(
+                        entry.first,
+                        entry.second->getName(),
+                        entry.second->count);
+
+                    termRend
+                        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
+                        .put(line);
+                    
+                    ++lineY;
+                }
+
+                ++lineY;
+                termRend
+                    .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
+                    .put("Press '-' to unload one.");
+                
+                char chToLoad;
+                while (true) {
+                    chToLoad = termRead.readChar();
+                    if (chToLoad == '\033')
+                        return;
+                    if (chToLoad == '-' or inventory.hasID(chToLoad))
+                        break;
+                }
+
+                if (chToLoad == '-') {
                     if (weapon->currCartridgeSize == 0) {
                         continue;
                     }
-                    bool found = false;
-                    for (int j = 0; j < BANDOLIER; j++) {
-                        auto & item = bandolier[j];
-                        if (item and item->symbol == weapon->cartridge[weapon->currCartridgeSize - 1]->symbol) {
-                            weapon->cartridge[weapon->currCartridgeSize - 1].reset();
-                            weapon->currCartridgeSize--;
-                            item->count++;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found)
-                        continue;
-                    for (int j = 0; j < BANDOLIER; j++) {
-                        auto & item = bandolier[j];
-                        if (not item) {
-                            item = std::move(weapon->cartridge[weapon->currCartridgeSize - 1]);
-                            weapon->currCartridgeSize--;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found)
-                        continue;
-                    drop(std::move(weapon->cartridge[weapon->currCartridgeSize - 1]), pos);
-                    weapon->currCartridgeSize--;
+                    auto bullet = std::move(weapon->cartridge[weapon->currCartridgeSize - 1]);
+                    --weapon->currCartridgeSize;
+
+                    inventory.add(std::move(bullet)).doIf<AddStatus::FullInvError>([&] (auto & err) {
+                        drop(std::move(err.item), pos);
+                    });
                 } else {
-                    int intin = in - '1';
-                    auto & item = bandolier[intin];
-                    if (item) {
+                    auto & item = inventory[chToLoad];
+                    if (item.getType() == ItemAmmo) {
                         if (weapon->currCartridgeSize >= weapon->maxCartridgeSize) {
                             message += "Weapon is loaded ";
                             return;
                         }
                         auto & slot = weapon->cartridge[weapon->currCartridgeSize];
-                        if (item->count > 1) {
-                            slot = std::make_unique<Ammo>(dynamic_cast<Ammo &>(*item));
+                        if (item.count > 1) {
+                            slot = std::make_unique<Ammo>(dynamic_cast<Ammo &>(item));
                             slot->count = 1;
-                            --item->count;
+                            --item.count;
                         } else {
-                            slot.reset(dynamic_cast<Ammo *>(item.release()));
+                            auto bullet = inventory.remove(item.inventorySymbol);
+                            slot.reset(dynamic_cast<Ammo *>(bullet.release()));
                         }
                         weapon->currCartridgeSize++;
                     }
@@ -1106,4 +960,3 @@ void Hero::moveTo(Coord2i cell) {
         g_stop = true;
     }
 }
-

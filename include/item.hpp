@@ -217,8 +217,6 @@ public:
     }
 };*/
 
-const int BANDOLIER = Ammo::TYPES_COUNT;
-
 using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
 

@@ -474,15 +474,6 @@ void draw() {
             g_hero->level, g_hero->xp,
             g_hero->luck);
 
-    bar += "Bul: |";
-    for (int i = 0; i < BANDOLIER; i++) {
-        if (g_hero->bandolier[i]) {
-            bar += fmt::format("{}|", dynamic_cast<Ammo &>(*g_hero->bandolier[i]).count);
-        } else {
-            bar += "0|";
-        }
-    }
-    bar += " ";
     if (g_hero->isBurdened)
         bar += "Burdened. ";
 
