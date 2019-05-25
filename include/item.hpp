@@ -91,6 +91,7 @@ public:
 
 class Ammo: public Item {
 public:
+    using Ptr = std::unique_ptr<Ammo>;
     static const int TYPES_COUNT = 2;
     static const int COUNT = 25;
 
@@ -113,28 +114,53 @@ public:
 
 class Weapon: public Item {
 public:
+    using Ptr = std::unique_ptr<Weapon>;
+
+private:
+    class Cartridge {
+        std::vector<Ammo::Ptr> loaded;
+        int capacity = 0;
+
+    public:
+        Cartridge(int capacity = 0);
+        Cartridge(const Cartridge &);
+        Cartridge & operator =(const Cartridge &); 
+
+        // returns the bullet if fails to load it
+        Ammo::Ptr load(Ammo::Ptr bullet);
+
+        Ammo::Ptr unloadOne();
+
+        const Ammo & next() const;
+        Ammo & next();
+
+        const Ammo * operator [](int ind) const;
+
+        auto begin() const -> decltype(loaded.begin());
+        auto end() const -> decltype(loaded.end());
+
+        int getCapacity() const;
+        int getCurrSize() const;
+        bool isEmpty() const;
+        bool isFull() const;
+    };
+
+public:
     static const int TYPES_COUNT = 6;
     static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
-    static const int MAX_CARTRIDGE_SIZE = 10;
 
 	Weapon(int WeaponType);
 	
+    Cartridge cartridge;
 	int damage;
 	int range; 									// Ranged bullets have additional effect on this paramether
 	int damageBonus;								// And on this too
 	bool isRanged = false;
     bool canDig = false;
-	int maxCartridgeSize;
-	int currCartridgeSize = 0;
-	
-    std::unique_ptr<Ammo> cartridge[MAX_CARTRIDGE_SIZE];
 
 	Weapon();
-	
-	Weapon(const Weapon&);
-
-	Weapon& operator=(const Weapon&);
-
+	Weapon(const Weapon&) = default;
+	Weapon& operator=(const Weapon&) = default;
 	~Weapon();
 
     ItemType getType() const override {

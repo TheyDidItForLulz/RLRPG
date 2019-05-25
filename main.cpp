@@ -486,9 +486,8 @@ void draw() {
         weaponBar += g_hero->weapon->getName();
         if (g_hero->weapon->isRanged) {
             weaponBar += "[";
-            for (int i = 0; i < g_hero->weapon->maxCartridgeSize; i++) {
-                if (i < g_hero->weapon->currCartridgeSize and (g_hero->weapon->cartridge[i]->symbol == 450 or
-                    g_hero->weapon->cartridge[i]->symbol == 451)) {
+            for (int i = 0; i < g_hero->weapon->cartridge.getCapacity(); i++) {
+                if (g_hero->weapon->cartridge[i]) {
                     weaponBar += "i";
                 } else {
                     weaponBar += "_";

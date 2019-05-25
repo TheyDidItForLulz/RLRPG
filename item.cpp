@@ -123,8 +123,6 @@ Ammo::~Ammo(){}
 ////////////////////////////////
 // Weapon
 Weapon::Weapon(int WeaponType) {
-	maxCartridgeSize = 0;
-    currCartridgeSize = 0;
 	switch (WeaponType) {
 		case 0:
 			symbol = 400;
@@ -145,7 +143,7 @@ Weapon::Weapon(int WeaponType) {
 			range = 14;
 			isRanged = true;
 			damageBonus = 4;
-			maxCartridgeSize = 1;
+			cartridge = Cartridge(1);
 			break;
 		case 3:
 			symbol = 403;
@@ -160,7 +158,7 @@ Weapon::Weapon(int WeaponType) {
 			isRanged = true;
 			range = 4;
 			damageBonus = 5;
-			maxCartridgeSize = 6;
+			cartridge = Cartridge(6);
 			break;
 		case 5:
 			symbol = 405;
@@ -169,7 +167,7 @@ Weapon::Weapon(int WeaponType) {
 			isRanged = true;
 			range = 7;
 			damageBonus = 2;
-			maxCartridgeSize = 10;
+			cartridge = Cartridge(10);
 			break;
         case 6:
 			symbol = 406;
@@ -183,42 +181,85 @@ Weapon::Weapon(int WeaponType) {
 
 Weapon::Weapon() {}
 
-Weapon::Weapon(const Weapon& other): Item(other) {
-	damage = other.damage;
-	isRanged = other.isRanged;
-	range = other.range;
-	damageBonus = other.damageBonus;
-    canDig = other.canDig;
-	maxCartridgeSize = other.maxCartridgeSize;
-	currCartridgeSize = other.currCartridgeSize;
-	if (isRanged) {
-		for (int i = 0; i < maxCartridgeSize; i++) {
-            if (other.cartridge[i])
-                cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
-		}
+Weapon::~Weapon(){};
+
+Weapon::Cartridge::Cartridge(int capacity): capacity(capacity) {
+	assert(capacity >= 0);
+}
+
+Weapon::Cartridge::Cartridge(const Cartridge & other): capacity(other.capacity) {
+	for (const auto & bullet : other) {
+		loaded.push_back(std::make_unique<Ammo>(*bullet));
 	}
 }
 
-Weapon& Weapon::operator=(const Weapon& other) {
-	Item::operator=(other);
-	damage = other.damage;
-	isRanged = other.isRanged;
-    canDig = other.canDig;
-	range = other.range;
-	damageBonus = other.damageBonus;
-	maxCartridgeSize = other.maxCartridgeSize;
-	currCartridgeSize = other.currCartridgeSize;
-	if (isRanged) {
-		for (int i = 0; i < maxCartridgeSize; i++) {
-            if (other.cartridge[i])
-                cartridge[i] = std::make_unique<Ammo>(*other.cartridge[i]);
-		}
+Weapon::Cartridge & Weapon::Cartridge::operator =(const Cartridge & other) {
+	capacity = other.capacity;
+	loaded.clear();
+	for (const auto & bullet : other) {
+		loaded.push_back(std::make_unique<Ammo>(*bullet));
 	}
 	return *this;
 }
 
-Weapon::~Weapon(){};
+Ammo::Ptr Weapon::Cartridge::load(Ammo::Ptr bullet) {
+	if (loaded.size() == capacity) {
+		return bullet;
+	}
+	loaded.push_back(std::move(bullet));
+	return nullptr;
+}
 
+Ammo::Ptr Weapon::Cartridge::unloadOne() {
+	if (loaded.empty()) {
+		return nullptr;
+	}
+	auto bullet = std::move(loaded.back());
+	loaded.pop_back();
+	return bullet;
+}
+
+Ammo & Weapon::Cartridge::next() {
+	assert(not isEmpty());
+	return *loaded.back();
+}
+
+const Ammo & Weapon::Cartridge::next() const {
+	assert(not isEmpty());
+	return *loaded.back();
+}
+
+const Ammo * Weapon::Cartridge::operator [](int ind) const {
+	assert(ind >= 0 and ind < capacity);
+	if (ind < loaded.size()) {
+		return loaded[ind].get();
+	}
+	return nullptr;
+}
+
+auto Weapon::Cartridge::begin() const -> decltype(loaded.begin()) {
+	return loaded.begin();
+}
+
+auto Weapon::Cartridge::end() const -> decltype(loaded.end()) {
+	return loaded.end();
+}
+
+int Weapon::Cartridge::getCapacity() const {
+	return capacity;
+}
+
+int Weapon::Cartridge::getCurrSize() const {
+	return (int) loaded.size();
+}
+
+bool Weapon::Cartridge::isEmpty() const {
+	return loaded.empty();
+}
+
+bool Weapon::Cartridge::isFull() const {
+	return loaded.size() == capacity;
+}
 ////////////////////////////////
 // Scroll
 Scroll::Scroll(int s) {

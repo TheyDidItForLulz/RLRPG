@@ -751,7 +751,7 @@ void Hero::showInventory(char inp) {
                     .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 1 })
                     .put('[');
 
-                for (int i = 0; i < weapon->maxCartridgeSize; i++) {
+                for (int i = 0; i < weapon->cartridge.getCapacity(); i++) {
                     TextStyle style{ TerminalColor{} };
                     char symbol = 'i';
                     if (weapon->cartridge[i]) {
@@ -804,32 +804,30 @@ void Hero::showInventory(char inp) {
                 }
 
                 if (chToLoad == '-') {
-                    if (weapon->currCartridgeSize == 0) {
-                        continue;
+                    auto bullet = weapon->cartridge.unloadOne();
+                    if (bullet) {
+                        inventory.add(std::move(bullet)).doIf<AddStatus::FullInvError>([&] (auto & err) {
+                            drop(std::move(err.item), pos);
+                        });
                     }
-                    auto bullet = std::move(weapon->cartridge[weapon->currCartridgeSize - 1]);
-                    --weapon->currCartridgeSize;
-
-                    inventory.add(std::move(bullet)).doIf<AddStatus::FullInvError>([&] (auto & err) {
-                        drop(std::move(err.item), pos);
-                    });
                 } else {
                     auto & item = inventory[chToLoad];
                     if (item.getType() == ItemAmmo) {
-                        if (weapon->currCartridgeSize >= weapon->maxCartridgeSize) {
+                        if (weapon->cartridge.isFull()) {
                             message += "Weapon is loaded ";
                             return;
                         }
-                        auto & slot = weapon->cartridge[weapon->currCartridgeSize];
-                        if (item.count > 1) {
-                            slot = std::make_unique<Ammo>(dynamic_cast<Ammo &>(item));
-                            slot->count = 1;
-                            --item.count;
+
+                        Ammo::Ptr bullet;
+                        if (item.count == 1) {
+                            auto itemptr = inventory.remove(item.inventorySymbol).release();
+                            bullet.reset(dynamic_cast<Ammo *>(itemptr));
                         } else {
-                            auto bullet = inventory.remove(item.inventorySymbol);
-                            slot.reset(dynamic_cast<Ammo *>(bullet.release()));
+                            bullet = std::make_unique<Ammo>(dynamic_cast<Ammo &>(item));
+                            bullet->count = 1;
+                            --item.count;
                         }
-                        weapon->currCartridgeSize++;
+                        weapon->cartridge.load(std::move(bullet));
                     }
                 }
             }
@@ -885,7 +883,7 @@ void Hero::shoot() {
         message += "You have no ranged weapon in hands. ";
         return;
     }
-    if (weapon->currCartridgeSize == 0) {
+    if (weapon->cartridge.isEmpty()) {
         message += "You have no bullets. ";
         g_stop = true;
         return;
@@ -903,9 +901,9 @@ void Hero::shoot() {
     auto direction = *optdir;
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
-    int bulletPower = weapon->cartridge[weapon->currCartridgeSize - 1]->damage + g_hero->weapon->damageBonus;
+    int bulletPower = weapon->cartridge.next().damage + g_hero->weapon->damageBonus;
 
-    for (int i = 1; i < weapon->range + weapon->cartridge[weapon->currCartridgeSize - 1]->range; i++) {
+    for (int i = 1; i < weapon->range + weapon->cartridge.next().range; i++) {
         auto cell = pos + offset * i;
 
         if (::level[cell] == 2)
@@ -926,8 +924,7 @@ void Hero::shoot() {
             .display();
         sleep(DELAY / 3);
     }
-    weapon->cartridge[weapon->currCartridgeSize - 1].reset();
-    weapon->currCartridgeSize--;
+    weapon->cartridge.unloadOne();
 }
 
 void Hero::moveTo(Coord2i cell) {
