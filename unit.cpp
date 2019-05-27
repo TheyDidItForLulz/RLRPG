@@ -113,10 +113,18 @@ void Unit::dealDamage(int damage) {
 
 void Unit::dropInventory() {
     weapon = nullptr;
-    armor = nullptr;
+    takeArmorOff();
     while (not inventory.isEmpty()) {
         auto id = inventory.begin()->second->inventorySymbol;
         drop(inventory.remove(id), pos);
     }
     assert(inventory.isEmpty());
+}
+
+void Unit::takeArmorOff() {
+    armor = nullptr;
+}
+
+void Unit::unequipWeapon() {
+    weapon = nullptr;
 }

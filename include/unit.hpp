@@ -46,6 +46,9 @@ public:
 
 protected:
 	bool linearVisibilityCheck(Vec2d from, Vec2d to) const;
+
+    virtual void takeArmorOff();
+    virtual void unequipWeapon();
 };
 
 extern Array2D<Unit::Ptr, LEVEL_ROWS, LEVEL_COLS> unitMap;

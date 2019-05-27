@@ -52,8 +52,15 @@ private:
 	void throwAnimated(Item::Ptr item, Direction direction);
 	void shoot();
 	void eat();
+	void dropItems();
 	void pickUp();
-	void showInventory(char inp);
+	void showInventory();
+	void reloadWeapon();
+	void readScroll();
+	void drinkPotion();
+	void throwItem();
+	void wieldWeapon();
+	void wearArmor();
 
 	void printList(std::vector<Item *> items, std::string_view msg, int mode) const;
 
