@@ -24,7 +24,7 @@ AddStatus Inventory::add(Item::Ptr item) {
         for (auto & pair : items) {
             if (pair.second->symbol == item->symbol) {
                 pair.second->count += item->count;
-                return AddStatus::Stacked{ pair.first, pair.second->count };
+                return AddStatus::Stacked{ pair.first, item->count };
             }
         }
     }

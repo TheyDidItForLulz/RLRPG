@@ -20,7 +20,7 @@ public:
 
     struct Stacked {
         char at;
-        int totalCount;
+        int pickedCount;
     };
 
     template<class St>

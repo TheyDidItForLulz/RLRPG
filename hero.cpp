@@ -6,6 +6,7 @@
 #include<fmt/printf.h>
 
 using namespace fmt::literals;
+using fmt::format;
 
 Hero::Hero() {
     maxHealth = 15;
@@ -195,17 +196,28 @@ void Hero::pickUp() {
         std::advance(it, intch);
     }
     auto & itemToPick = *it;
-    message += "You picked up {}. "_format(itemToPick->getName());
 
-    auto status = inventory.add(std::move(itemToPick));
-    if (status) {
+    inventory.add(std::move(itemToPick)).doIf<AddStatus::New>([this, it] (AddStatus::New added) {
         itemsMap[pos].erase(it);
-    } else {
-        status.doIf<AddStatus::FullInvError>([&] (auto & err) {
-            itemToPick = std::move(err.item);
-            message += "Your inventory is full. ";
-        });
-    }
+        auto & item = inventory[added.at];
+        if (item.isStackable and item.count > 1)
+            message += format("You picked up {}x {} ({}).", item.count, item.getName(), added.at);
+        else
+            message += format("You picked up {} ({}).", item.getName(), added.at);
+    }).doIf<AddStatus::Stacked>([this, it] (AddStatus::Stacked stacked) {
+        itemsMap[pos].erase(it);
+        auto & item = inventory[stacked.at];
+
+        std::string pickedCount;
+        if (stacked.pickedCount > 1)
+            pickedCount = fmt::format("{}x ", stacked.pickedCount);
+
+        message += fmt::format("You picked up {}{} ({}), now you have {}.",
+            pickedCount, item.getName(), stacked.at, item.count);
+    }).doIf<AddStatus::FullInvError>([&itemToPick] (auto & err) {
+        itemToPick = std::move(err.item);
+        message += "Your inventory is full. ";
+    });
 
     if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
         message += "You're burdened. ";
