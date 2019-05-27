@@ -16,7 +16,6 @@ Hero::Hero() {
 
     inventory.add(std::make_unique<Armor>(armorTypes[1]));
     armor = dynamic_cast<Armor *>(&inventory['a']);
-    armor->attribute = 201;
     if (std::rand() % (500 / luck) == 0)
         armor->mdf = 2;
 }
@@ -66,81 +65,55 @@ int Hero::getInventoryItemsWeight() const {
 }
 
 void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) const {
-    int num = 0;
+    int lineNo = 0;
 
     termRend
-        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, num })
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
         .put(msg);
+    lineNo ++;
 
-    num ++;
-    switch (mode) {
-        case 1: {
-            std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
-                return a->inventorySymbol < b->inventorySymbol;
-            });
-
-            for (int i = 0; i < items.size(); i++) {
-                termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
-                if (items[i]->showMdf == true and items[i]->count == 1) {
-                    if (items[i]->attribute == 100) {
-                        termRend.put(format("[{}] {} {{{}}}. ",
-                                items[i]->inventorySymbol,
-                                items[i]->getName(),
-                                items[i]->getMdf()));
-                    } else {
-                        termRend.put(format("[{}] {} ({}) {{{}}}. ",
-                                items[i]->inventorySymbol,
-                                items[i]->getName(),
-                                items[i]->getAttribute(),
-                                items[i]->getMdf()));
-                    }
-                } else if (items[i]->count > 1) {
-                    if (items[i]->attribute == 100) {
-                        termRend.put(format("[{}] {} {{{}}}. ",
-                                items[i]->inventorySymbol,
-                                items[i]->getName(),
-                                items[i]->count));
-                    } else {
-                        termRend.put(format("[{}] {} ({}) {{{}}}. ",
-                                items[i]->inventorySymbol,
-                                items[i]->getName(),
-                                items[i]->getAttribute(),
-                                items[i]->count));
-                    }
-                } else if (items[i]->attribute == 100) {
-                    termRend.put(format("[{}] {}. ",
-                            items[i]->inventorySymbol,
-                            items[i]->getName()));
-                } else {
-                    termRend.put(format("[{}] {} ({}). ",
-                            items[i]->inventorySymbol,
-                            items[i]->getName(),
-                            items[i]->getAttribute()));
-                }
-                num ++;
-            }
+    if (mode == 1) {
+        std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
+            return a->inventorySymbol < b->inventorySymbol;
+        });
+    }
+    for (int i = 0; i < items.size(); i++) {
+        char charid;
+        if (mode == 1) {
+            charid = items[i]->inventorySymbol;
+        } else if (i < 26) {
+            charid = 'a' + i;
+        } else if (i < 52) {
+            charid = 'A' + (i - 26);
+        } else {
+            termRend
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
+                .put("... and others ...");
             break;
         }
-        case 2: {
-            for (int i = 0; i < items.size(); i++)
-            {
-                termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
-                if (items[i]->showMdf == true) {
-                    termRend.put(format("[{}] {} ({}) {{{}}}. ",
-                            char(i + 'a'),
-                            items[i]->getName(),
-                            items[i]->getAttribute(),
-                            items[i]->getMdf()));
-                } else {
-                    termRend.put(format("[{}] {} ({}). ",
-                            char(i + 'a'),
-                            items[i]->getName(),
-                            items[i]->getAttribute()));
-                }
-                num ++;
-            }
-            break;
+        std::string id = format("{} -", charid);
+        std::string name = format(" {}", items[i]->getName());
+
+        std::string count;
+        if (items[i]->count > 1)
+            count = format(" {}x", items[i]->count);
+        
+        std::string modifier;
+        if (items[i]->showMdf)
+            modifier = format(" {{{}}}", items[i]->getMdf());
+        
+        std::string equipped;
+        if (mode == 1) {
+            if (items[i] == weapon)
+                equipped = " (being wielded)";
+            else if (items[i] == armor)
+                equipped = " (being worn)";
         }
+        
+        termRend
+            .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
+            .put(id + count + name + modifier + equipped);
+        lineNo ++;
     }
 }
 
@@ -150,8 +123,6 @@ bool Hero::isMapInInventory() const {
             return true;
     return false;
 }
-
-// 101010 something went wrong
 
 std::optional<char> Hero::findAmmoInInventory() const {
     for (const auto & entry : inventory)
@@ -488,11 +459,7 @@ void Hero::showInventory(char inp) {
             if (item.getType() == Item::Type::Armor) {
                 message += format("Now you wearing {}. ", item.getName());
 
-                if (armor != nullptr) {
-                    armor->attribute = 100;
-                }
                 armor = dynamic_cast<Armor *>(&item);
-                item.attribute = 201;
             }
             break;
         }
@@ -546,7 +513,6 @@ void Hero::showInventory(char inp) {
         }
         case CONTROL_TAKEOFF: {
             if (armor) {
-                armor->attribute = 100;
                 armor = nullptr;
             }
             break;
@@ -570,21 +536,14 @@ void Hero::showInventory(char inp) {
             if (item.getType() == Item::Type::Weapon) {
                 message += format("You wield {}. ", item.getName());
 
-                if (weapon != nullptr) {
-                    weapon->attribute = 100;
-                }
                 weapon = dynamic_cast<Weapon *>(&item);
-                item.attribute = 301;
             }
     
             break;
         
         }
         case CONTROL_UNEQUIP: {
-            if (weapon != nullptr) {
-                weapon->attribute = 100;
-                weapon = nullptr;
-            }
+            weapon = nullptr;
             break;
         }
         case CONTROL_THROW: {

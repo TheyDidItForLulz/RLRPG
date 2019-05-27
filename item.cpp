@@ -4,7 +4,7 @@
 
 ////////////////////////////////
 // Item
-Item::Item(): mdf(1), showMdf(false), attribute(100), count(1){};
+Item::Item(): mdf(1), showMdf(false), count(1){};
 
 std::string Item::getMdf() const {
 	switch (mdf) {
@@ -12,15 +12,6 @@ std::string Item::getMdf() const {
 		case 2: return "thorns";
 	}
     throw std::logic_error("Unknown modifier id");
-}
-
-std::string Item::getAttribute() const {
-	switch (attribute) {
-		case 100: return "nothing";
-		case 201: return "being worn";
-		case 301: return "wielded";
-	}
-    throw std::logic_error("Unknown attribute id");
 }
 
 std::string Item::getName() const {

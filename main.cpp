@@ -32,15 +32,6 @@
 /* 1 - Nothing
                                                 2 - Thorns (chance to turn damage back)
 */
-/////////////////////////////////////////////////// Attributes ////////////////////////////////////////////////////////////
-/*
-                                                100 - Nothing
-                                                101..199 - Food attributes
-                                                200..299 - Armor attributes
-                                                300..399 - Weapon attributes
-                                                201 - Worn
-                                                301 - Wielded
-*/
 //////////////////////////////////////////////////// Effects //////////////////////////////////////////////////////////////
 /*
                                                 1 - Map recording in Hard-mode                

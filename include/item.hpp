@@ -33,13 +33,11 @@ public:
 	char inventorySymbol;
 	int weight;
 	int mdf;
-	int attribute;
 	int count;
 	bool showMdf;
 	bool isStackable;
 
     std::string getMdf() const;
-    std::string getAttribute() const;
     std::string getName() const;
     virtual Type getType() const = 0;
     virtual Item::Ptr clone() const = 0;
