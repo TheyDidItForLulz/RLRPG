@@ -41,6 +41,16 @@ std::string Item::getName() const {
 }
 Item::~Item(){};
 
+Item::Ptr Item::splitStack(int toSplit) {
+	if (toSplit <= 0 or toSplit > count) {
+		throw std::logic_error("Trying to split an item pile invalidly");
+	}
+	Item::Ptr otherPile = clone();
+	otherPile->count = toSplit;
+	count -= toSplit;
+	return otherPile;
+}
+
 ////////////////////////////////
 // Food
 Food::Food(int FoodType)

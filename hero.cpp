@@ -535,29 +535,22 @@ void Hero::dropItems() {
         takeArmorOff();
     if (weapon != nullptr and choice == weapon->inventorySymbol)
         unequipWeapon();
+
     auto & item = inventory[choice];
-    if (not item.isStackable or item.count == 1) {
-        drop(inventory.remove(choice), pos);
-    } else {
+    int dropCount = 1;
+    if (item.count != 1) {
         clearRightPane();
+        int maxCount = std::min(item.count, 9);
         termRend
-            .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
-            .put("How much items do you want to drop? [1-9]");
+            .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
+            .put(format("How much items do you want to drop? [1-{}]", maxCount))
+            .display();
 
-        int dropCount = clamp(1, termRead.readChar() - '0', item.count);
-
-        auto iter = findItemAt(pos, item.symbol);
-        if (iter != end(itemsMap[pos])) {        
-            (*iter)->count += dropCount;
-        } else {            
-            itemsMap[pos].push_back(item.clone());
-            itemsMap[pos].back()->count = dropCount;
-        }
-        item.count -= dropCount;
-        if (item.count == 0) {
-            inventory.remove(choice);
-        }
+        dropCount = clamp(1, termRead.readChar() - '0', item.count);
     }
+    drop(item.splitStack(dropCount), pos);
+    if (item.count == 0)
+        inventory.remove(choice);
 
     if (getInventoryItemsWeight() <= maxBurden and isBurdened) {
         message += "You are burdened no more. ";

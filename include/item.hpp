@@ -37,6 +37,10 @@ public:
 	bool showMdf;
 	bool isStackable;
 
+    // toSplit:
+    //  - [1, count) - splits on 2 piles, returns one with count = toSplit
+    //  - count - returns whole pile, this pile becomes invalid
+    Ptr splitStack(int toSplit);
     std::string getMdf() const;
     std::string getName() const;
     virtual Type getType() const = 0;
