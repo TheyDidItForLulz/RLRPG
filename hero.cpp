@@ -34,7 +34,7 @@ bool Hero::tryLevelUp() {
 
 void Hero::levelUp() {
     level++;
-    message += fmt::format("Now you are level {}. ", level);
+    message += format("Now you are level {}. ", level);
     maxBurden += maxBurden / 4;
     maxHealth += maxHealth / 4;
     health = maxHealth;
@@ -83,12 +83,12 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
                 termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
                 if (items[i]->showMdf == true and items[i]->count == 1) {
                     if (items[i]->attribute == 100) {
-                        termRend.put("[{}] {} {{{}}}. "_format(
+                        termRend.put(format("[{}] {} {{{}}}. ",
                                 items[i]->inventorySymbol,
                                 items[i]->getName(),
                                 items[i]->getMdf()));
                     } else {
-                        termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                        termRend.put(format("[{}] {} ({}) {{{}}}. ",
                                 items[i]->inventorySymbol,
                                 items[i]->getName(),
                                 items[i]->getAttribute(),
@@ -96,23 +96,23 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
                     }
                 } else if (items[i]->count > 1) {
                     if (items[i]->attribute == 100) {
-                        termRend.put("[{}] {} {{{}}}. "_format(
+                        termRend.put(format("[{}] {} {{{}}}. ",
                                 items[i]->inventorySymbol,
                                 items[i]->getName(),
                                 items[i]->count));
                     } else {
-                        termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                        termRend.put(format("[{}] {} ({}) {{{}}}. ",
                                 items[i]->inventorySymbol,
                                 items[i]->getName(),
                                 items[i]->getAttribute(),
                                 items[i]->count));
                     }
                 } else if (items[i]->attribute == 100) {
-                    termRend.put("[{}] {}. "_format(
+                    termRend.put(format("[{}] {}. ",
                             items[i]->inventorySymbol,
                             items[i]->getName()));
                 } else {
-                    termRend.put("[{}] {} ({}). "_format(
+                    termRend.put(format("[{}] {} ({}). ",
                             items[i]->inventorySymbol,
                             items[i]->getName(),
                             items[i]->getAttribute()));
@@ -126,13 +126,13 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
             {
                 termRend.setCursorPosition(Coord2i{ LEVEL_COLS + 10, num });
                 if (items[i]->showMdf == true) {
-                    termRend.put("[{}] {} ({}) {{{}}}. "_format(
+                    termRend.put(format("[{}] {} ({}) {{{}}}. ",
                             char(i + 'a'),
                             items[i]->getName(),
                             items[i]->getAttribute(),
                             items[i]->getMdf()));
                 } else {
-                    termRend.put("[{}] {} ({}). "_format(
+                    termRend.put(format("[{}] {} ({}). ",
                             char(i + 'a'),
                             items[i]->getName(),
                             items[i]->getAttribute()));
@@ -201,9 +201,9 @@ void Hero::pickUp() {
         itemsMap[pos].erase(it);
         auto & item = inventory[added.at];
         if (item.isStackable and item.count > 1)
-            message += format("You picked up {}x {} ({}).", item.count, item.getName(), added.at);
+            message += format("You picked up {}x {} ({}). ", item.count, item.getName(), added.at);
         else
-            message += format("You picked up {} ({}).", item.getName(), added.at);
+            message += format("You picked up {} ({}). ", item.getName(), added.at);
     }).doIf<AddStatus::Stacked>([this, it] (AddStatus::Stacked stacked) {
         itemsMap[pos].erase(it);
         auto & item = inventory[stacked.at];
@@ -212,7 +212,7 @@ void Hero::pickUp() {
         if (stacked.pickedCount > 1)
             pickedCount = fmt::format("{}x ", stacked.pickedCount);
 
-        message += fmt::format("You picked up {}{} ({}), now you have {}.",
+        message += fmt::format("You picked up {}{} ({}), now you have {}. ",
             pickedCount, item.getName(), stacked.at, item.count);
     }).doIf<AddStatus::FullInvError>([&itemToPick] (auto & err) {
         itemToPick = std::move(err.item);
@@ -486,7 +486,7 @@ void Hero::showInventory(char inp) {
                 return;
             auto & item = inventory[choice];
             if (item.getType() == Item::Type::Armor) {
-                message += "Now you wearing {}. "_format(item.getName());
+                message += format("Now you wearing {}. ", item.getName());
 
                 if (armor != nullptr) {
                     armor->attribute = 100;
@@ -568,7 +568,7 @@ void Hero::showInventory(char inp) {
             }
             auto & item = inventory[choice];
             if (item.getType() == Item::Type::Weapon) {
-                message += "You wield {}. "_format(item.getName());
+                message += format("You wield {}. ", item.getName());
 
                 if (weapon != nullptr) {
                     weapon->attribute = 100;
@@ -796,7 +796,7 @@ void Hero::showInventory(char inp) {
                     if (entry.second->getType() != Item::Type::Ammo)
                         continue;
                     
-                    std::string line = "{} - {} (x{})"_format(
+                    std::string line = format("{} - {} (x{})",
                         entry.first,
                         entry.second->getName(),
                         entry.second->count);
@@ -965,7 +965,7 @@ void Hero::moveTo(Coord2i cell) {
             if (inpChar == 'y' or inpChar == 'Y') {
                 ::level[cell] = 1;
                 if (std::rand() % 100 <= Hero::MAX_LUCK - luck) {
-                    message += "You've broken your {}. "_format(weapon->getName());
+                    message += format("You've broken your {}. ", weapon->getName());
                     inventory.remove(weapon->inventorySymbol);
                     weapon = nullptr;
                 }

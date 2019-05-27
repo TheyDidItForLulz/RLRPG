@@ -96,7 +96,7 @@
 #include<fmt/core.h>
 #include<fmt/printf.h>
 
-using namespace fmt::literals;
+using fmt::format;
 
 #include<unit.hpp>
 #include<hero.hpp>
@@ -333,7 +333,7 @@ void printMenu(const std::vector<std::string_view> & items, int active) {
     for (int i = 1; i <= items.size(); ++i) {
         termRend
             .setCursorPosition(Coord2i{ 0, i })
-            .put("{} {}"_format(i, items[i - 1]), itemStyles[i - 1]);
+            .put(format("{} {}", i, items[i - 1]), itemStyles[i - 1]);
     }
 }
 
@@ -432,7 +432,7 @@ void mainMenu() {
 
     while (true) {
         auto tip = tips[rand() % tips.size()];
-        auto result = processMenu("Welcome to RLRPG /* Tip of the day: {} */"_format(tip), {
+        auto result = processMenu(format("Welcome to RLRPG /* Tip of the day: {} */", tip), {
             "Start game",
             "Settings",
             "Exit"
@@ -466,7 +466,7 @@ void draw() {
 
     int defence = g_hero->armor ? g_hero->armor->defence : 0;
     int damage = g_hero->weapon ? g_hero->weapon->damage : 0;
-    bar += fmt::format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
+    bar += format("HP: {} Sat: {} Def: {} Dmg: {} L/XP: {}/{} Lu: {} ",
             g_hero->health,
             g_hero->hunger,
             defence,
