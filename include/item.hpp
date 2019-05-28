@@ -43,6 +43,8 @@ public:
     Ptr splitStack(int toSplit);
     std::string getMdf() const;
     std::string getName() const;
+    int getSingleWeight() const;
+    int getTotalWeight() const;
     virtual Type getType() const = 0;
     virtual Item::Ptr clone() const = 0;
 };

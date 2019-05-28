@@ -1,6 +1,8 @@
 #include"item.hpp"
 #include<stdexcept>
 #include<algorithm>
+#include <item.hpp>
+
 
 ////////////////////////////////
 // Item
@@ -49,6 +51,14 @@ Item::Ptr Item::splitStack(int toSplit) {
 	otherPile->count = toSplit;
 	count -= toSplit;
 	return otherPile;
+}
+
+int Item::getSingleWeight() const {
+    return weight;
+}
+
+int Item::getTotalWeight() const {
+    return weight * count;
 }
 
 ////////////////////////////////

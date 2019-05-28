@@ -599,16 +599,34 @@ void Hero::throwItem() {
 
     printList(list, "What do you want to throw?", 1);
 
-    char choice;
+    char itemChoice;
     while (true) {
-        choice = termRead.readChar();
-        if (choice == '\033')
+        itemChoice = termRead.readChar();
+        if (itemChoice == '\033')
             return;
-        if (inventory.hasID(choice))
+        if (inventory.hasID(itemChoice))
             break;
     }
 
-    auto & item = inventory[choice];
+    auto & item = inventory[itemChoice];
+    int throwCount = 1;
+    if (item.count > 1) {
+        clearRightPane();
+        int maxCount = std::min(item.count, 9);
+        termRend
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
+                .put(format("How many items do you want to throw? [1-{}]", maxCount));
+
+        while (true) {
+            char countChoice = termRead.readChar();
+            if (countChoice == '\033')
+                return;
+
+            throwCount = countChoice - '0';
+            if (throwCount > 0 and throwCount <= maxCount)
+                break;
+        }
+    }
 
     clearRightPane();
     termRend
@@ -617,10 +635,11 @@ void Hero::throwItem() {
     
     Direction throwDir;
     while (true) {
-        char choice = termRead.readChar();
-        if (choice == '\033')
+        char dirChoice = termRead.readChar();
+        if (dirChoice == '\033')
             return;
-        auto optdir = getDirectionByControl(choice);
+
+        auto optdir = getDirectionByControl(dirChoice);
         if (optdir) {
             throwDir = optdir.value();
             break;
@@ -632,7 +651,11 @@ void Hero::throwItem() {
     else if (weapon != nullptr and item.inventorySymbol == weapon->inventorySymbol)
         unequipWeapon();
 
-    throwAnimated(inventory.remove(choice), throwDir);
+    auto itemToThrow = item.splitStack(throwCount);
+    if (item.count == 0)
+        inventory.remove(itemChoice);
+
+    throwAnimated(std::move(itemToThrow), throwDir);
 }
 
 void Hero::drinkPotion() {
@@ -792,14 +815,14 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
     int throwDist = 0;
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
-    for (int i = 0; i < 12 - item->weight / 3; i++) {                        // 12 is "strength"
+    for (int i = 0; i < 12 - item->getTotalWeight() / 3; i++) {                        // 12 is "strength"
         auto cell = pos + offset * (i + 1);
 
         if (::level[cell] == 2)
             break;
 
         if (unitMap[cell]) {
-            unitMap[cell]->dealDamage(item->weight / 2);
+            unitMap[cell]->dealDamage(item->getTotalWeight() / 2);
             if (unitMap[cell]->health <= 0) {
                 auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
                 enemy.dropInventory();
