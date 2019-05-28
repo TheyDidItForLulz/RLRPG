@@ -1,4 +1,4 @@
-#include"include/log.hpp"
+#include"log.hpp"
 
 std::ofstream logfile;
 

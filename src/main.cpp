@@ -109,13 +109,13 @@ TerminalRenderer termRend;
 TerminalReader termRead;
                                                             
 void initialize() {
-    std::srand(std::time(0));
+    std::srand(std::time(nullptr));
     initField();
 }
 
-std::string message = "";
-std::string bar = "";
-std::string weaponBar = "";
+std::string message;
+std::string bar;
+std::string weaponBar;
 
 Hero * g_hero;
 
@@ -245,6 +245,7 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
                 case 201: return { '@', { Color::Yellow } };
                 case 202: return { '@', { TextStyle::Bold, Color::Green } };
                 case 203: return { '@', { TextStyle::Bold, Color::Black } };
+                default: throw std::logic_error("Unknown unit id");
             }
     }
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Yellow, Color::Blue } } }; 
@@ -281,6 +282,9 @@ std::optional<CellRenderData> getRenderData(Coord2i cell) {
             } else {
                 renderData.level = '#';
             }
+            break;
+        default:
+            throw std::logic_error(format("Unknown block id: {}", level[cell]));
     }
     return renderData;
 }
@@ -330,7 +334,7 @@ void printMenu(const std::vector<std::string_view> & items, int active) {
 
 std::optional<std::string> processMenu(std::string_view title, const std::vector<std::string_view> & items, bool canExit = true) {
     int selected = 1;
-    int itemsCount = items.size();
+    int itemsCount = (int) items.size();
     while (true) {
         termRend
             .clear()
@@ -355,6 +359,8 @@ std::optional<std::string> processMenu(std::string_view title, const std::vector
                 break;
             case CONTROL_CONFIRM:
                 return std::string{ items[selected - 1] };
+            default:
+                break;
         }
     }
 }
@@ -422,7 +428,7 @@ void mainMenu() {
     auto tips = readTips();
 
     while (true) {
-        auto tip = tips[rand() % tips.size()];
+        auto tip = tips[std::rand() % tips.size()];
         auto result = processMenu(format("Welcome to RLRPG /* Tip of the day: {} */", tip), {
             "Start game",
             "Settings",
@@ -575,8 +581,6 @@ int main() {
 
     g_hero->checkVisibleCells();
 
-    int TurnsCounter = 0;
-
     draw();
     
     while (true) {
@@ -647,8 +651,8 @@ int main() {
                     .setCursorPosition(Coord2i{ 0, LEVEL_ROWS })
                     .put("Are you sure you want to exit?\n")
                     .display();
-                char inp = termRead.readChar();
-                if (inp == 'y' or inp == 'Y' or inp == CONTROL_CONFIRM) {
+                char confirmExit = termRead.readChar();
+                if (confirmExit == 'y' or confirmExit == 'Y' or confirmExit == CONTROL_CONFIRM) {
                     return 0;
                 }
                 g_stop = true;
@@ -662,8 +666,4 @@ int main() {
             g_stop = false;
         }
     }
-        
-    termRend.display();
-
-    return 0;
 }

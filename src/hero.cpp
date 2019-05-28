@@ -82,9 +82,9 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
         if (mode == 1) {
             charid = items[i]->inventorySymbol;
         } else if (i < 26) {
-            charid = 'a' + i;
+            charid = char('a' + i);
         } else if (i < 52) {
-            charid = 'A' + (i - 26);
+            charid = char('A' + (i - 26));
         } else {
             termRend
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
@@ -109,10 +109,10 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
             else if (items[i] == armor)
                 equipped = " (being worn)";
         }
-        
+
         termRend
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
-            .put(id + count + name + modifier + equipped);
+            .put(format("{}{}{}{}{}", id, count, name, modifier, equipped));
         lineNo ++;
     }
 }
@@ -194,8 +194,6 @@ void Hero::pickUp() {
         message += "You're burdened. ";
         isBurdened = true;
     }
-
-    return;
 }
 
 bool Hero::isFoodInInventory() const {
@@ -372,6 +370,8 @@ void Hero::processInput(char inp) {
             }
             break;
         }
+        default:
+            throw std::logic_error("Unknown control key");
     }
 }
 
@@ -692,6 +692,8 @@ void Hero::drinkPotion() {
                 message += "My eyes!! ";
                 break;
             }
+            default:
+                throw std::logic_error("Unknown potion id");
         }
         potionTypeKnown[item.symbol - 600] = true;
         if (item.count == 1) {
@@ -768,6 +770,8 @@ void Hero::readScroll() {
                 }
                 break;
             }
+            default:
+                throw std::logic_error("Unknown scroll id");
         }
     }
 }

@@ -1,7 +1,9 @@
+cmake-build-debug
 log.txt
 .vscode
 obj
 bin
+.idea
 
 # Prerequisites
 *.d
