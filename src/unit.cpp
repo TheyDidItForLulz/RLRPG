@@ -60,6 +60,8 @@ std::string Unit::getName() {
             return "Barbarian";
         case 202:
             return "Zombie";
+        default:
+            throw std::logic_error("Trying to get a name of an unknown unit");
     }
 }
 
@@ -73,7 +75,7 @@ bool Unit::linearVisibilityCheck(Vec2d from, Vec2d to) const {
     double k = d.y / d.x;
     int s = sgn(d.x);
     for (int i = 0; i * s < d.x * s; i += s) {
-        Vec2i c = from + Vec2d{ i, i * k };
+        Vec2i c = from + Vec2d{ double(i), i * k };
         if (steep)
             std::swap(c.x, c.y);
         if (level[c] == 2)

@@ -27,6 +27,7 @@ inline char toChar(Direction dir) {
         case Direction::Right: return '-';
         case Direction::UpLeft:
         case Direction::DownRight: return '\\';
+        default: return '?';
     }
 }
 
@@ -78,7 +79,7 @@ inline std::optional<Direction> getDirectionByControl(char control) {
         case CONTROL_DOWNLEFT: return Direction::DownLeft;
         case CONTROL_LEFT: return Direction::Left;
         case CONTROL_UPLEFT: return Direction::UpLeft;
-        default: std::nullopt;
+        default: return std::nullopt;
     }
 };
 
