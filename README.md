@@ -4,10 +4,12 @@ Little C++17 console-based rogue-like RPG inspired by Nethack and Angband.
 
 # Build
 
-You need ```make``` utility to build the game. Then just execute:
+You need ```cmake``` and ```make``` utilities to build the game. Then just execute:
 ```
-make
+cmake . && make
 ```
+Unfortunately, there is no standard way to install the game now. Files needed to run the game are tips.txt and the
+binary itself, RLRPG file.
 
 # Dependencies
 
