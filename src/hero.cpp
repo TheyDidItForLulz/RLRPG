@@ -120,34 +120,25 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
     }
 }
 
-void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) const {
-    int lineNo = 0;
-
+void Hero::printList(std::string_view msg, const std::vector<Item *> & items) const {
     termRend
-        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put(msg);
-    lineNo ++;
 
-    if (mode == 1) {
-        std::sort(items.begin(), items.end(), [] (Item * a, Item * b) {
-            return a->inventorySymbol < b->inventorySymbol;
-        });
-    }
+    int lineNo = 2;
     for (int i = 0; i < items.size(); i++) {
-        char charid;
-        if (mode == 1) {
-            charid = items[i]->inventorySymbol;
-        } else if (i < 26) {
-            charid = char('a' + i);
+        char charID;
+        if (i < 26) {
+            charID = char('a' + i);
         } else if (i < 52) {
-            charid = char('A' + (i - 26));
+            charID = char('A' + (i - 26));
         } else {
             termRend
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
                 .put("... and others ...");
             break;
         }
-        std::string id = format("{} -", charid);
+        std::string id = format("{} -", charID);
         std::string name = format(" {}", items[i]->getName());
 
         std::string count;
@@ -157,18 +148,10 @@ void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) 
         std::string modifier;
         if (items[i]->showMdf)
             modifier = format(" {{{}}}", items[i]->getMdf());
-        
-        std::string equipped;
-        if (mode == 1) {
-            if (items[i] == weapon)
-                equipped = " (being wielded)";
-            else if (items[i] == armor)
-                equipped = " (being worn)";
-        }
 
         termRend
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
-            .put(format("{}{}{}{}{}", id, count, name, modifier, equipped));
+            .put(format("{}{}{}{}", id, count, name, modifier));
         lineNo ++;
     }
 }
@@ -193,7 +176,7 @@ void Hero::pickUp() {
         for (const auto & item : itemsMap[pos])
             list.push_back(item.get());
 
-        printList(list, "What do you want to pick up? ", 2);
+        printList("What do you want to pick up? ", list);
 
         int intch;
         while (true) {
@@ -497,7 +480,7 @@ void Hero::showInventory() {
     for (const auto & entry : inventory)
         list.push_back(entry.second);
 
-    printList(list, "Here is your inventory.", 1);
+    printList("Here is your inventory.", list);
     termRead.readChar();
 }
 

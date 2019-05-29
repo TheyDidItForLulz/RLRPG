@@ -57,8 +57,7 @@ private:
 	void wieldWeapon();
 	void wearArmor();
 
-	void printList(std::vector<Item *> items, std::string_view msg, int mode) const;
-
+	void printList(std::string_view msg, const std::vector<Item *> & items) const;
 	void printListFromInventory(const std::vector<const Item *> & items) const;
 
 	enum SelectStatus {
