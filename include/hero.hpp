@@ -5,6 +5,8 @@
 #include<utils.hpp>
 #include<direction.hpp>
 
+#include<functional>
+
 class Hero: public Unit {
 public:
     static const int MAX_LUCK = 20;
@@ -56,6 +58,18 @@ private:
 	void wearArmor();
 
 	void printList(std::vector<Item *> items, std::string_view msg, int mode) const;
+
+	void printListFromInventory(const std::vector<const Item *> & items) const;
+
+	enum SelectStatus {
+	    NothingToSelect,
+	    Cancelled,
+	    Success
+	};
+
+	std::pair<SelectStatus, char> selectOneFromInventory(
+	        std::string_view title,
+	        std::function<bool(const Item &)> filter = [] (const Item &) { return true; }) const;
 
 	void moveTo(Coord2i cell);
 

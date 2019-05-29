@@ -64,6 +64,62 @@ int Hero::getInventoryItemsWeight() const {
     return totalWeight;
 }
 
+void Hero::printListFromInventory(const std::vector<const Item *> & items) const {
+    int lineY = 2;
+    for (auto item : items) {
+        std::string id = format("{} -", item->inventorySymbol);
+        std::string name = format(" {}", item->getName());
+
+        std::string count;
+        if (item->count > 1)
+            count = format(" {}x", item->count);
+
+        std::string modifier;
+        if (item->showMdf)
+            modifier = format(" {{{}}}", item->getMdf());
+
+        std::string equipped;
+        if (item == weapon)
+            equipped = " (being wielded)";
+        else if (item == armor)
+            equipped = " (being worn)";
+
+        termRend
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
+                .put(format("{}{}{}{}{}", id, count, name, modifier, equipped));
+        ++lineY;
+    }
+}
+
+std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_view title, std::function<bool(const Item &)> filter) const {
+    std::vector<const Item *> items;
+    for (const auto & entry : inventory)
+        if (filter(*entry.second))
+            items.push_back(entry.second);
+
+    if (items.empty())
+        return { NothingToSelect, 0 };
+
+    std::sort(items.begin(), items.end(), [] (const Item * a, const Item * b) {
+        return a->inventorySymbol < b->inventorySymbol;
+    });
+
+    termRend
+        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
+        .put(title);
+
+    printListFromInventory(items);
+
+    while (true) {
+        char choice = termRead.readChar();
+        if (choice == '\033')
+            return { Cancelled, 0 };
+        for (auto entry : inventory)
+            if (entry.second->inventorySymbol == choice)
+                return { Success, choice };
+    }
+}
+
 void Hero::printList(std::vector<Item *> items, std::string_view msg, int mode) const {
     int lineNo = 0;
 
@@ -193,34 +249,33 @@ void Hero::clearRightPane() const {
 }
 
 void Hero::eat() {
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Food)
-            list.push_back(entry.second);
-    if (list.empty()) {
-        message += "You don't have anything to eat. ";
-        return;
+    auto [status, choice] = selectOneFromInventory("What do you want to eat?", [] (const Item & item) {
+        return item.getType() == Item::Type::Food;
+    });
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to eat. ";
+            g_stop = true;
+            return;
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:break;
     }
 
-    printList(list, "What do you want to eat?", 1);
-    char choice = termRead.readChar();
-    if (choice == '\033')
-        return;
     auto & item = inventory[choice];
-    if (item.getType() == Item::Type::Food) {
-        int prob = rand() % g_hero->luck;
-        if (prob == 0) {
-            hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
-            health --;
-            message += "Fuck! This food was rotten! ";
-        } else {
-            hunger += dynamic_cast<Food &>(item).nutritionalValue;
-        }
-        if (item.count == 1) {
-            inventory.remove(choice);
-        } else {
-            item.count--;
-        }
+    int prob = std::rand() % g_hero->luck;
+    if (prob == 0) {
+        hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
+        health --;
+        message += "Fuck! This food was rotten! ";
+    } else {
+        hunger += dynamic_cast<Food &>(item).nutritionalValue;
+    }
+    if (item.count == 1) {
+        inventory.remove(choice);
+    } else {
+        item.count--;
     }
 }
 
@@ -441,53 +496,41 @@ void Hero::showInventory() {
     std::vector<Item *> list;
     for (const auto & entry : inventory)
         list.push_back(entry.second);
-    
+
     printList(list, "Here is your inventory.", 1);
     termRead.readChar();
 }
 
 void Hero::wearArmor() {
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Armor)
-            list.push_back(entry.second);
-    if (list.empty()) {
-        message += "You don't have anything to wear. ";
-        g_stop = true;
-        return;
+    auto [status, choice] = selectOneFromInventory("What do you want to wear?");
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to wear. ";
+            g_stop = true;
+            return;
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:break;
     }
-
-    printList(list, "What do you want to wear?", 1);
-    char choice = termRead.readChar();
-    if (choice == '\033')
-        return;
     auto & item = inventory[choice];
-    if (item.getType() == Item::Type::Armor) {
-        message += format("Now you wearing {}. ", item.getName());
-
-        armor = dynamic_cast<Armor *>(&item);
-    }
+    message += format("Now you wearing {}. ", item.getName());
+    armor = dynamic_cast<Armor *>(&item);
 }
 
 void Hero::dropItems() {
-    if (inventory.isEmpty()) {
-        message += "You don't have anything to drop. ";
-        g_stop = true;
-        return;
-    }
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        list.push_back(entry.second);
-
-    printList(list, "What do you want to drop?", 1);
-    char choice;
-    while (true) {
-        choice = termRead.readChar();
-        if (choice == '\033')
+    auto [status, choice] = selectOneFromInventory("What do you want to drop?");
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to drop. ";
+            g_stop = true;
             return;
-        if (inventory.hasID(choice))
-            break;
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:break;
     }
+
     if (armor != nullptr and choice == armor->inventorySymbol)
         takeArmorOff();
     if (weapon != nullptr and choice == weapon->inventorySymbol)
@@ -516,56 +559,41 @@ void Hero::dropItems() {
 }
 
 void Hero::wieldWeapon() {
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Weapon)
-            list.push_back(entry.second);
-    if (list.empty()) {
-        message += "You don't have anything to wield. ";
-        g_stop = true;
-        return;
-    }
-
-    printList(list, "What do you want to wield?", 1);
-    
-    char choice;
-    while (true) {
-        choice = termRead.readChar();
-        if (choice == '\033')
+    auto [status, itemID] = selectOneFromInventory("What do you want to wield?", [] (const Item & item) {
+        return item.getType() == Item::Type::Weapon;
+    });
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to wield. ";
+            g_stop = true;
             return;
-        if (inventory.hasID(choice))
+        case Success: {
+            auto & item = inventory[itemID];
+            message += format("You wield {}. ", item.getName());
+            weapon = dynamic_cast<Weapon *>(&item);
             break;
-    }
-    auto & item = inventory[choice];
-    if (item.getType() == Item::Type::Weapon) {
-        message += format("You wield {}. ", item.getName());
-
-        weapon = dynamic_cast<Weapon *>(&item);
+        }
+        case Cancelled:
+            g_stop = true;
+            break;
+        default:break;
     }
 }
 
 void Hero::throwItem() {
-    if (inventory.isEmpty()) {
-        message += "You don't have anything to throw. ";
-        g_stop = true;
-        return;
-    }
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        list.push_back(entry.second);
-
-    printList(list, "What do you want to throw?", 1);
-
-    char itemChoice;
-    while (true) {
-        itemChoice = termRead.readChar();
-        if (itemChoice == '\033')
+    auto [status, itemID] = selectOneFromInventory("What do you want to throw?");
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to throw. ";
+            g_stop = true;
             return;
-        if (inventory.hasID(itemChoice))
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:
             break;
     }
-
-    auto & item = inventory[itemChoice];
+    auto & item = inventory[itemID];
     int throwCount = 1;
     if (item.count > 1) {
         clearRightPane();
@@ -610,149 +638,125 @@ void Hero::throwItem() {
 
     auto itemToThrow = item.splitStack(throwCount);
     if (item.count == 0)
-        inventory.remove(itemChoice);
+        inventory.remove(itemID);
 
     throwAnimated(std::move(itemToThrow), throwDir);
 }
 
 void Hero::drinkPotion() {
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Potion)
-            list.push_back(entry.second);
-    if (list.empty()) {
-        message += "You don't have anything to drink. ";
-        g_stop = true;
-        return;
-    }
-
-    printList(list, "What do you want to drink?", 1);
-
-    char choice;
-    while (true) {
-        choice = termRead.readChar();
-        if (choice == '\033')
+    auto [status, itemID] = selectOneFromInventory("What do you want to drink?", [] (const Item & item) {
+        return item.getType() == Item::Type::Potion;
+    });
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to drink. ";
+            g_stop = true;
             return;
-        if (inventory.hasID(choice))
-            break;
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:break;
     }
 
-    auto & item = inventory[choice];
-    if (item.getType() == Item::Type::Potion) {
-        auto & potion = dynamic_cast<Potion &>(item);
-        switch (potion.effect) {
-            case 1: {
-                heal(3);
-                message += "Now you feeling better. ";
-                break;
-            }
-            case 2: {
-                g_hero->turnsInvisible = 150;
-                message += "Am I invisible? Oh, lol! ";
-                break;
-            }
-            case 3: {
-                while (true) {
-                    Coord2i pos = { std::rand() % LEVEL_ROWS, std::rand() % LEVEL_COLS };
-                    if (::level[pos] != 2 and not unitMap[pos]) {
-                        setTo(pos);
-                        break;
-                    }
+    auto & item = inventory[itemID];
+    auto & potion = dynamic_cast<Potion &>(item);
+    switch (potion.effect) {
+        case 1:
+            heal(3);
+            message += "Now you feeling better. ";
+            break;
+        case 2:
+            g_hero->turnsInvisible = 150;
+            message += "Am I invisible? Oh, lol! ";
+            break;
+        case 3:
+            while (true) {
+                Coord2i pos = { std::rand() % LEVEL_ROWS, std::rand() % LEVEL_COLS };
+                if (::level[pos] != 2 and not unitMap[pos]) {
+                    setTo(pos);
+                    break;
                 }
-                message += "Teleportation is so straaange thing! ";
-                break;
             }
-            case 4: {
-                message += "Well.. You didn't die. Nice. ";
-                break;
-            }
-            case 5: {
-                vision = 1;
-                g_hero->turnsBlind = 50;
-                message += "My eyes!! ";
-                break;
-            }
-            default:
-                throw std::logic_error("Unknown potion id");
-        }
-        potionTypeKnown[item.symbol - 600] = true;
-        if (item.count == 1) {
-            inventory.remove(choice);
-        } else {
-            --item.count;
-        }
+            message += "Teleportation is so straaange thing! ";
+            break;
+        case 4:
+            message += "Well.. You didn't die. Nice. ";
+            break;
+        case 5:
+            vision = 1;
+            g_hero->turnsBlind = 50;
+            message += "My eyes!! ";
+            break;
+        default:
+            throw std::logic_error("Unknown potion id");
+    }
+    potionTypeKnown[item.symbol - 600] = true;
+    if (item.count == 1) {
+        inventory.remove(itemID);
+    } else {
+        --item.count;
     }
 }
 
 void Hero::readScroll() {
-    std::vector<Item *> list;
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Scroll)
-            list.push_back(entry.second);
-    if (list.empty()) {
-        message += "You don't have anything to read. ";
-        g_stop = true;
-        return;
-    }
-
-    printList(list, "What do you want to read?", 1);
-
-    char choice;
-    while (true) {
-        choice = termRead.readChar();
-        if (choice == '\033')
+    auto [status, itemID] = selectOneFromInventory("What do you want to read?", [] (const Item & item) {
+        return item.getType() == Item::Type::Scroll;
+    });
+    switch (status) {
+        case NothingToSelect:
+            message += "You don't have anything to read. ";
+            g_stop = true;
             return;
-        if (inventory.hasID(choice))
+        case Cancelled:
+            g_stop = true;
+            return;
+        default:
             break;
     }
 
-    auto & item = inventory[choice];
-    if (item.getType() == Item::Type::Scroll) {
-        switch (dynamic_cast<Scroll &>(item).effect) {
-            case 1: {
-                message += "You wrote this map. Why you read it, I don't know. ";
-                break;
+    auto & item = inventory[itemID];
+    switch (dynamic_cast<Scroll &>(item).effect) {
+        case 1:
+            message += "You wrote this map. Why you read it, I don't know. ";
+            break;
+        case 2: {
+            auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
+                if (item.getType() == Item::Type::Potion) {
+                    if (not potionTypeKnown[item.symbol - 600])
+                        return true;
+                } else if (not item.showMdf){
+                    return true;
+                }
+                return false;
+            });
+            switch (status) {
+                case NothingToSelect:
+                    message += "You have nothing to identify. ";
+                    g_stop = true;
+                    return;
+                case Cancelled:
+                    g_stop = true;
+                    return;
+                default:
+                    break;
             }
-            case 2: {
-                clearRightPane();
-                list.clear();
-                for (const auto & entry : inventory) {
-                    if (entry.second->getType() == Item::Type::Potion) {
-                        if (not potionTypeKnown[entry.second->symbol - 600])
-                            list.push_back(entry.second);
-                    } else if (not entry.second->showMdf) {
-                        list.push_back(entry.second);
-                    }
-                }
 
-                printList(list, "What do you want to identify?", 1);
-
-                char chToApply;
-                while (true) {
-                    chToApply = termRead.readChar();
-                    if (chToApply == '\033')
-                        return;
-                    if (inventory.hasID(chToApply))
-                        break;
-                }
-
-                auto & item2 = inventory[chToApply];
-                if (item2.getType() == Item::Type::Potion) {
-                    potionTypeKnown[item2.symbol - 600] = true;
-                } else {
-                    item2.showMdf = true;
-                }    
-            
-                if (item.count == 1) {
-                    inventory.remove(choice);
-                } else {
-                    --item.count;
-                }
-                break;
+            auto & item2 = inventory[chToApply];
+            if (item2.getType() == Item::Type::Potion) {
+                potionTypeKnown[item2.symbol - 600] = true;
+            } else {
+                item2.showMdf = true;
             }
-            default:
-                throw std::logic_error("Unknown scroll id");
+
+            if (item.count == 1) {
+                inventory.remove(itemID);
+            } else {
+                --item.count;
+            }
+            break;
         }
+        default:
+            throw std::logic_error("Unknown scroll id");
     }
 }
 
