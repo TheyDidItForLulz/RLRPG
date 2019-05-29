@@ -30,13 +30,6 @@ public:
 
     bool isInvisible() const;
 	bool isMapInInventory() const;
-	bool isFoodInInventory() const;
-	bool isArmorInInventory() const;
-	bool isWeaponInInventory() const;
-	bool isPotionInInventory() const;
-
-	std::optional<char> findAmmoInInventory() const;
-	std::optional<char> findScrollInInventory() const;
 
 	int getInventoryItemsWeight() const;
 

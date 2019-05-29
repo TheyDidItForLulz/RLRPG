@@ -428,8 +428,13 @@ void mainMenu() {
     auto tips = readTips();
 
     while (true) {
-        auto tip = tips[std::rand() % tips.size()];
-        auto result = processMenu(format("Welcome to RLRPG /* Tip of the day: {} */", tip), {
+        std::string title = "Welcome to RLRPG";
+        if (not tips.empty()) {
+            const auto & tip = tips[std::rand() % tips.size()];
+            title = format("{} /* Tip of the day: {} */", title, tip);
+        }
+
+        auto result = processMenu(title, {
             "Start game",
             "Settings",
             "Exit"

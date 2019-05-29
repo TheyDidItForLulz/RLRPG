@@ -59,7 +59,7 @@ void Hero::checkVisibleCells() {
 int Hero::getInventoryItemsWeight() const {
     int totalWeight = 0;
     for (const auto & entry : inventory) {
-        totalWeight += entry.second->weight * entry.second->count;
+        totalWeight += entry.second->getTotalWeight();
     }
     return totalWeight;
 }
@@ -124,20 +124,6 @@ bool Hero::isMapInInventory() const {
     return false;
 }
 
-std::optional<char> Hero::findAmmoInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Ammo)
-            return entry.first;
-    return std::nullopt;
-}
-
-std::optional<char> Hero::findScrollInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Scroll)
-            return entry.first;
-    return std::nullopt;
-}
-
 void Hero::pickUp() {
     if (itemsMap[pos].empty()) {
         message += "There is nothing here to pick up. ";
@@ -196,34 +182,6 @@ void Hero::pickUp() {
     }
 }
 
-bool Hero::isFoodInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Food)
-            return true;
-    return false;
-}
-
-bool Hero::isArmorInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Armor)
-            return true;
-    return false;
-}
-
-bool Hero::isWeaponInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Weapon)
-            return true;
-    return false;
-}
-
-bool Hero::isPotionInInventory() const {
-    for (const auto & entry : inventory)
-        if (entry.second->getType() == Item::Type::Potion)
-            return true;
-    return false;
-}
-
 void Hero::clearRightPane() const {
     for (int i = 0; i < 100; i++) {
         for (int j = 0; j < 50; j++) {
@@ -235,15 +193,14 @@ void Hero::clearRightPane() const {
 }
 
 void Hero::eat() {
-    if (not isFoodInInventory()) {
-        message += "You don't have anything to eat. ";
-        return;
-    }
-
     std::vector<Item *> list;
     for (const auto & entry : inventory)
         if (entry.second->getType() == Item::Type::Food)
             list.push_back(entry.second);
+    if (list.empty()) {
+        message += "You don't have anything to eat. ";
+        return;
+    }
 
     printList(list, "What do you want to eat?", 1);
     char choice = termRead.readChar();
@@ -371,7 +328,7 @@ void Hero::processInput(char inp) {
             break;
         }
         default:
-            throw std::logic_error("Unknown control key");
+            break;
     }
 }
 
