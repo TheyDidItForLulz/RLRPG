@@ -671,7 +671,7 @@ void Hero::drinkPotion() {
             break;
         case 3:
             while (true) {
-                Coord2i pos = { std::rand() % LEVEL_ROWS, std::rand() % LEVEL_COLS };
+                Coord2i pos = { std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
                 if (::level[pos] != 2 and not unitMap[pos]) {
                     setTo(pos);
                     break;
