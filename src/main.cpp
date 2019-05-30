@@ -89,9 +89,9 @@
 
 using fmt::format;
 
-#include<unit.hpp>
-#include<hero.hpp>
-#include<enemy.hpp>
+#include<units/unit.hpp>
+#include<units/hero.hpp>
+#include<units/enemy.hpp>
 #include<controls.hpp>
 #include<level.hpp>
 #include<item.hpp>

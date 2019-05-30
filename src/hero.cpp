@@ -1,5 +1,5 @@
-#include<hero.hpp>
-#include<enemy.hpp>
+#include<units/hero.hpp>
+#include<units/enemy.hpp>
 #include<globals.hpp>
 
 #include<fmt/core.h>
@@ -37,13 +37,6 @@ void Hero::levelUp() {
     maxBurden += maxBurden / 4;
     maxHealth += maxHealth / 4;
     health = maxHealth;
-}
-
-void Hero::dealDamage(int damage) {
-    int defence = 0;
-    if (armor != nullptr)
-        defence = armor->defence;
-    health -= damage * (100 - defence) / 100.f;
 }
 
 bool Hero::isInvisible() const {

@@ -1,7 +1,7 @@
-#include<enemy.hpp>
+#include<units/enemy.hpp>
 #include<globals.hpp>
 #include<direction.hpp>
-#include<hero.hpp>
+#include<units/hero.hpp>
 
 #include<queue>
 

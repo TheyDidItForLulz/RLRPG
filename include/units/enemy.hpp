@@ -1,7 +1,7 @@
 #ifndef ENEMY_HPP
 #define ENEMY_HPP
 
-#include<unit.hpp>
+#include<units/unit.hpp>
 
 class Enemy: public Unit {
 public:

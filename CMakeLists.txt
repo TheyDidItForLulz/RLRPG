@@ -23,16 +23,16 @@ add_executable(RLRPG
         include/array2d.hpp
         include/controls.hpp
         include/direction.hpp
-        include/enemy.hpp
+        include/units/enemy.hpp
         include/gen_map.hpp
         include/globals.hpp
-        include/hero.hpp
+        include/units/hero.hpp
         include/inventory.hpp
         include/inventory_iterator.hpp
         include/item.hpp
         include/level.hpp
         include/log.hpp
-        include/unit.hpp
+        include/units/unit.hpp
         include/utils.hpp
         src/termlib/default_window_provider.cpp
         src/enemy.cpp

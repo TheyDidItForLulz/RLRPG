@@ -1,7 +1,7 @@
 #ifndef HERO_HPP
 #define HERO_HPP
 
-#include<unit.hpp>
+#include<units/unit.hpp>
 #include<utils.hpp>
 #include<direction.hpp>
 
@@ -27,7 +27,6 @@ public:
 	
 	void checkVisibleCells();
 	void clearRightPane() const;
-    void dealDamage(int damage);
 	void processInput(char inp);
 
     bool isInvisible() const;
