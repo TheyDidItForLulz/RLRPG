@@ -4,6 +4,8 @@
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
+#include <item_list_formatters.hpp>
+#include <numeric>
 
 using namespace fmt::literals;
 using fmt::format;
@@ -57,30 +59,18 @@ int Hero::getInventoryItemsWeight() const {
     return totalWeight;
 }
 
-void Hero::printListFromInventory(const std::vector<const Item *> & items) const {
-    int lineY = 2;
-    for (auto item : items) {
-        std::string id = format("{} -", item->inventorySymbol);
-        std::string name = format(" {}", item->getName());
+template<class Formatter>
+void printList(std::string_view title, const std::vector<const Item *> & items, Formatter formatter) {
+    termRend
+            .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
+            .put(title);
 
-        std::string count;
-        if (item->count > 1)
-            count = format(" {}x", item->count);
-
-        std::string modifier;
-        if (item->showMdf)
-            modifier = format(" {{{}}}", item->getMdf());
-
-        std::string equipped;
-        if (item == weapon)
-            equipped = " (being wielded)";
-        else if (item == armor)
-            equipped = " (being worn)";
-
+    int lineNo = 2;
+    for (int i = 0; i < items.size(); i++) {
         termRend
-                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
-                .put(format("{}{}{}{}{}", id, count, name, modifier, equipped));
-        ++lineY;
+                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
+                .put(formatter(i, *items[i]));
+        lineNo ++;
     }
 }
 
@@ -97,55 +87,96 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
         return a->inventorySymbol < b->inventorySymbol;
     });
 
-    termRend
-        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
-        .put(title);
-
-    printListFromInventory(items);
+    printList(title, items, formatters::FromInventory{ weapon, armor });
 
     while (true) {
         char choice = termRead.readChar();
         if (choice == '\033')
             return { Cancelled, 0 };
-        for (auto entry : inventory)
-            if (entry.second->inventorySymbol == choice)
+        for (const Item * item : items)
+            if (item->inventorySymbol == choice)
                 return { Success, choice };
     }
 }
 
-void Hero::printList(std::string_view msg, const std::vector<Item *> & items) const {
-    termRend
-        .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
-        .put(msg);
+std::pair<Hero::SelectStatus, std::vector<char>> Hero::selectMultipleFromInventory(
+        std::string_view title,
+        std::function<bool(const Item &)> filter) const {
+    std::vector<const Item *> items;
+    for (const auto & entry : inventory)
+        if (filter(*entry.second))
+            items.push_back(entry.second);
 
-    int lineNo = 2;
-    for (int i = 0; i < items.size(); i++) {
-        char charID;
-        if (i < 26) {
-            charID = char('a' + i);
-        } else if (i < 52) {
-            charID = char('A' + (i - 26));
-        } else {
-            termRend
-                .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
-                .put("... and others ...");
-            break;
+    if (items.empty())
+        return { NothingToSelect, {} };
+
+    std::sort(items.begin(), items.end(), [] (const Item * a, const Item * b) {
+        return a->inventorySymbol < b->inventorySymbol;
+    });
+
+    std::vector<bool> selected(items.size());
+
+    while (true) {
+        printList(title, items, formatters::SelectMultipleFromInventory{selected, weapon, armor});
+
+        char choice = termRead.readChar();
+        if (choice == '\033')
+            return {Cancelled, {}};
+        if (choice == '\n') {
+            std::vector<char> selectedIDs;
+            for (int i = 0; i < items.size(); ++i)
+                if (selected[i])
+                    selectedIDs.push_back(items[i]->inventorySymbol);
+            return {Success, std::move(selectedIDs)};
         }
-        std::string id = format("{} -", charID);
-        std::string name = format(" {}", items[i]->getName());
+        for (int i = 0; i < items.size(); ++i)
+            if (items[i]->inventorySymbol == choice)
+                selected[i] = not selected[i];
+    }
+}
 
-        std::string count;
-        if (items[i]->count > 1)
-            count = format(" {}x", items[i]->count);
-        
-        std::string modifier;
-        if (items[i]->showMdf)
-            modifier = format(" {{{}}}", items[i]->getMdf());
+std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view title, const std::vector<const Item *> & items) const {
+    if (items.empty())
+        return { NothingToSelect, 0 };
 
-        termRend
-            .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
-            .put(format("{}{}{}{}", id, count, name, modifier));
-        lineNo ++;
+    printList(title, items, formatters::FromList{});
+
+    while (true) {
+        char choice = termRead.readChar();
+        if (choice == '\033')
+            return { Cancelled, 0 };
+        if (not std::isalpha(choice))
+            continue;
+        int index = std::islower(choice) ? choice - 'a' : choice - 'A' + 26;
+        if (index < items.size())
+            return { Success, index };
+    }
+}
+
+std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std::string_view title, const std::vector<const Item *> & items) const {
+    if (items.empty())
+        return { NothingToSelect, {} };
+
+    std::vector<bool> selected(items.size());
+
+    while (true) {
+        printList(title, items, formatters::SelectMultipleFromList{ selected });
+
+        char choice = termRead.readChar();
+        if (choice == '\033')
+            return { Cancelled, {} };
+        if (choice == '\n') {
+            std::vector<int> selectedIndices;
+            for (int i = 0; i < items.size(); ++i)
+                if (selected[i])
+                    selectedIndices.push_back(i);
+            return { Success, std::move(selectedIndices) };
+        }
+        if (not std::isalpha(choice))
+            continue;
+        int index = std::islower(choice) ? choice - 'a' : choice - 'A' + 26;
+        if (index < items.size())
+            selected[index] = not selected[index];
     }
 }
 
@@ -163,50 +194,72 @@ void Hero::pickUp() {
         return;
     }
 
-    auto it = itemsMap[pos].begin();
-    if (itemsMap[pos].size() > 1) {
-        std::vector<Item *> list;
+    std::vector<ItemPileIter> iters;
+    if (itemsMap[pos].size() == 1) {
+        iters.push_back(itemsMap[pos].begin());
+    } else {
+        std::vector<const Item *> list;
         for (const auto & item : itemsMap[pos])
             list.push_back(item.get());
 
-        printList("What do you want to pick up? ", list);
+        auto [status, indices] = selectMultipleFromList("What do you want to pick up? ", list);
+        if (status == Cancelled or indices.empty()) {
+            g_stop = true;
+            return;
+        }
+        std::vector<int> shifts(indices.size());
+        std::adjacent_difference(indices.begin(), indices.end(), shifts.begin());
 
-        int intch;
-        while (true) {
-            char choice = termRead.readChar();
-            if (choice == '\033')
-                return;
+        auto it = itemsMap[pos].begin();
+        for (int shift : shifts) {
+            std::advance(it, shift);
+            iters.push_back(it);
+        }
+    }
 
-            intch = choice - 'a';
-            if (intch >= 0 or intch < itemsMap[pos].size())
-                break;
+    bool fullInventory = false;
+    bool firstPickUp = true;
+    for (auto it : iters) {
+        auto & itemToPick = *it;
+        std::string pickUpString;
+
+        inventory.add(std::move(itemToPick)).doIf<AddStatus::New>(
+                [this, it, &pickUpString](AddStatus::New added) {
+            itemsMap[pos].erase(it);
+            auto & item = inventory[added.at];
+            if (item.isStackable and item.count > 1)
+                pickUpString = format("{}x {} ({})", item.count, item.getName(), added.at);
+            else
+                pickUpString = format("{} ({})", item.getName(), added.at);
+        }).doIf<AddStatus::Stacked>([this, it, &pickUpString](AddStatus::Stacked stacked) {
+            itemsMap[pos].erase(it);
+            auto & item = inventory[stacked.at];
+
+            std::string pickedCount;
+            if (stacked.pickedCount > 1)
+                pickedCount = fmt::format("{}x ", stacked.pickedCount);
+
+            pickUpString = fmt::format("{}{} ({}), now you have {}",
+                                 pickedCount, item.getName(), stacked.at, item.count);
+        }).doIf<AddStatus::FullInvError>([&itemToPick, &fullInventory](auto & err) {
+            itemToPick = std::move(err.item);
+            fullInventory = true;
+            message += "Your inventory is full";
+        });
+
+        if (fullInventory)
+            break;
+
+        if (firstPickUp) {
+            message += "You picked up ";
+        } else {
+            message += ", ";
         }
 
-        std::advance(it, intch);
+        message += pickUpString;
+        firstPickUp = false;
     }
-    auto & itemToPick = *it;
-
-    inventory.add(std::move(itemToPick)).doIf<AddStatus::New>([this, it] (AddStatus::New added) {
-        itemsMap[pos].erase(it);
-        auto & item = inventory[added.at];
-        if (item.isStackable and item.count > 1)
-            message += format("You picked up {}x {} ({}). ", item.count, item.getName(), added.at);
-        else
-            message += format("You picked up {} ({}). ", item.getName(), added.at);
-    }).doIf<AddStatus::Stacked>([this, it] (AddStatus::Stacked stacked) {
-        itemsMap[pos].erase(it);
-        auto & item = inventory[stacked.at];
-
-        std::string pickedCount;
-        if (stacked.pickedCount > 1)
-            pickedCount = fmt::format("{}x ", stacked.pickedCount);
-
-        message += fmt::format("You picked up {}{} ({}), now you have {}. ",
-            pickedCount, item.getName(), stacked.at, item.count);
-    }).doIf<AddStatus::FullInvError>([&itemToPick] (auto & err) {
-        itemToPick = std::move(err.item);
-        message += "Your inventory is full. ";
-    });
+    message += ". ";
 
     if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
         message += "You're burdened. ";
@@ -469,11 +522,11 @@ void Hero::showInventory() {
         message += "Your inventory is empty.";
         return;
     }
-    std::vector<Item *> list;
+    std::vector<const Item *> list;
     for (const auto & entry : inventory)
         list.push_back(entry.second);
 
-    printList("Here is your inventory.", list);
+    printList("Here is your inventory.", list, formatters::FromInventory{ weapon, armor });
     termRead.readChar();
 }
 

@@ -46,6 +46,6 @@ add_executable(RLRPG
         README.md
         tips.txt
         src/unit.cpp
-        src/utils.cpp)
+        src/utils.cpp include/item_list_formatters.hpp src/item_list_formatters.cpp)
 
 target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES})

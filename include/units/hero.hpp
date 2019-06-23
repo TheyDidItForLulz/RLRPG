@@ -56,9 +56,6 @@ private:
 	void wieldWeapon();
 	void wearArmor();
 
-	void printList(std::string_view msg, const std::vector<Item *> & items) const;
-	void printListFromInventory(const std::vector<const Item *> & items) const;
-
 	enum SelectStatus {
 	    NothingToSelect,
 	    Cancelled,
@@ -68,6 +65,14 @@ private:
 	std::pair<SelectStatus, char> selectOneFromInventory(
 	        std::string_view title,
 	        std::function<bool(const Item &)> filter = [] (const Item &) { return true; }) const;
+
+	std::pair<SelectStatus, int> selectOneFromList(std::string_view title, const std::vector<const Item *> & items) const;
+
+    std::pair<SelectStatus, std::vector<char>> selectMultipleFromInventory(
+            std::string_view title,
+            std::function<bool(const Item &)> filter = [] (const Item &) { return true; }) const;
+
+    std::pair<SelectStatus, std::vector<int>> selectMultipleFromList(std::string_view title, const std::vector<const Item *> & items) const;
 
 	void moveTo(Coord2i cell);
 
