@@ -22,7 +22,7 @@ AddStatus Inventory::add(Item::Ptr item) {
 
     if (item->isStackable) {
         for (auto & pair : items) {
-            if (pair.second->symbol == item->symbol) {
+            if (pair.second->id == item->id) {
                 pair.second->count += item->count;
                 return AddStatus::Stacked{ pair.first, item->count };
             }

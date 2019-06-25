@@ -29,7 +29,7 @@ public:
 	virtual ~Item();
 
     Coord2i pos;
-	int symbol;
+	std::string id;
 	char inventorySymbol;
 	int weight;
 	int mdf;
@@ -54,7 +54,7 @@ public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 10;
 
-	Food(int FoodType);
+	explicit Food(const std::string & id);
 	
 	int nutritionalValue;
 	bool isRotten;
@@ -76,7 +76,7 @@ public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 4;
 
-	Armor(int ArmorType);
+	explicit Armor(const std::string & id);
 
 	int defence;
 	int durability;
@@ -99,7 +99,7 @@ public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 25;
 
-	Ammo(int AmmoType);
+	explicit Ammo(const std::string & id);
 
 	int range;
 	int damage;
@@ -126,7 +126,7 @@ private:
         int capacity = 0;
 
     public:
-        Cartridge(int capacity = 0);
+		explicit Cartridge(int capacity = 0);
         Cartridge(const Cartridge &);
         Cartridge & operator =(const Cartridge &); 
 
@@ -153,7 +153,7 @@ public:
     static const int TYPES_COUNT = 6;
     static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
 
-	Weapon(int WeaponType);
+	explicit Weapon(const std::string & id);
 	
     Cartridge cartridge;
 	int damage;
@@ -182,7 +182,8 @@ public:
     static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
 	Scroll();
-	Scroll(int s);
+
+	explicit Scroll(const std::string & id);
 	~Scroll();
 
 	int effect;
@@ -201,24 +202,36 @@ public:
     static const int TYPES_COUNT = 5;
     static const int COUNT = 25; /* IT TOO */
 
+    enum Effect {
+    	None,
+    	Heal,
+    	Invisibility,
+    	Teleport,
+    	Blindness,
+    	EffectCount
+    };
+
 	Potion();
-	Potion(int p);
+
+	explicit Potion(const std::string & id);
 	~Potion();
 
-    std::string getPotionName() const;
+	Effect effect;
 
-	int effect;
+    std::string getPotionName() const;
 
     Type getType() const override {
         return Type::Potion;
     }
+
+    int getTypeIndex() const;
 
     Item::Ptr clone() const override {
         return std::make_unique<Potion>(*this);
     }
 };
 
-std::string getPotionName(int sym);
+std::string getPotionName(const std::string & id);
 
 /*
 class Tools: public Item {
@@ -260,7 +273,7 @@ extern std::vector<Scroll> scrollTypes;
 extern std::vector<Potion> potionTypes;
 extern std::vector<bool> potionTypeKnown;
 
-ItemPileIter findItemAt(Coord2i cell, int sym);
+ItemPileIter findItemAt(Coord2i cell, std::string_view id);
 bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>

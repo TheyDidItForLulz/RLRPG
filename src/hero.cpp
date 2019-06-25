@@ -182,7 +182,7 @@ std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std
 
 bool Hero::isMapInInventory() const {
     for (const auto & entry : inventory)
-        if (entry.second->symbol == 500)
+        if (entry.second->id == "map")
             return true;
     return false;
 }
@@ -438,15 +438,13 @@ void Hero::reloadWeapon() {
             TextStyle style{ TerminalColor{} };
             char symbol = 'i';
             if (weapon->cartridge[i]) {
-                switch (weapon->cartridge[i]->symbol) {
-                    case 450:
-                        style = TextStyle{ TextStyle::Bold, Color::Black };
-                        break;
-                    case 451:
-                        style = TextStyle{ TextStyle::Bold, Color::Red };
-                        break;
-                    default:
-                        symbol = '?';
+                std::string_view ammoID = weapon->cartridge[i]->id;
+                if (ammoID == "steel_bullets") {
+                    style = TextStyle{TextStyle::Bold, Color::Black};
+                } else if (ammoID == "shotgun_bullets") {
+                    style = TextStyle{TextStyle::Bold, Color::Red};
+                } else {
+                    symbol = '?';
                 }
             } else {
                 symbol = '_';
@@ -690,15 +688,15 @@ void Hero::drinkPotion() {
     auto & item = inventory[itemID];
     auto & potion = dynamic_cast<Potion &>(item);
     switch (potion.effect) {
-        case 1:
+        case Potion::Heal:
             heal(3);
             message += "Now you feeling better. ";
             break;
-        case 2:
+        case Potion::Invisibility:
             g_hero->turnsInvisible = 150;
             message += "Am I invisible? Oh, lol! ";
             break;
-        case 3:
+        case Potion::Teleport:
             while (true) {
                 Coord2i pos = { std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
                 if (::level[pos] != 2 and not unitMap[pos]) {
@@ -708,10 +706,10 @@ void Hero::drinkPotion() {
             }
             message += "Teleportation is so straaange thing! ";
             break;
-        case 4:
+        case Potion::None:
             message += "Well.. You didn't die. Nice. ";
             break;
-        case 5:
+        case Potion::Blindness:
             vision = 1;
             g_hero->turnsBlind = 50;
             message += "My eyes!! ";
@@ -719,7 +717,8 @@ void Hero::drinkPotion() {
         default:
             throw std::logic_error("Unknown potion id");
     }
-    potionTypeKnown[item.symbol - 600] = true;
+    potionTypeKnown[potion.getTypeIndex()] = true;
+
     if (item.count == 1) {
         inventory.remove(itemID);
     } else {
@@ -751,7 +750,7 @@ void Hero::readScroll() {
         case 2: {
             auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
                 if (item.getType() == Item::Type::Potion) {
-                    if (not potionTypeKnown[item.symbol - 600])
+                    if (not potionTypeKnown[dynamic_cast<const Potion &>(item).getTypeIndex()])
                         return true;
                 } else if (not item.showMdf){
                     return true;
@@ -772,7 +771,8 @@ void Hero::readScroll() {
 
             auto & item2 = inventory[chToApply];
             if (item2.getType() == Item::Type::Potion) {
-                potionTypeKnown[item2.symbol - 600] = true;
+                auto ind = dynamic_cast<const Potion &>(item2).getTypeIndex();
+                potionTypeKnown[ind] = true;
             } else {
                 item2.showMdf = true;
             }

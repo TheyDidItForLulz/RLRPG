@@ -81,6 +81,7 @@
 #include<cstdlib>
 #include<ctime>
 #include<vector>
+#include<random>
 #include<assert.h>
 #include<termlib/termlib.hpp>
 
@@ -212,28 +213,48 @@ struct CellRenderData {
 };
 
 SymbolRenderData getRenderData(const Item::Ptr & item) {
-    switch (item->symbol) {
-        case 100: return '%';
-        case 101: return { '%', { Color::Red } };
-        case 300: return { '&', { TextStyle::Bold, Color::Black } };
-        case 301: return { '&', { Color::Yellow } };
-        case 400: return { '/', { TextStyle::Bold, Color::Red } };
-        case 401: return { '/', { TextStyle::Bold, Color::Yellow } };
-        case 402: return { '/', { TextStyle::Bold } };
-        case 403: return { '/', { TextStyle::Bold, Color::Yellow } };
-        case 404: return { '/', { TextStyle::Bold, Color::Black } };
-        case 405: return '/';
-        case 406: return { '\\', { Color::Yellow } };
-        case 450: return { ',', { TextStyle::Bold, Color::Black } };
-        case 451: return { ',', { TextStyle::Bold, Color::Red } };
-        case 500: return { '~', { TextStyle::Bold, Color::Yellow } };
-        case 501: return { '~', { TextStyle::Bold, Color::Yellow } };
-        case 600: return { '!', { TextStyle::Bold, Color::Blue } };
-        case 601: return { '!', { Color::Green } };
-        case 602: return { '!', { TextStyle::Bold, Color::Black } };
-        case 603: return { '!', { TextStyle::Bold, Color::Magenta } };
-        case 604: return { '!', { Color::Yellow } };
-        default: return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
+    if (item->id == "egg") {
+        return '%';
+    } else if (item->id == "apple") {
+        return {'%', {Color::Red}};
+    } else if (item->id == "chain_chestplate") {
+        return {'&', {TextStyle::Bold, Color::Black}};
+    } else if (item->id == "leather_chestplate") {
+        return {'&', {Color::Yellow}};
+    } else if (item->id == "copper_shortsword") {
+        return {'/', {TextStyle::Bold, Color::Red}};
+    } else if (item->id == "bronze_spear") {
+        return {'/', {TextStyle::Bold, Color::Yellow}};
+    } else if (item->id == "musket") {
+        return {'/', {TextStyle::Bold}};
+    } else if (item->id == "stick") {
+        return {'/', {TextStyle::Bold, Color::Yellow}};
+    } else if (item->id == "shotgun") {
+        return {'/', {TextStyle::Bold, Color::Black}};
+    } else if (item->id == "pistol") {
+        return '/';
+    } else if (item->id == "pickaxe" ) {
+        return {'\\', {Color::Yellow}};
+    } else if (item->id == "steel_bullets") {
+        return {',', {TextStyle::Bold, Color::Black}};
+    } else if (item->id == "shotgun_bullets") {
+        return {',', {TextStyle::Bold, Color::Red}};
+    } else if (item->id == "map") {
+        return {'~', {TextStyle::Bold, Color::Yellow}};
+    } else if (item->id == "identify_scroll") {
+        return {'~', {TextStyle::Bold, Color::Yellow}};
+    } else if (item->id == "blue_potion") {
+        return {'!', {TextStyle::Bold, Color::Blue}};
+    } else if (item->id == "green_potion") {
+        return {'!', {Color::Green}};
+    } else if (item->id == "dark_potion") {
+        return {'!', {TextStyle::Bold, Color::Black}};
+    } else if (item->id == "magenta_potion") {
+        return {'!', {TextStyle::Bold, Color::Magenta}};
+    } else if (item->id == "yellow_potion") {
+        return {'!', {Color::Yellow}};
+    } else {
+        return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
     }
 }
 
@@ -452,13 +473,8 @@ void mainMenu() {
 }
 
 void setRandomPotionEffects() {
-    for (int i = 0; i < Potion::TYPES_COUNT; i++) {
-        int rv = rand() % Potion::TYPES_COUNT;
-        if (potionTypes[rv].effect == 0) {
-            potionTypes[rv].effect = i + 1;
-        } else {
-            i--;
-        }
+    for (auto & potion : potionTypes) {
+        potion.effect = Potion::Effect(std::rand() % Potion::EffectCount);
     }
 }
 
@@ -524,21 +540,21 @@ int main() {
         readMap();
     }
 
-    Food Egg(0);
-    Food Apple(1);
+    Food Egg("egg");
+    Food Apple("apple");
     foodTypes = { Egg, Apple };
     
-    Armor ChainChestplate(0);
-    Armor LeatherChestplate(1);
+    Armor ChainChestplate("chain_chestplate");
+    Armor LeatherChestplate("leather_chestplate");
     armorTypes = { ChainChestplate, LeatherChestplate };
 
-    Weapon CopperShortsword(0);
-    Weapon BronzeSpear(1);
-    Weapon Musket(2);
-    Weapon Stick(3);
-    Weapon Shotgun(4);
-    Weapon Pistol(5);
-    Weapon Pickaxe(6);
+    Weapon CopperShortsword("copper_shortsword");
+    Weapon BronzeSpear("bronze_spear");
+    Weapon Musket("musket");
+    Weapon Stick("stick");
+    Weapon Shotgun("shotgun");
+    Weapon Pistol("pistol");
+    Weapon Pickaxe("pickaxe");
     weaponTypes = {
         CopperShortsword,
         BronzeSpear,
@@ -549,25 +565,25 @@ int main() {
         Pickaxe
     };
 
-    Ammo SteelBullets(0);
-    Ammo ShotgunShells(1);
+    Ammo SteelBullets("steel_bullets");
+    Ammo ShotgunShells("shotgun_bullets");
     ammoTypes = { SteelBullets, ShotgunShells };
     
-    Scroll MapScroll(0);
-    Scroll IdentifyScrollBitch(1);
-    scrollTypes = { MapScroll, IdentifyScrollBitch };
+    Scroll MapScroll("map");
+    Scroll IdentifyScroll("identify_scroll");
+    scrollTypes = { MapScroll, IdentifyScroll };
 
-    Potion BluePotion(0);
-    Potion GreenPotion(1);
-    Potion DarkPotion(2);
-    Potion lol(3);
-    Potion kek(4);
+    Potion BluePotion("blue_potion");
+    Potion GreenPotion("green_potion");
+    Potion DarkPotion("dark_potion");
+    Potion MagentaPotion("magenta_potion");
+    Potion YellowPotion("yellow_potion");
     potionTypes = {
         BluePotion,
         GreenPotion,
         DarkPotion,
-        lol,
-        kek
+        MagentaPotion,
+        YellowPotion
     };
     potionTypeKnown.resize(potionTypes.size());
     
