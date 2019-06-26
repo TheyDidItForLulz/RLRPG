@@ -1,0 +1,7 @@
+id: leather_chestplate
+name: a leather chestplate
+weight: 7
+isStackable: false
+armor:
+  defence: 20
+  durability: 15

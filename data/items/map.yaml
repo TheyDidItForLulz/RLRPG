@@ -1,0 +1,6 @@
+id: map
+name: a map
+weight: 1
+isStackable: true
+scroll:
+  effect: 1

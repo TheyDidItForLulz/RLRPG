@@ -54,8 +54,6 @@ public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 10;
 
-	explicit Food(const std::string & id);
-	
 	int nutritionalValue;
 	bool isRotten;
 
@@ -75,8 +73,6 @@ class Armor: public Item {
 public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 4;
-
-	explicit Armor(const std::string & id);
 
 	int defence;
 	int durability;
@@ -99,8 +95,6 @@ public:
     static const int TYPES_COUNT = 2;
     static const int COUNT = 25;
 
-	explicit Ammo(const std::string & id);
-
 	int range;
 	int damage;
 
@@ -120,7 +114,6 @@ class Weapon: public Item {
 public:
     using Ptr = std::unique_ptr<Weapon>;
 
-private:
     class Cartridge {
         std::vector<Ammo::Ptr> loaded;
         int capacity = 0;
@@ -149,12 +142,9 @@ private:
         bool isFull() const;
     };
 
-public:
     static const int TYPES_COUNT = 6;
     static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
 
-	explicit Weapon(const std::string & id);
-	
     Cartridge cartridge;
 	int damage;
 	int range; 									// Ranged bullets have additional effect on this paramether
@@ -182,8 +172,6 @@ public:
     static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
 	Scroll();
-
-	explicit Scroll(const std::string & id);
 	~Scroll();
 
 	int effect;
@@ -212,8 +200,6 @@ public:
     };
 
 	Potion();
-
-	explicit Potion(const std::string & id);
 	~Potion();
 
 	Effect effect;

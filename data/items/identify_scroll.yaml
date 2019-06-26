@@ -1,0 +1,6 @@
+id: identify_scroll
+name: an identify scroll
+weight: 1
+isStackable: true
+scroll:
+  effect: 2

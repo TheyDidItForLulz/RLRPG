@@ -8,6 +8,7 @@ include_directories(include/termlib)
 
 find_package(fmt REQUIRED)
 find_package(Curses REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_executable(RLRPG
         include/termlib/abstract_terminal_window.hpp
@@ -48,4 +49,4 @@ add_executable(RLRPG
         src/unit.cpp
         src/utils.cpp include/item_list_formatters.hpp src/item_list_formatters.cpp)
 
-target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES})
+target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES} ${YAML_CPP_LIBRARIES})

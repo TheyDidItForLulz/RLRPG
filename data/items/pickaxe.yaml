@@ -1,0 +1,7 @@
+id: pickaxe
+name: a pickaxe
+weight: 5
+isStackable: false
+weapon:
+  damage: 2
+  canDig: true

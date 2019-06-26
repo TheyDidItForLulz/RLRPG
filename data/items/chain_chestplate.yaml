@@ -1,0 +1,7 @@
+id: chain_chestplate
+name: a chain chestplate
+weight: 20
+isStackable: false
+armor:
+    defence: 33
+    durability: 20

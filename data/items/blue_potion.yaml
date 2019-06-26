@@ -1,0 +1,5 @@
+id: blue_potion
+name: blue potion
+weight: 1
+isStackable: true
+potion: ""

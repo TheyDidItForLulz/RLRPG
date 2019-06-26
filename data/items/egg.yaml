@@ -1,0 +1,6 @@
+id: egg
+name: an egg
+weight: 1
+isStackable: true
+food:
+  nutritionalValue: 100

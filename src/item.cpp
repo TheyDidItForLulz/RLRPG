@@ -82,115 +82,22 @@ int Item::getTotalWeight() const {
 
 ////////////////////////////////
 // Food
-Food::Food(const std::string & id) {
-    this->id = id;
-	isStackable = true;
-	if (id == "egg") {
-		nutritionalValue = 100;
-		weight = 1;
-	} else if (id == "apple") {
-        nutritionalValue = 125;
-        weight = 1;
-	} else {
-		throw std::logic_error("Unknown food type id: '" + id + "'");
-	}
-};
-
 Food::Food(): isRotten(false){};
 Food::~Food() = default;;
 
 ////////////////////////////////
 // Armor
-Armor::Armor(const std::string & id) {
-	this->id = id;
-	mdf = 1;
-	isStackable = false;
-	if (id == "chain_chestplate") {
-		defence = 33;
-		durability = 20;
-		weight = 20;
-	} else if (id == "leather_chestplate") {
-        defence = 20;
-        durability = 15;
-        weight = 7;
-	} else {
-		throw std::logic_error("Unknown armor type id: '" + id + "'");
-	}
-}
-
 Armor::Armor() = default;
 Armor::~Armor() = default;
 
 ////////////////////////////////
 // Ammo
-Ammo::Ammo(const std::string & id) {
-    this->id = id;
-    isStackable = true;
-    if (id == "steel_bullets") {
-		weight = 0;
-		range = 2;
-		damage = 1;
-	} else if (id == "shotgun_bullets") {
-        weight = 0;
-        range = 1;
-        damage = 2;
-	} else {
-    	throw std::logic_error("Unknown ammo type id: '" + id + "'");
-    }
-};
-
 Ammo::Ammo() = default;
 
 Ammo::~Ammo() = default;
 
 ////////////////////////////////
 // Weapon
-Weapon::Weapon(const std::string & id) {
-	this->id = id;
-	isStackable = false;
-	if (id == "copper_shortsword") {
-		damage = 4;
-		weight = 3;
-		isRanged = false;
-	} else if (id == "bronze_spear") {
-		damage = 5;
-		weight = 5;
-		isRanged = false;
-	} else if (id == "musket") {
-		damage = 3;
-		weight = 3;
-		range = 14;
-		isRanged = true;
-		damageBonus = 4;
-		cartridge = Cartridge(1);
-	} else if (id == "stick") {
-		damage = 2;
-		weight = 1;
-		isRanged = false;
-	} else if (id == "shotgun") {
-		damage = 2;
-		weight = 4;
-		isRanged = true;
-		range = 4;
-		damageBonus = 5;
-		cartridge = Cartridge(6);
-	} else if (id == "pistol") {
-		damage = 1;
-		weight = 2;
-		isRanged = true;
-		range = 7;
-		damageBonus = 2;
-		cartridge = Cartridge(10);
-	} else if (id == "pickaxe") {
-		damage = 2;
-		weight = 5;
-		isRanged = false;
-		canDig = true;
-	} else {
-		throw std::logic_error("Unknown weapon type id: '" + id + "'");
-	}
-};
-
 Weapon::Weapon() = default;
 
 Weapon::~Weapon() = default;
@@ -274,31 +181,12 @@ bool Weapon::Cartridge::isFull() const {
 }
 ////////////////////////////////
 // Scroll
-Scroll::Scroll(const std::string & id) {
-	this->id = id;
-	isStackable = true;
-	if (id == "map") {
-		weight = 1;
-		effect = 1;
-	} else if (id == "identify_scroll") {
-        weight = 1;
-        effect = 2;
-	}
-}
-
 Scroll::Scroll() = default;
 
 Scroll::~Scroll() = default;
 
 ////////////////////////////////
 // Potion
-Potion::Potion(const std::string & id) {
-	weight = 1;
-	isStackable = true;
-	this->id = id;
-	effect = None;
-}
-
 int Potion::getTypeIndex() const {
     return std::find_if(potionTypes.begin(), potionTypes.end(), [this] (const Potion & potion) {
     	return potion.id == id;

@@ -1,0 +1,10 @@
+id: musket
+name: a musket
+weight: 3
+isStackable: false
+weapon:
+  damage: 3
+  ranged:
+    range: 14
+    damageBonus: 4
+    cartridgeSize: 1

@@ -1,0 +1,10 @@
+id: shotgun
+name: a shotgun
+weight: 4
+isStackable: false
+weapon:
+  damage: 2
+  ranged:
+    range: 4
+    damageBonus: 5
+    cartridgeSize: 6

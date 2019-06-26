@@ -90,6 +90,8 @@
 
 using fmt::format;
 
+#include<yaml-cpp/yaml.h>
+
 #include<units/unit.hpp>
 #include<units/hero.hpp>
 #include<units/enemy.hpp>
@@ -524,6 +526,76 @@ void draw() {
         .setCursorPosition(g_hero->pos);
 }
 
+void initItemBase(Item & item, const YAML::Node & data) {
+    item.weight = data["weight"].as<int>();
+    item.id = data["id"].as<std::string>();
+    item.isStackable = data["isStackable"].as<bool>();
+}
+
+YAML::Node loadItemData(std::string_view id) {
+    auto filename = fmt::format("data/items/{}.yaml", id);
+    return YAML::LoadFile(filename);
+}
+
+Food loadFood(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Food loaded;
+    initItemBase(loaded, item);
+    loaded.nutritionalValue = item["food"]["nutritionalValue"].as<int>();
+    return loaded;
+}
+
+Armor loadArmor(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Armor loaded;
+    initItemBase(loaded, item);
+    loaded.durability = item["armor"]["durability"].as<int>();
+    loaded.defence = item["armor"]["defence"].as<int>();
+    return loaded;
+}
+
+Ammo loadAmmo(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Ammo loaded;
+    initItemBase(loaded, item);
+    loaded.damage = item["ammo"]["damage"].as<int>();
+    loaded.range = item["ammo"]["range"].as<int>();
+    return loaded;
+}
+
+Weapon loadWeapon(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Weapon loaded;
+    initItemBase(loaded, item);
+    loaded.damage = item["weapon"]["damage"].as<int>();
+    if (item["weapon"]["ranged"]) {
+        loaded.isRanged = true;
+        loaded.range = item["weapon"]["ranged"]["range"].as<int>();
+        loaded.damageBonus = item["weapon"]["ranged"]["damageBonus"].as<int>();
+        int cartridgeSize = item["weapon"]["ranged"]["cartridgeSize"].as<int>();
+        loaded.cartridge = Weapon::Cartridge(cartridgeSize);
+        if (item["weapon"]["canDig"]) {
+            loaded.canDig = item["weapon"]["canDig"].as<bool>();
+        }
+    }
+    return loaded;
+}
+
+Scroll loadScroll(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Scroll loaded;
+    initItemBase(loaded, item);
+    loaded.effect = item["scroll"]["effect"].as<int>();
+    return loaded;
+}
+
+Potion loadPotion(std::string_view id) {
+    YAML::Node item = loadItemData(id);
+    Potion loaded;
+    initItemBase(loaded, item);
+    return loaded;
+}
+
 int main() {
     termRead.setEchoing(false);
 
@@ -540,51 +612,34 @@ int main() {
         readMap();
     }
 
-    Food Egg("egg");
-    Food Apple("apple");
-    foodTypes = { Egg, Apple };
-    
-    Armor ChainChestplate("chain_chestplate");
-    Armor LeatherChestplate("leather_chestplate");
-    armorTypes = { ChainChestplate, LeatherChestplate };
+    for (std::string_view id : {"egg", "apple"})
+        foodTypes.push_back(loadFood(id));
 
-    Weapon CopperShortsword("copper_shortsword");
-    Weapon BronzeSpear("bronze_spear");
-    Weapon Musket("musket");
-    Weapon Stick("stick");
-    Weapon Shotgun("shotgun");
-    Weapon Pistol("pistol");
-    Weapon Pickaxe("pickaxe");
-    weaponTypes = {
-        CopperShortsword,
-        BronzeSpear,
-        Musket,
-        Stick,
-        Shotgun,
-        Pistol,
-        Pickaxe
-    };
+    for (std::string_view id : {"chain_chestplate", "leather_chestplate"})
+        armorTypes.push_back(loadArmor(id));
 
-    Ammo SteelBullets("steel_bullets");
-    Ammo ShotgunShells("shotgun_bullets");
-    ammoTypes = { SteelBullets, ShotgunShells };
-    
-    Scroll MapScroll("map");
-    Scroll IdentifyScroll("identify_scroll");
-    scrollTypes = { MapScroll, IdentifyScroll };
+    for (std::string_view id : {"stick",
+                                "copper_shortsword",
+                                "bronze_spear",
+                                "pickaxe",
+                                "musket",
+                                "pistol",
+                                "shotgun"})
+        weaponTypes.push_back(loadWeapon(id));
 
-    Potion BluePotion("blue_potion");
-    Potion GreenPotion("green_potion");
-    Potion DarkPotion("dark_potion");
-    Potion MagentaPotion("magenta_potion");
-    Potion YellowPotion("yellow_potion");
-    potionTypes = {
-        BluePotion,
-        GreenPotion,
-        DarkPotion,
-        MagentaPotion,
-        YellowPotion
-    };
+    for (std::string_view id : {"steel_bullets", "shotgun_bullets"})
+        ammoTypes.push_back(loadAmmo(id));
+
+    for (std::string_view id : {"map", "identify_scroll"})
+        scrollTypes.push_back(loadScroll(id));
+
+    for (std::string_view id : {"blue_potion",
+                                "dark_potion",
+                                "yellow_potion",
+                                "magenta_potion",
+                                "green_potion"})
+        potionTypes.push_back(loadPotion(id));
+
     potionTypeKnown.resize(potionTypes.size());
     
     setRandomPotionEffects();

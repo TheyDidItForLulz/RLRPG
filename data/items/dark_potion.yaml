@@ -1,0 +1,5 @@
+id: dark_potion
+name: dark potion
+weight: 1
+isStackable: true
+potion: ""

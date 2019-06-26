@@ -1,0 +1,5 @@
+id: magenta_potion
+name: magenta potion
+weight: 1
+isStackable: true
+potion: ""

@@ -1,0 +1,6 @@
+id: bronze_spear
+name: a bronze spear
+weight: 5
+isStackable: false
+weapon:
+  damage: 5

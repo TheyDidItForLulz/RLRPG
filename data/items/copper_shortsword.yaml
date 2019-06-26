@@ -1,0 +1,6 @@
+id: copper_shortsword
+name: a copper shortsword
+weight: 3
+isStackable: false
+weapon:
+  damage: 4

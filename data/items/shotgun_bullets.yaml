@@ -1,0 +1,7 @@
+id: shotgun_bullets
+name: shotgun bullets
+weight: 0
+isStackable: true
+ammo:
+  damage: 2
+  range: 1

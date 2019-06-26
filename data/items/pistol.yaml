@@ -1,0 +1,10 @@
+id: pistol
+name: a pistol
+weight: 2
+isStackable: false
+weapon:
+  damage: 1
+  ranged:
+    range: 7
+    damageBonus: 2
+    cartridgeSize: 10

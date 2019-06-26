@@ -1,0 +1,6 @@
+id: apple
+name: an apple
+weight: 1
+isStackable: true
+food:
+  nutritionalValue: 125

@@ -1,0 +1,6 @@
+id: stick
+name: a stick
+weight: 1
+isStackable: false
+weapon:
+  damage: 2
