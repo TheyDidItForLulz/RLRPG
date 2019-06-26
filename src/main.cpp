@@ -103,16 +103,18 @@ void updateAI() {
 
 void setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
-    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, ItemSelector<Armor>([&] (const std::vector<Armor> & types) {
-        Armor item = types[std::rand() % types.size()];
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, ItemSelector<Armor>([&] (const ItemRegistry<Armor> & types) {
+        int ind = std::rand() % types.size();
+        Armor item = std::next(types.begin(), ind)->second;
         if (std::rand() % 500 < g_hero->luck) {
             item.mdf = 2;
         }
         return item;
     }));
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, ItemSelector<Ammo>([&] (const std::vector<Ammo> & types) {
-        Ammo ammo = types[std::rand() % types.size()];
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, ItemSelector<Ammo>([&] (const ItemRegistry<Ammo> & types) {
+        int ind = std::rand() % types.size();
+        Ammo ammo = std::next(types.begin(), ind)->second;
         ammo.count = std::rand() % g_hero->luck + 1;
         return ammo;
     }));
@@ -435,7 +437,7 @@ void mainMenu() {
 }
 
 void setRandomPotionEffects() {
-    for (auto & potion : potionTypes) {
+    for (auto & [id, potion] : potionTypes) {
         potion.effect = Potion::Effect(std::rand() % Potion::EffectCount);
     }
 }
@@ -559,23 +561,35 @@ Potion loadPotion(std::string_view id) {
 void loadItems() {
     YAML::Node registry = YAML::LoadFile("data/items.yaml");
 
-    for (const auto & id : registry["food"])
-        foodTypes.push_back(loadFood(id.as<std::string>()));
+    for (const auto & id : registry["food"]) {
+        auto idstr = id.as<std::string>();
+        foodTypes[idstr] = loadFood(idstr);
+    }
 
-    for (const auto & id : registry["armor"])
-        armorTypes.push_back(loadArmor(id.as<std::string>()));
+    for (const auto & id : registry["armor"]) {
+        auto idstr = id.as<std::string>();
+        armorTypes[idstr] = loadArmor(idstr);
+    }
 
-    for (const auto & id : registry["weapon"])
-        weaponTypes.push_back(loadWeapon(id.as<std::string>()));
+    for (const auto & id : registry["weapon"]) {
+        auto idstr = id.as<std::string>();
+        weaponTypes[idstr] = loadWeapon(idstr);
+    }
 
-    for (const auto & id : registry["ammo"])
-        ammoTypes.push_back(loadAmmo(id.as<std::string>()));
+    for (const auto & id : registry["ammo"]) {
+        auto idstr = id.as<std::string>();
+        ammoTypes[idstr] = loadAmmo(idstr);
+    }
 
-    for (const auto & id : registry["scroll"])
-        scrollTypes.push_back(loadScroll(id.as<std::string>()));
+    for (const auto & id : registry["scroll"]) {
+        auto idstr = id.as<std::string>();
+        scrollTypes[idstr] = loadScroll(idstr);
+    }
 
-    for (const auto & id : registry["potion"])
-        potionTypes.push_back(loadPotion(id.as<std::string>()));
+    for (const auto & id : registry["potion"]) {
+        auto idstr = id.as<std::string>();
+        potionTypes[idstr] = loadPotion(idstr);
+    }
 }
 
 int main() {
@@ -596,8 +610,9 @@ int main() {
 
     loadItems();
 
-    potionTypeKnown.resize(potionTypes.size());
-    
+    for (const auto &[id, _] : potionTypes)
+        potionTypeKnown[id] = false;
+
     setRandomPotionEffects();
 
     Enemy Barbarian(0);

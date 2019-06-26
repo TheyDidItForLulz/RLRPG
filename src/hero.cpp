@@ -16,7 +16,7 @@ Hero::Hero() {
     symbol = 200;
     vision = DEFAULT_VISION;
 
-    inventory.add(std::make_unique<Armor>(armorTypes[1]));
+    inventory.add(std::make_unique<Armor>(armorTypes["leather_chestplate"]));
     armor = dynamic_cast<Armor *>(&inventory['a']);
     if (std::rand() % (500 / luck) == 0)
         armor->mdf = 2;
@@ -721,7 +721,7 @@ void Hero::drinkPotion() {
         default:
             throw std::logic_error("Unknown potion id");
     }
-    potionTypeKnown[potion.getTypeIndex()] = true;
+    potionTypeKnown[potion.id] = true;
 
     if (item.count == 1) {
         inventory.remove(itemID);
@@ -754,7 +754,7 @@ void Hero::readScroll() {
         case 2: {
             auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
                 if (item.getType() == Item::Type::Potion) {
-                    if (not potionTypeKnown[dynamic_cast<const Potion &>(item).getTypeIndex()])
+                    if (not potionTypeKnown[item.id])
                         return true;
                 } else if (not item.showMdf){
                     return true;
@@ -775,8 +775,7 @@ void Hero::readScroll() {
 
             auto & item2 = inventory[chToApply];
             if (item2.getType() == Item::Type::Potion) {
-                auto ind = dynamic_cast<const Potion &>(item2).getTypeIndex();
-                potionTypeKnown[ind] = true;
+                potionTypeKnown[item2.id] = true;
             } else {
                 item2.showMdf = true;
             }

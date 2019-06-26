@@ -7,6 +7,7 @@
 #include<list>
 #include<memory>
 #include<functional>
+#include<unordered_map>
 
 #include<level.hpp>
 #include<array2d.hpp>
@@ -210,8 +211,6 @@ public:
         return Type::Potion;
     }
 
-    int getTypeIndex() const;
-
     Item::Ptr clone() const override {
         return std::make_unique<Potion>(*this);
     }
@@ -251,27 +250,32 @@ using ItemPileIter = ItemPile::iterator;
 
 extern Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
 
-extern std::vector<Food> foodTypes;
-extern std::vector<Armor> armorTypes;
-extern std::vector<Weapon> weaponTypes;
-extern std::vector<Ammo> ammoTypes;
-extern std::vector<Scroll> scrollTypes;
-extern std::vector<Potion> potionTypes;
-extern std::vector<bool> potionTypeKnown;
+template<class ItemType>
+using ItemRegistry = std::unordered_map<std::string, ItemType>;
+
+extern ItemRegistry<Food> foodTypes;
+extern ItemRegistry<Armor> armorTypes;
+extern ItemRegistry<Weapon> weaponTypes;
+extern ItemRegistry<Ammo> ammoTypes;
+extern ItemRegistry<Scroll> scrollTypes;
+extern ItemRegistry<Potion> potionTypes;
+extern ItemRegistry<bool> potionTypeKnown;
 
 ItemPileIter findItemAt(Coord2i cell, std::string_view id);
 bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>
-ItemType selectOne(const std::vector<ItemType> & types) {
-    return types[std::rand() % types.size()];
+ItemType selectOne(const ItemRegistry<ItemType> & types) {
+	int ind = std::rand() % types.size();
+	auto it = std::next(types.begin(), ind);
+    return it->second;
 }
 
 template<class ItemType>
-using ItemSelector = std::function<ItemType(const std::vector<ItemType> &)>;
+using ItemSelector = std::function<ItemType(const ItemRegistry<ItemType> &)>;
 
 template<class ItemType>
-void randomlySelectAndSetOnMap(const std::vector<ItemType> & types, int n, const ItemSelector<ItemType> & selector = selectOne<ItemType>) {
+void randomlySelectAndSetOnMap(const ItemRegistry<ItemType> & types, int n, const ItemSelector<ItemType> & selector = selectOne<ItemType>) {
     for (int i = 0; i < n; ++i) {
         Item::Ptr item = std::make_unique<ItemType>(selector(types));
         randomlySetOnMap(std::move(item));

@@ -187,37 +187,24 @@ Scroll::~Scroll() = default;
 
 ////////////////////////////////
 // Potion
-int Potion::getTypeIndex() const {
-    return std::find_if(potionTypes.begin(), potionTypes.end(), [this] (const Potion & potion) {
-    	return potion.id == id;
-    }) - potionTypes.begin();
-}
-
 Potion::Potion() = default;
 
 Potion::~Potion() = default;
 
 Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
 
-std::vector<Food> foodTypes;
-std::vector<Armor> armorTypes;
-std::vector<Weapon> weaponTypes;
-std::vector<Ammo> ammoTypes;
-std::vector<Scroll> scrollTypes;
-std::vector<Potion> potionTypes;
-std::vector<bool> potionTypeKnown;
+ItemRegistry<Food> foodTypes;
+ItemRegistry<Armor> armorTypes;
+ItemRegistry<Weapon> weaponTypes;
+ItemRegistry<Ammo> ammoTypes;
+ItemRegistry<Scroll> scrollTypes;
+ItemRegistry<Potion> potionTypes;
+ItemRegistry<bool> potionTypeKnown;
 
 std::string getPotionName(const std::string & id) {
-	int ind = -1;
-	for (int i = 0; i < potionTypes.size(); ++i)
-		if (potionTypes[i].id == id)
-			ind = i;
-
-	if (ind == -1)
-	    throw std::logic_error("Unknown potion type id: '" + id + "'");
-
-	if (potionTypeKnown[ind]) {
-		switch (potionTypes[ind].effect) {
+	auto it = potionTypeKnown.find(id);
+	if (it != potionTypeKnown.end() and it->second) {
+		switch (potionTypes[id].effect) {
 			case Potion::Heal: return "a potion of healing";
 			case Potion::Invisibility: return "a potion of invisibility";
 			case Potion::Teleport: return "a potion of teleport";

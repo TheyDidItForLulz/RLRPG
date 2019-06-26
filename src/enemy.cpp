@@ -12,8 +12,8 @@ Enemy::Enemy(int eType) {
         case 0: {
             health = 7;
             maxHealth = 7;
-            inventory.add(std::make_unique<Food>(foodTypes[0]));
-            inventory.add(std::make_unique<Weapon>(weaponTypes[0]));
+            inventory.add(std::make_unique<Food>(foodTypes["egg"]));
+            inventory.add(std::make_unique<Weapon>(weaponTypes["copper_shortsword"]));
             weapon = dynamic_cast<Weapon *>(&inventory['b']);
             symbol = 201;
             vision = 16;
@@ -23,7 +23,7 @@ Enemy::Enemy(int eType) {
         case 1: {
             health = 10;
             maxHealth = 10;
-            inventory.add(std::make_unique<Weapon>(weaponTypes[3]));
+            inventory.add(std::make_unique<Weapon>(weaponTypes["stick"]));
             weapon = dynamic_cast<Weapon *>(&inventory['a']);
             symbol = 202;
             vision = 10;
@@ -33,8 +33,8 @@ Enemy::Enemy(int eType) {
         case 2: {
             health = 5;
             maxHealth = 5;
-            inventory.add(std::make_unique<Weapon>(weaponTypes[5]));
-            inventory.add(std::make_unique<Ammo>(ammoTypes[0]));
+            inventory.add(std::make_unique<Weapon>(weaponTypes["pistol"]));
+            inventory.add(std::make_unique<Ammo>(ammoTypes["steel_bullets"]));
             weapon = dynamic_cast<Weapon *>(&inventory['a']);
             ammo = dynamic_cast<Ammo *>(&inventory['b']);
             ammo->count = std::rand() % 30 + 4;
