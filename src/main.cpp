@@ -3,30 +3,6 @@
                                                 '_'(Floor) == 1
                                                 '#'(Wall) == 2
                                                 '^'(Pile) == 3
-                                                '%'(Egg) == 100
-                                                '%'(Apple) == 101
-                                                '@'(Hero) == 200
-                                                '@'(Barbarian) == 201
-                                                '@'(Zombie) == 202
-                                                '@'(Guardian) == 203
-                                                '&'(Leather armor) == 301
-                                                '&'(Chain armor) == 300
-                                                '/'(Copper shortsword) == 400
-                                                '/'(Bronze spear) == 401
-                                                '/'(Musket) == 402
-                                                '/'(Stick) == 403
-                                                '/'(Shotgun) == 404
-                                                '/'(Pistol) == 405
-                                                '\'(Pickaxe) == 406
-                                                ','(Steel bullets) == 450
-                                                ','(Shotgun shells) == 451
-                                                '~'(Map) == 500
-                                                '~'(Identify scroll) == 501
-                                                '!'(Blue potion) == 600
-                                                '!'(Green potion) == 601
-                                                '!'(Dark potion) == 602
-                                                '!'(Magenta potion) == 603
-                                                '!'(Yellow potion) == 604
 */
 ////////////////////////////////////////////////// Modificators ///////////////////////////////////////////////////////////
 /* 1 - Nothing
@@ -36,18 +12,6 @@
 /*
                                                 1 - Map recording in Hard-mode                
                                                 2 - Identify
-*/
-///////////////////////////////////////////////// Potion Effects //////////////////////////////////////////////////////////
-/*
-                                                1 - Healing 3 hp
-                                                2 - Invisibility
-                                                3 - Random location teleport
-                                                4 - Nothing
-                                                5 - Blindness
-*/
-/////////////////////////////////////////////// Tool possibilities ////////////////////////////////////////////////////////
-/*
-                                                1 - Digging through walls
 */
 //////////////////////////////////////////// Types of weapon construction /////////////////////////////////////////////////
 /*
@@ -316,10 +280,6 @@ void clearCachedMap() {
     cachedMap.forEach([] (std::optional<CellRenderData> & cell) {
         cell = std::nullopt;
     });
-}
-
-void cache(Coord2i cell, const CellRenderData & renderData) {
-    cachedMap[cell] = renderData.forCache();
 }
 
 void drawMap(){
