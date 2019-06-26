@@ -492,6 +492,7 @@ void initItemBase(Item & item, const YAML::Node & data) {
     item.weight = data["weight"].as<int>();
     item.id = data["id"].as<std::string>();
     item.isStackable = data["isStackable"].as<bool>();
+    item.name = data["name"].as<std::string>();
 }
 
 YAML::Node loadItemData(std::string_view id) {

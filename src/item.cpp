@@ -18,48 +18,9 @@ std::string Item::getMdf() const {
 }
 
 std::string Item::getName() const {
-    if (id == "egg") {
-		return "an egg";
-	} else if (id == "apple") {
-		return "an apple";
-	} else if (id == "chain_chestplate") {
-		return "a chain chestplate";
-	} else if (id == "leather_chestplate") {
-		return "a leather chestplate";
-	} else if (id == "copper_shortsword") {
-		return "a copper shortsword";
-	} else if (id == "bronze_spear") {
-		return "a bronze spear";
-	} else if (id == "musket") {
-		return "a musket";
-	} else if (id == "stick") {
-	    return "a stick";
-	} else if (id == "shotgun") {
-	    return "a shotgun";
-	} else if (id == "pistol") {
-	    return "a pistol";
-    } else if (id == "pickaxe") {
-        return "a pickaxe";
-	} else if (id == "steel_bullets") {
-	    return "steel bullets";
-	} else if (id == "shotgun_bullets") {
-	    return "shotgun shells";
-	} else if (id == "map") {
-	    return "a map";
-	} else if (id == "identify_scroll") {
-	    return "an identify scroll";
-	} else if (
-			id == "blue_potion" or
-			id == "green_potion" or
-			id == "yellow_potion" or
-			id == "magenta_potion" or
-			id == "dark_potion"
-			) {
-		return getPotionName(id);
-	} else {
-		throw std::logic_error("Unknown item id");
-	}
+	return name;
 }
+
 Item::~Item() = default;
 
 Item::Ptr Item::splitStack(int toSplit) {
@@ -191,17 +152,7 @@ Potion::Potion() = default;
 
 Potion::~Potion() = default;
 
-Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
-
-ItemRegistry<Food> foodTypes;
-ItemRegistry<Armor> armorTypes;
-ItemRegistry<Weapon> weaponTypes;
-ItemRegistry<Ammo> ammoTypes;
-ItemRegistry<Scroll> scrollTypes;
-ItemRegistry<Potion> potionTypes;
-ItemRegistry<bool> potionTypeKnown;
-
-std::string getPotionName(const std::string & id) {
+std::string Potion::getName() const {
 	auto it = potionTypeKnown.find(id);
 	if (it != potionTypeKnown.end() and it->second) {
 		switch (potionTypes[id].effect) {
@@ -213,20 +164,19 @@ std::string getPotionName(const std::string & id) {
 			default: throw std::logic_error("Unknown potion effect");
 		}
 	} else {
-		if (id == "blue_potion") {
-			return "blue potion";
-		} else if (id == "green_potion") {
-			return "green potion";
-		} else if (id == "dark_potion") {
-			return "dark potion";
-		} else if (id == "magenta_potion") {
-			return "magenta potion";
-		} else if (id == "yellow_potion") {
-			return "yellow potion";
-		}
+	    return name;
 	}
-    throw std::logic_error("Unknown potion id");
 }
+
+Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
+
+ItemRegistry<Food> foodTypes;
+ItemRegistry<Armor> armorTypes;
+ItemRegistry<Weapon> weaponTypes;
+ItemRegistry<Ammo> ammoTypes;
+ItemRegistry<Scroll> scrollTypes;
+ItemRegistry<Potion> potionTypes;
+ItemRegistry<bool> potionTypeKnown;
 
 ItemPileIter findItemAt(Coord2i cell, std::string_view id) {
     auto & pile = itemsMap[cell];
@@ -265,4 +215,3 @@ void drop(Item::Ptr item, Coord2i cell) {
     }
     itemsMap[cell].push_back(std::move(item));
 }
-

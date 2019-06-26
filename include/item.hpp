@@ -31,6 +31,7 @@ public:
 
     Coord2i pos;
 	std::string id;
+	std::string name;
 	char inventorySymbol;
 	int weight;
 	int mdf;
@@ -43,7 +44,7 @@ public:
     //  - count - returns whole pile, this pile becomes invalid
     Ptr splitStack(int toSplit);
     std::string getMdf() const;
-    std::string getName() const;
+    virtual std::string getName() const;
     int getSingleWeight() const;
     int getTotalWeight() const;
     virtual Type getType() const = 0;
@@ -205,7 +206,7 @@ public:
 
 	Effect effect;
 
-    std::string getPotionName() const;
+    std::string getName() const override;
 
     Type getType() const override {
         return Type::Potion;
@@ -215,8 +216,6 @@ public:
         return std::make_unique<Potion>(*this);
     }
 };
-
-std::string getPotionName(const std::string & id);
 
 /*
 class Tools: public Item {
