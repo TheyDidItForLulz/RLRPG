@@ -524,6 +524,10 @@ void Hero::showInventory() {
     for (const auto & entry : inventory)
         list.push_back(entry.second);
 
+    std::sort(list.begin(), list.end(), [] (const Item * a, const Item * b) {
+        return a->inventorySymbol < b->inventorySymbol;
+    });
+
     printList("Here is your inventory.", list, formatters::FromInventory{ weapon, armor });
     termRead.readChar();
 }

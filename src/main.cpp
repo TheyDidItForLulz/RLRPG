@@ -556,6 +556,28 @@ Potion loadPotion(std::string_view id) {
     return loaded;
 }
 
+void loadItems() {
+    YAML::Node registry = YAML::LoadFile("data/items.yaml");
+
+    for (const auto & id : registry["food"])
+        foodTypes.push_back(loadFood(id.as<std::string>()));
+
+    for (const auto & id : registry["armor"])
+        armorTypes.push_back(loadArmor(id.as<std::string>()));
+
+    for (const auto & id : registry["weapon"])
+        weaponTypes.push_back(loadWeapon(id.as<std::string>()));
+
+    for (const auto & id : registry["ammo"])
+        ammoTypes.push_back(loadAmmo(id.as<std::string>()));
+
+    for (const auto & id : registry["scroll"])
+        scrollTypes.push_back(loadScroll(id.as<std::string>()));
+
+    for (const auto & id : registry["potion"])
+        potionTypes.push_back(loadPotion(id.as<std::string>()));
+}
+
 int main() {
     termRead.setEchoing(false);
 
@@ -572,33 +594,7 @@ int main() {
         readMap();
     }
 
-    for (std::string_view id : {"egg", "apple"})
-        foodTypes.push_back(loadFood(id));
-
-    for (std::string_view id : {"chain_chestplate", "leather_chestplate"})
-        armorTypes.push_back(loadArmor(id));
-
-    for (std::string_view id : {"stick",
-                                "copper_shortsword",
-                                "bronze_spear",
-                                "pickaxe",
-                                "musket",
-                                "pistol",
-                                "shotgun"})
-        weaponTypes.push_back(loadWeapon(id));
-
-    for (std::string_view id : {"steel_bullets", "shotgun_bullets"})
-        ammoTypes.push_back(loadAmmo(id));
-
-    for (std::string_view id : {"map", "identify_scroll"})
-        scrollTypes.push_back(loadScroll(id));
-
-    for (std::string_view id : {"blue_potion",
-                                "dark_potion",
-                                "yellow_potion",
-                                "magenta_potion",
-                                "green_potion"})
-        potionTypes.push_back(loadPotion(id));
+    loadItems();
 
     potionTypeKnown.resize(potionTypes.size());
     

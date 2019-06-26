@@ -1,0 +1,26 @@
+food:
+  - egg
+  - apple
+armor:
+  - chain_chestplate
+  - leather_chestplate
+ammo:
+  - steel_bullets
+  - shotgun_bullets
+weapon:
+  - stick
+  - copper_shortsword
+  - bronze_spear
+  - pickaxe
+  - pistol
+  - musket
+  - shotgun
+scroll:
+  - map
+  - identify_scroll
+potion:
+  - blue_potion
+  - green_potion
+  - dark_potion
+  - yellow_potion
+  - magenta_potion
