@@ -5,3 +5,7 @@ isStackable: true
 ammo:
   damage: 1
   range: 2
+render:
+  symbol: ','
+  color:
+    fg: light white

@@ -8,3 +8,7 @@ weapon:
     range: 4
     damageBonus: 5
     cartridgeSize: 6
+render:
+  symbol: '/'
+  color:
+    fg: light white

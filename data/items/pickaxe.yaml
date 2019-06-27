@@ -5,3 +5,7 @@ isStackable: false
 weapon:
   damage: 2
   canDig: true
+render:
+  symbol: '\'
+  color:
+    fg: yellow

@@ -8,3 +8,5 @@ weapon:
     range: 7
     damageBonus: 2
     cartridgeSize: 10
+render:
+  symbol: '/'

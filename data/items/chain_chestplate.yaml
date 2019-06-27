@@ -5,3 +5,7 @@ isStackable: false
 armor:
     defence: 33
     durability: 20
+render:
+  symbol: '&'
+  color:
+    fg: light black

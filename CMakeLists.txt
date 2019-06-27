@@ -47,6 +47,6 @@ add_executable(RLRPG
         README.md
         tips.txt
         src/unit.cpp
-        src/utils.cpp include/item_list_formatters.hpp src/item_list_formatters.cpp include/abstract_item_loader.hpp include/yaml_item_loader.hpp src/yaml_item_loader.cpp)
+        src/utils.cpp include/item_list_formatters.hpp src/item_list_formatters.cpp include/abstract_item_loader.hpp include/yaml_item_loader.hpp src/yaml_item_loader.cpp include/yaml_file_cache.hpp src/yaml_file_cache.cpp)
 
 target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES} ${YAML_CPP_LIBRARIES})

@@ -4,12 +4,13 @@
 
 #include<yaml_item_loader.hpp>
 #include<item.hpp>
+#include<yaml_file_cache.hpp>
 
 #include<yaml-cpp/yaml.h>
 #include <fmt/format.h>
 
-void yaml_item_loader::load() {
-    YAML::Node registry = YAML::LoadFile("data/items.yaml");
+void YAMLItemLoader::load() {
+    YAML::Node registry = yamlFileCache["data/items.yaml"];
 
     foodTypes.clear();
     armorTypes.clear();
@@ -56,21 +57,21 @@ void initItemBase(Item & item, const YAML::Node & data) {
     item.name = data["name"].as<std::string>();
 }
 
-YAML::Node loadItemData(std::string_view id) {
+YAML::Node loadItemData(std::string_view id, YAMLFileCache & yamlFileCache) {
     auto filename = fmt::format("data/items/{}.yaml", id);
-    return YAML::LoadFile(filename);
+    return yamlFileCache[filename];
 }
 
-Food yaml_item_loader::loadFood(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Food YAMLItemLoader::loadFood(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Food loaded;
     initItemBase(loaded, item);
     loaded.nutritionalValue = item["food"]["nutritionalValue"].as<int>();
     return loaded;
 }
 
-Armor yaml_item_loader::loadArmor(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Armor YAMLItemLoader::loadArmor(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Armor loaded;
     initItemBase(loaded, item);
     loaded.durability = item["armor"]["durability"].as<int>();
@@ -78,8 +79,8 @@ Armor yaml_item_loader::loadArmor(std::string_view id) {
     return loaded;
 }
 
-Ammo yaml_item_loader::loadAmmo(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Ammo YAMLItemLoader::loadAmmo(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Ammo loaded;
     initItemBase(loaded, item);
     loaded.damage = item["ammo"]["damage"].as<int>();
@@ -87,8 +88,8 @@ Ammo yaml_item_loader::loadAmmo(std::string_view id) {
     return loaded;
 }
 
-Weapon yaml_item_loader::loadWeapon(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Weapon YAMLItemLoader::loadWeapon(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Weapon loaded;
     initItemBase(loaded, item);
     loaded.damage = item["weapon"]["damage"].as<int>();
@@ -105,16 +106,16 @@ Weapon yaml_item_loader::loadWeapon(std::string_view id) {
     return loaded;
 }
 
-Scroll yaml_item_loader::loadScroll(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Scroll YAMLItemLoader::loadScroll(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Scroll loaded;
     initItemBase(loaded, item);
     loaded.effect = item["scroll"]["effect"].as<int>();
     return loaded;
 }
 
-Potion yaml_item_loader::loadPotion(std::string_view id) {
-    YAML::Node item = loadItemData(id);
+Potion YAMLItemLoader::loadPotion(std::string_view id) {
+    YAML::Node item = loadItemData(id, yamlFileCache);
     Potion loaded;
     initItemBase(loaded, item);
     return loaded;

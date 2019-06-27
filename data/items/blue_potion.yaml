@@ -3,3 +3,8 @@ name: blue potion
 weight: 1
 isStackable: true
 potion: ""
+render:
+  symbol: '!'
+  color:
+    fg: light blue
+

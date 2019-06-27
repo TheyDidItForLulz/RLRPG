@@ -4,3 +4,7 @@ weight: 5
 isStackable: false
 weapon:
   damage: 5
+render:
+  symbol: '/'
+  color:
+    fg: light yellow

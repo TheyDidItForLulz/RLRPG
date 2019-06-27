@@ -3,3 +3,7 @@ name: magenta potion
 weight: 1
 isStackable: true
 potion: ""
+render:
+  symbol: '!'
+  color:
+    fg: light magenta

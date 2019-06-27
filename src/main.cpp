@@ -47,11 +47,15 @@
 #include<vector>
 #include<random>
 #include<assert.h>
+#include<string_view>
+#include<sstream>
 #include<termlib/termlib.hpp>
+#include<tl/optional.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
 
+using namespace std::string_view_literals;
 using fmt::format;
 
 #include<units/unit.hpp>
@@ -63,6 +67,7 @@ using fmt::format;
 #include<gen_map.hpp>
 #include<utils.hpp>
 #include<yaml_item_loader.hpp>
+#include <yaml_file_cache.hpp>
 
 // !COMMENT! // Enemies must move at first turn
 int g_mode = 1;    
@@ -157,16 +162,12 @@ struct SymbolRenderData {
 };
 
 struct CellRenderData {
-    std::optional<SymbolRenderData> level;
-    std::optional<SymbolRenderData> item;
-    std::optional<SymbolRenderData> unit;
+    tl::optional<SymbolRenderData> level;
+    tl::optional<SymbolRenderData> item;
+    tl::optional<SymbolRenderData> unit;
 
-    std::optional<SymbolRenderData> get() const {
-        if (unit.has_value())
-            return unit;
-        if (item.has_value())
-            return item;
-        return level;
+    tl::optional<SymbolRenderData> get() const {
+        return unit.disjunction(item).disjunction(level);
     }
 
     CellRenderData forCache() const {
@@ -179,50 +180,13 @@ struct CellRenderData {
     }
 };
 
+std::unordered_map<std::string, SymbolRenderData> itemRenderData;
+
 SymbolRenderData getRenderData(const Item::Ptr & item) {
-    if (item->id == "egg") {
-        return '%';
-    } else if (item->id == "apple") {
-        return {'%', {Color::Red}};
-    } else if (item->id == "chain_chestplate") {
-        return {'&', {TextStyle::Bold, Color::Black}};
-    } else if (item->id == "leather_chestplate") {
-        return {'&', {Color::Yellow}};
-    } else if (item->id == "copper_shortsword") {
-        return {'/', {TextStyle::Bold, Color::Red}};
-    } else if (item->id == "bronze_spear") {
-        return {'/', {TextStyle::Bold, Color::Yellow}};
-    } else if (item->id == "musket") {
-        return {'/', {TextStyle::Bold}};
-    } else if (item->id == "stick") {
-        return {'/', {TextStyle::Bold, Color::Yellow}};
-    } else if (item->id == "shotgun") {
-        return {'/', {TextStyle::Bold, Color::Black}};
-    } else if (item->id == "pistol") {
-        return '/';
-    } else if (item->id == "pickaxe" ) {
-        return {'\\', {Color::Yellow}};
-    } else if (item->id == "steel_bullets") {
-        return {',', {TextStyle::Bold, Color::Black}};
-    } else if (item->id == "shotgun_bullets") {
-        return {',', {TextStyle::Bold, Color::Red}};
-    } else if (item->id == "map") {
-        return {'~', {TextStyle::Bold, Color::Yellow}};
-    } else if (item->id == "identify_scroll") {
-        return {'~', {TextStyle::Bold, Color::Yellow}};
-    } else if (item->id == "blue_potion") {
-        return {'!', {TextStyle::Bold, Color::Blue}};
-    } else if (item->id == "green_potion") {
-        return {'!', {Color::Green}};
-    } else if (item->id == "dark_potion") {
-        return {'!', {TextStyle::Bold, Color::Black}};
-    } else if (item->id == "magenta_potion") {
-        return {'!', {TextStyle::Bold, Color::Magenta}};
-    } else if (item->id == "yellow_potion") {
-        return {'!', {Color::Yellow}};
-    } else {
+    if (itemRenderData.count(item->id))
+        return itemRenderData.at(item->id);
+    else
         return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
-    }
 }
 
 SymbolRenderData getRenderData(const Unit::Ptr & unit) {
@@ -236,12 +200,11 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
                 default: throw std::logic_error("Unknown unit id");
             }
     }
-    return { '?', { TextStyle::Bold, TerminalColor{ Color::Yellow, Color::Blue } } }; 
 }
 
-Array2D<std::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
+Array2D<tl::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
 
-std::optional<CellRenderData> getRenderData(Coord2i cell) {
+tl::optional<CellRenderData> getRenderData(Coord2i cell) {
 #ifndef DEBUG
     if (not seenUpdated[cell]) {
         return {};
@@ -278,8 +241,8 @@ std::optional<CellRenderData> getRenderData(Coord2i cell) {
 }
 
 void clearCachedMap() {
-    cachedMap.forEach([] (std::optional<CellRenderData> & cell) {
-        cell = std::nullopt;
+    cachedMap.forEach([] (tl::optional<CellRenderData> & cell) {
+        cell = tl::nullopt;
     });
 }
 
@@ -289,7 +252,7 @@ void drawMap(){
     if (g_mode == 2 and not g_hero->isMapInInventory())
         clearCachedMap();
 
-    cachedMap.forEach([&] (Coord2i pos, std::optional<CellRenderData> & cellCache) {
+    cachedMap.forEach([&] (Coord2i pos, tl::optional<CellRenderData> & cellCache) {
         auto cell = getRenderData(pos);
 
         if (cell)
@@ -316,7 +279,7 @@ void printMenu(const std::vector<std::string_view> & items, int active) {
     }
 }
 
-std::optional<std::string> processMenu(std::string_view title, const std::vector<std::string_view> & items, bool canExit = true) {
+tl::optional<std::string> processMenu(std::string_view title, const std::vector<std::string_view> & items, bool canExit = true) {
     int selected = 1;
     int itemsCount = (int) items.size();
     while (true) {
@@ -458,7 +421,7 @@ void draw() {
     if (g_hero->isBurdened)
         bar += "Burdened. ";
 
-    if (g_hero->hunger < 75) {    
+    if (g_hero->hunger < 75) {
         bar += "Hungry. ";
     }
 
@@ -487,6 +450,79 @@ void draw() {
         .setCursorPosition(g_hero->pos);
 }
 
+tl::optional<Color> toColor(std::string_view colorString) {
+    if (colorString == "black") {
+        return Color::Black;
+    } else if (colorString == "red") {
+        return Color::Red;
+    } else if (colorString == "green") {
+        return Color::Green;
+    } else if (colorString == "yellow") {
+        return Color::Yellow;
+    } else if (colorString == "blue") {
+        return Color::Blue;
+    } else if (colorString == "magenta") {
+        return Color::Magenta;
+    } else if (colorString == "cyan") {
+        return Color::Cyan;
+    } else if (colorString == "white") {
+        return Color::White;
+    } else {
+        return tl::nullopt;
+    }
+}
+
+tl::optional<TextStyle> toTextStyle(const YAML::Node & colorData) {
+    TextStyle style;
+    std::istringstream iss(colorData["fg"].as<std::string>());
+    std::string fgString;
+    iss >> fgString;
+    if (fgString == "light") {
+        style += TextStyle::Bold;
+        iss >> fgString;
+    }
+    return toColor(fgString).and_then([&colorData] (Color fg) {
+        if (colorData["bg"]) {
+            return toColor(colorData["bg"].as<std::string>()).and_then([fg](Color bg) {
+                return tl::optional{TerminalColor{fg, bg}};
+            });
+        }
+        return tl::optional{TerminalColor{fg}};
+    }).map([&style] (TerminalColor color) {
+        return style += color;
+    });
+}
+
+tl::optional<SymbolRenderData> toSymbolRenderData(const YAML::Node & renderData) {
+    char symbol = renderData["symbol"].as<char>();
+    if (not renderData["color"])
+        return SymbolRenderData{ symbol };
+    else
+        return toTextStyle(renderData["color"]).map([symbol](TextStyle style) {
+            return SymbolRenderData{ symbol, style };
+        });
+}
+
+void readItemRenderData(const std::string & id, YAMLFileCache & yamlFileCache) {
+    std::string filename = fmt::format("data/items/{}.yaml", id);
+    const auto & itemData = yamlFileCache[filename];
+    if (not itemData["render"])
+        return;
+
+    toSymbolRenderData(itemData["render"]).map([&id] (const SymbolRenderData & data) {
+        itemRenderData.emplace(id, data);
+    });
+}
+
+void readItemRenderData(YAMLFileCache & yamlFileCache) {
+    const auto & itemRegistry = yamlFileCache["data/items.yaml"];
+    for (const auto & typeEntry : itemRegistry) {
+        for (const auto & itemID : typeEntry.second) {
+            readItemRenderData(itemID.as<std::string>(), yamlFileCache);
+        }
+    }
+}
+
 int main() {
     termRead.setEchoing(false);
 
@@ -504,8 +540,11 @@ int main() {
     }
 
     {
-        std::unique_ptr<AbstractItemLoader> itemLoader(new yaml_item_loader());
+        YAMLFileCache yamlFileCache;
+        std::unique_ptr<AbstractItemLoader> itemLoader(new YAMLItemLoader(yamlFileCache));
         itemLoader->load();
+
+        readItemRenderData(yamlFileCache);
     }
 
     for (const auto &[id, _] : potionTypes)
