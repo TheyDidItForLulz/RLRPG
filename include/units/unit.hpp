@@ -6,6 +6,8 @@
 #include<termlib/vec2.hpp>
 #include<inventory.hpp>
 
+#include<string>
+
 #define DELAY 0.07
 #define ENEMIESCOUNT 17
 #define AMMO_SLOT 53
@@ -29,10 +31,10 @@ public:
 	Weapon* weapon = nullptr;
 	Armor* armor = nullptr;
 
+	std::string id;
     Coord2i pos = {-1, -1};
 	int health;
     int maxHealth;
-	int symbol;
 	int vision;
 
     std::string getName();

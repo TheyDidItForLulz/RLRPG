@@ -5,47 +5,41 @@
 
 #include<queue>
 #include<effolkronium/random.hpp>
+#include <fmt/format.h>
 
 using Random = effolkronium::random_static;
 
 Enemy enemyTypes[Enemy::TYPES_COUNT];
 
-Enemy::Enemy(int eType) {
-    switch (eType) {
-        case 0: {
-            health = 7;
-            maxHealth = 7;
-            inventory.add(std::make_unique<Food>(foodTypes["egg"]));
-            inventory.add(std::make_unique<Weapon>(weaponTypes["copper_shortsword"]));
-            weapon = dynamic_cast<Weapon *>(&inventory['b']);
-            symbol = 201;
-            vision = 16;
-            xpCost = 3;
-            break;
-        }
-        case 1: {
-            health = 10;
-            maxHealth = 10;
-            inventory.add(std::make_unique<Weapon>(weaponTypes["stick"]));
-            weapon = dynamic_cast<Weapon *>(&inventory['a']);
-            symbol = 202;
-            vision = 10;
-            xpCost = 2;
-            break;
-        }
-        case 2: {
-            health = 5;
-            maxHealth = 5;
-            inventory.add(std::make_unique<Weapon>(weaponTypes["pistol"]));
-            inventory.add(std::make_unique<Ammo>(ammoTypes["steel_bullets"]));
-            weapon = dynamic_cast<Weapon *>(&inventory['a']);
-            ammo = dynamic_cast<Ammo *>(&inventory['b']);
-            ammo->count = Random::get(4, 30);
-            symbol = 203;
-            vision = 16;
-            xpCost = 5;
-            break;
-        }
+Enemy::Enemy(std::string_view id) {
+    this->id = id;
+    if (id == "barbarian") {
+        health = 7;
+        maxHealth = 7;
+        inventory.add(std::make_unique<Food>(foodTypes["egg"]));
+        inventory.add(std::make_unique<Weapon>(weaponTypes["copper_shortsword"]));
+        weapon = dynamic_cast<Weapon *>(&inventory['b']);
+        vision = 16;
+        xpCost = 3;
+    } else if (id == "zombie") {
+        health = 10;
+        maxHealth = 10;
+        inventory.add(std::make_unique<Weapon>(weaponTypes["stick"]));
+        weapon = dynamic_cast<Weapon *>(&inventory['a']);
+        vision = 10;
+        xpCost = 2;
+    } else if (id == "guardian") {
+        health = 5;
+        maxHealth = 5;
+        inventory.add(std::make_unique<Weapon>(weaponTypes["pistol"]));
+        inventory.add(std::make_unique<Ammo>(ammoTypes["steel_bullets"]));
+        weapon = dynamic_cast<Weapon *>(&inventory['a']);
+        ammo = dynamic_cast<Ammo *>(&inventory['b']);
+        ammo->count = Random::get(4, 30);
+        vision = 16;
+        xpCost = 5;
+    } else {
+        throw std::logic_error(fmt::format("Trying to create an enemy with unknown id '{}'", id));
     }
 }
 

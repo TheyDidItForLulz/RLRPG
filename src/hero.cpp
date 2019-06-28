@@ -15,12 +15,12 @@ using Random = effolkronium::random_static;
 Hero::Hero() {
     maxHealth = 15;
     health = 15;
-    symbol = 200;
+    id = "hero";
     vision = DEFAULT_VISION;
 
     inventory.add(std::make_unique<Armor>(armorTypes["leather_chestplate"]));
     armor = dynamic_cast<Armor *>(&inventory['a']);
-    float thornsProbability = 500.f / luck;
+    float thornsProbability = luck / 500.f;
     if (Random::get<bool>(thornsProbability))
         armor->mdf = 2;
 }

@@ -2,6 +2,7 @@
 #define ENEMY_HPP
 
 #include<units/unit.hpp>
+#include<string_view>
 
 class Enemy: public Unit {
 public:
@@ -13,7 +14,7 @@ public:
 	int xpCost;
 
 	Enemy() {}
-	Enemy(int eType);
+	Enemy(std::string_view id);
     Enemy(const Enemy &);
 
     Enemy & operator =(const Enemy &);

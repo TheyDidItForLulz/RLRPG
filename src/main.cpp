@@ -186,15 +186,16 @@ SymbolRenderData getRenderData(const Item::Ptr & item) {
 }
 
 SymbolRenderData getRenderData(const Unit::Ptr & unit) {
-    switch (unit->getType()) {
-        case Unit::Type::Hero: return { '@', { Color::Green } };
-        case Unit::Type::Enemy:
-            switch (unit->symbol) {
-                case 201: return { '@', { Color::Yellow } };
-                case 202: return { '@', { TextStyle::Bold, Color::Green } };
-                case 203: return { '@', { TextStyle::Bold, Color::Black } };
-                default: throw std::logic_error("Unknown unit id");
-            }
+    if (unit->id == "hero") {
+        return { '@', { Color::Green } };
+    } else if (unit->id == "barbarian") {
+        return { '@', { Color::Yellow } };
+    } else if (unit->id == "zombie") {
+        return { '@', { TextStyle::Bold, Color::Green } };
+    } else if (unit->id == "guardian") {
+        return { '@', { TextStyle::Bold, Color::Black } };
+    } else {
+        throw std::logic_error(fmt::format("Unknown unit id: '{}'", unit->id));
     }
 }
 
@@ -548,9 +549,9 @@ int main() {
 
     setRandomPotionEffects();
 
-    Enemy Barbarian(0);
-    Enemy Zombie(1);
-    Enemy Guardian(2);
+    Enemy Barbarian("barbarian");
+    Enemy Zombie("zombie");
+    Enemy Guardian("guardian");
     enemyTypes[0] = Barbarian;
     enemyTypes[1] = Zombie;
     enemyTypes[2] = Guardian;

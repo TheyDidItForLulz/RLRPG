@@ -17,7 +17,7 @@ Unit::Unit(const Unit & other)
     : health(other.health)
     , maxHealth(other.maxHealth)
     , pos(other.pos)
-    , symbol(other.symbol)
+    , id(other.id)
     , vision(other.vision)
     , inventory(other.inventory)
     , weapon(), armor() {
@@ -36,7 +36,7 @@ Unit & Unit::operator =(const Unit & other) {
     health = other.health;
     maxHealth = other.maxHealth;
     pos = other.pos;
-    symbol = other.symbol;
+    id = other.id;
     vision = other.vision;
     inventory = other.inventory;
     if (other.weapon == nullptr) {
@@ -53,15 +53,16 @@ Unit & Unit::operator =(const Unit & other) {
 }
 
 std::string Unit::getName() {
-    switch (symbol) {
-        case 200:
-            return "Hero";
-        case 201:
-            return "Barbarian";
-        case 202:
-            return "Zombie";
-        default:
-            throw std::logic_error("Trying to get a name of an unknown unit");
+    if (id == "hero") {
+        return "Hero";
+    } else if (id == "barbarian") {
+        return "Barbarian";
+    } else if (id == "zombie") {
+        return "Zombie";
+    } else if (id == "guardian") {
+        return "Guardian";
+    } else {
+        throw std::logic_error("Trying to get a name of an unknown unit");
     }
 }
 
