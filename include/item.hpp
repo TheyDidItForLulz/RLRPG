@@ -53,7 +53,6 @@ public:
 
 class Food: public Item {
 public:	
-    static const int TYPES_COUNT = 2;
     static const int COUNT = 10;
 
 	int nutritionalValue;
@@ -73,7 +72,6 @@ public:
 
 class Armor: public Item {
 public:
-    static const int TYPES_COUNT = 2;
     static const int COUNT = 4;
 
 	int defence;
@@ -94,7 +92,6 @@ public:
 class Ammo: public Item {
 public:
     using Ptr = std::unique_ptr<Ammo>;
-    static const int TYPES_COUNT = 2;
     static const int COUNT = 25;
 
 	int range;
@@ -144,7 +141,6 @@ public:
         bool isFull() const;
     };
 
-    static const int TYPES_COUNT = 6;
     static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
 
     Cartridge cartridge;
@@ -170,7 +166,6 @@ public:
 
 class Scroll: public Item {
 public:
-    static const int TYPES_COUNT = 2;
     static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
 	Scroll();
@@ -189,7 +184,6 @@ public:
 
 class Potion: public Item {
 public:
-    static const int TYPES_COUNT = 5;
     static const int COUNT = 25; /* IT TOO */
 
     enum Effect {
@@ -216,33 +210,6 @@ public:
         return std::make_unique<Potion>(*this);
     }
 };
-
-/*
-class Tools: public Item {
-public:
-    static const int TYPES_COUNT = 1;
-    static const int COUNT = 5;
-
-	Tools();
-	Tools(int t);
-	~Tools();
-
-	int possibility;
-	int uses;
-	int damage;									// It is nedlectful to use weapon's attributes on tools
-	int range; 									// Ranged bullets have add effect on this paramether
-	bool isRanged;
-	int cooldown;									// The end of using attributes
-
-
-    ItemType getType() const override {
-        return ItemTools;
-    }
-
-    Item::Ptr clone() const override {
-        return std::make_unique<Tools>(*this);
-    }
-};*/
 
 using ItemPile = std::list<std::unique_ptr<Item>>;
 using ItemPileIter = ItemPile::iterator;
