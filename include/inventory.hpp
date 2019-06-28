@@ -10,7 +10,7 @@
 
 class AddStatus {
 public:
-    struct FullInvError {
+    struct AddError {
         Item::Ptr item;
     };
     
@@ -27,7 +27,7 @@ public:
     AddStatus(St && status): value(std::forward<St>(status)) {}
 
     explicit operator bool() const {
-        return not std::holds_alternative<FullInvError>(value);
+        return not std::holds_alternative<AddError>(value);
     }
 
     template<class St, class Fn>
@@ -49,7 +49,7 @@ public:
     }
 
 private:
-    std::variant<FullInvError, New, Stacked> value;
+    std::variant<AddError, New, Stacked> value;
 };
 
 class Inventory {
@@ -59,6 +59,7 @@ public:
     Inventory & operator =(const Inventory & other);
 
     AddStatus add(Item::Ptr item);
+    AddStatus add(Item::Ptr item, char at);
     Item::Ptr remove(char id);
 
     InventoryIterator erase(ConstInventoryIterator iter);

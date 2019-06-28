@@ -67,6 +67,7 @@ using Random = effolkronium::random_static;
 #include<utils.hpp>
 #include<yaml_item_loader.hpp>
 #include <yaml_file_cache.hpp>
+#include <yaml_unit_loader.hpp>
 
 // !COMMENT! // Enemies must move at first turn
 int g_mode = 1;    
@@ -127,7 +128,7 @@ void spawnUnits() {
     for (int i = 0; i < 1; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
         if (level[pos] == 1 and not unitMap[pos]) {
-            auto hero = std::make_unique<Hero>();
+            auto hero = std::make_unique<Hero>(heroTemplate);
             g_hero = hero.get();
             g_hero->pos = pos;
             unitMap[pos] = std::move(hero);
@@ -139,7 +140,7 @@ void spawnUnits() {
     for (int i = 0; i < ENEMIESCOUNT; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
         if (level[pos] == 1 and not unitMap[pos]) {
-            auto enemy = std::make_unique<Enemy>(*Random::get(enemyTypes));
+            auto enemy = std::make_unique<Enemy>(Random::get(enemyTypes)->second);
             enemy->pos = pos;
             unitMap[pos] = std::move(enemy);
         } else {
@@ -542,19 +543,15 @@ int main() {
         itemLoader->load();
 
         readItemRenderData(yamlFileCache);
+
+        std::unique_ptr<AbstractUnitLoader> unitLoader(new YAMLUnitLoader(yamlFileCache));
+        unitLoader->load();
     }
 
     for (const auto &[id, _] : potionTypes)
         potionTypeKnown[id] = false;
 
     setRandomPotionEffects();
-
-    Enemy Barbarian("barbarian");
-    Enemy Zombie("zombie");
-    Enemy Guardian("guardian");
-    enemyTypes[0] = Barbarian;
-    enemyTypes[1] = Zombie;
-    enemyTypes[2] = Guardian;
 
     spawnUnits();
 

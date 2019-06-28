@@ -3,11 +3,10 @@
 
 #include<units/unit.hpp>
 #include<string_view>
+#include<unordered_map>
 
 class Enemy: public Unit {
 public:
-    static const int TYPES_COUNT = 3;
-
 	Ammo* ammo = nullptr;
     std::optional<Coord2i> target;
 	int lastTurnMoved = 0;
@@ -34,7 +33,7 @@ private:
     void moveTo(Coord2i cell);
 };
 
-extern Enemy enemyTypes[Enemy::TYPES_COUNT];
+extern std::unordered_map<std::string, Enemy> enemyTypes;
 
 #endif // ENEMY_HPP
 

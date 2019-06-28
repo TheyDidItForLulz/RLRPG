@@ -44,6 +44,40 @@ int Item::getTotalWeight() const {
     return weight * count;
 }
 
+Item::Ptr Item::getByID(const std::string & id) {
+	{
+		auto it = foodTypes.find(id);
+		if (it != foodTypes.end())
+			return std::make_unique<Food>(it->second);
+	}
+	{
+		auto it = armorTypes.find(id);
+		if (it != armorTypes.end())
+			return std::make_unique<Armor>(it->second);
+	}
+	{
+		auto it = ammoTypes.find(id);
+		if (it != ammoTypes.end())
+			return std::make_unique<Ammo>(it->second);
+	}
+	{
+		auto it = potionTypes.find(id);
+		if (it != potionTypes.end())
+			return std::make_unique<Potion>(it->second);
+	}
+	{
+		auto it = scrollTypes.find(id);
+		if (it != scrollTypes.end())
+			return std::make_unique<Scroll>(it->second);
+	}
+	{
+		auto it = weaponTypes.find(id);
+		if (it != weaponTypes.end())
+			return std::make_unique<Weapon>(it->second);
+	}
+	return Item::Ptr{};
+}
+
 ////////////////////////////////
 // Food
 Food::Food(): isRotten(false){};

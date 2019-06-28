@@ -1,0 +1,12 @@
+id: barbarian
+name: a barbarian
+health: 7
+maxHealth: 7
+visionDistance: 16
+inventory:
+  a: { id: egg }
+  b: { id: copper_shortsword }
+weapon: b
+enemy:
+  xpCost: 3
+

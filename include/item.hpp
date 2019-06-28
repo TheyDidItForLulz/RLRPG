@@ -52,6 +52,8 @@ public:
     int getTotalWeight() const;
     virtual Type getType() const = 0;
     virtual Item::Ptr clone() const = 0;
+
+    static Item::Ptr getByID(const std::string & id);
 };
 
 class Food: public Item {

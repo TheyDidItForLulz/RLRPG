@@ -27,7 +27,7 @@ public:
 	bool canMoveThroughWalls = false;
 
     Hero();
-	
+
 	void checkVisibleCells();
 	void clearRightPane() const;
 	void processInput(char inp);
@@ -81,6 +81,8 @@ private:
 
     void levelUp();
 };
+
+extern Hero heroTemplate;
 
 #endif // HERO_HPP
 

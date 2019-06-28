@@ -12,7 +12,10 @@ using namespace fmt::literals;
 using fmt::format;
 using Random = effolkronium::random_static;
 
+Hero heroTemplate;
+
 Hero::Hero() {
+    /*
     maxHealth = 15;
     health = 15;
     id = "hero";
@@ -23,6 +26,7 @@ Hero::Hero() {
     float thornsProbability = luck / 500.f;
     if (Random::get<bool>(thornsProbability))
         armor->mdf = 2;
+        */
 }
 
 int Hero::getLevelUpXP() const{
@@ -244,7 +248,7 @@ void Hero::pickUp() {
 
             pickUpString = fmt::format("{}{} ({}), now you have {}",
                                  pickedCount, item.getName(), stacked.at, item.count);
-        }).doIf<AddStatus::FullInvError>([&itemToPick, &fullInventory](auto & err) {
+        }).doIf<AddStatus::AddError>([&itemToPick, &fullInventory](auto & err) {
             itemToPick = std::move(err.item);
             fullInventory = true;
             message += "Your inventory is full";
@@ -490,7 +494,7 @@ void Hero::reloadWeapon() {
         if (chToLoad == '-') {
             auto bullet = weapon->cartridge.unloadOne();
             if (bullet) {
-                inventory.add(std::move(bullet)).doIf<AddStatus::FullInvError>([&] (auto & err) {
+                inventory.add(std::move(bullet)).doIf<AddStatus::AddError>([&] (auto & err) {
                     drop(std::move(err.item), pos);
                 });
             }

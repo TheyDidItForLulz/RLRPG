@@ -1,0 +1,11 @@
+id: zombie
+name: a zombie
+health: 10
+maxHealth: 10
+visionDistance: 10
+inventory:
+  a: { id: stick }
+weapon: a
+enemy:
+  xpCost: 2
+

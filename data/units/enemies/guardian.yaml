@@ -1,0 +1,13 @@
+id: guardian
+name: a guardian
+health: 5
+maxHealth: 5
+visionDistance: 16
+inventory:
+  a: { id: pistol }
+  b: { id: steel_bullets, count: 4..30 }
+weapon: a
+enemy:
+  xpCost: 5
+  ammo: b
+

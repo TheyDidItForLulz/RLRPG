@@ -9,7 +9,7 @@
 
 using Random = effolkronium::random_static;
 
-Enemy enemyTypes[Enemy::TYPES_COUNT];
+std::unordered_map<std::string, Enemy> enemyTypes;
 
 Enemy::Enemy(std::string_view id) {
     this->id = id;

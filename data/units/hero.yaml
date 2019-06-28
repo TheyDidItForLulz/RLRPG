@@ -1,0 +1,13 @@
+id: hero
+name: the hero
+health: 15
+maxHealth: 15
+visionDistance: 16
+inventory:
+  a: { id: leather_chestplate }
+armor: a
+hero:
+  maxLuck: 20
+  maxBurden: 25
+  hunger: 900
+

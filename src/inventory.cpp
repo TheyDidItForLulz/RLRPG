@@ -43,7 +43,26 @@ AddStatus Inventory::add(Item::Ptr item) {
             return AddStatus::New{ i };
         }
     }
-    return AddStatus::FullInvError{ std::move(item) };
+    return AddStatus::AddError{ std::move(item) };
+}
+
+AddStatus Inventory::add(Item::Ptr item, char at) {
+    if (not item)
+        throw std::logic_error("Trying to add empty item to the inventory");
+
+    auto iter = items.find(at);
+    if (iter == items.end()) {
+        item->inventorySymbol = at;
+        items[at] = std::move(item);
+        return AddStatus::New{ at };
+    }
+
+    if (item->id != iter->second->id or not item->isStackable) {
+        return AddStatus::AddError{ std::move(item) };
+    }
+
+    iter->second->count += item->count;
+    return AddStatus::Stacked{ at, item->count };
 }
 
 Item::Ptr Inventory::remove(char id) {
