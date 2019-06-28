@@ -4,11 +4,13 @@
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
-#include <item_list_formatters.hpp>
-#include <numeric>
+#include<item_list_formatters.hpp>
+#include<numeric>
+#include<effolkronium/random.hpp>
 
 using namespace fmt::literals;
 using fmt::format;
+using Random = effolkronium::random_static;
 
 Hero::Hero() {
     maxHealth = 15;
@@ -18,7 +20,8 @@ Hero::Hero() {
 
     inventory.add(std::make_unique<Armor>(armorTypes["leather_chestplate"]));
     armor = dynamic_cast<Armor *>(&inventory['a']);
-    if (std::rand() % (500 / luck) == 0)
+    float thornsProbability = 500.f / luck;
+    if (Random::get<bool>(thornsProbability))
         armor->mdf = 2;
 }
 
@@ -293,8 +296,8 @@ void Hero::eat() {
     }
 
     auto & item = inventory[choice];
-    int prob = std::rand() % g_hero->luck;
-    if (prob == 0) {
+    float rottenProbability = 1.f / g_hero->luck;
+    if (Random::get<bool>(rottenProbability)) {
         hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
         health --;
         message += "Fuck! This food was rotten! ";
@@ -702,7 +705,7 @@ void Hero::drinkPotion() {
             break;
         case Potion::Teleport:
             while (true) {
-                Coord2i pos = { std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+                Coord2i pos = { Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
                 if (::level[pos] != 2 and not unitMap[pos]) {
                     setTo(pos);
                     break;
@@ -748,10 +751,10 @@ void Hero::readScroll() {
 
     auto & item = inventory[itemID];
     switch (dynamic_cast<Scroll &>(item).effect) {
-        case 1:
+        case Scroll::Map:
             message += "You wrote this map. Why you read it, I don't know. ";
             break;
-        case 2: {
+        case Scroll::Identify: {
             auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
                 if (item.getType() == Item::Type::Potion) {
                     if (not potionTypeKnown[item.id])
@@ -901,7 +904,8 @@ void Hero::moveTo(Coord2i cell) {
             char inpChar = termRead.readChar();
             if (inpChar == 'y' or inpChar == 'Y') {
                 ::level[cell] = 1;
-                if (std::rand() % 100 <= Hero::MAX_LUCK - luck) {
+                float breakProbability = (Hero::MAX_LUCK - luck) / 100.f;
+                if (Random::get<bool>(breakProbability)) {
                     message += format("You've broken your {}. ", weapon->getName());
                     char weaponID = weapon->inventorySymbol;
                     unequipWeapon();

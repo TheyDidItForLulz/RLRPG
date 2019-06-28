@@ -3,7 +3,7 @@ name: an identify scroll
 weight: 1
 isStackable: true
 scroll:
-  effect: 2
+  effect: identify
 render:
   symbol: '~'
   color:

@@ -1,22 +1,17 @@
 #include<algorithm>
 #include<vector>
+#include<effolkronium/random.hpp>
 
 #include<level.hpp>
 #include<utils.hpp>
+
+using Random = effolkronium::random_static;
 
 const int ROOMS_COUNT = 3;
 const int COLS = (LEVEL_COLS - 1) / 2;
 const int ROWS = (LEVEL_ROWS - 1) / 2;
 
-
-//extern int map[ FIELD_ROWS ][ FIELD_COLS ];
-//int used[ ROWS ][ COLS ];
 Array2D<bool, ROWS, COLS> used;
-
-/*struct Pair {                                                            
-    int x;
-    int y; 
-};*/
 
 void mazeNext(Coord2i start, Coord2i prev, Coord2i curr) {
     if (start == curr and used[start]) {
@@ -50,7 +45,7 @@ void mazeNext(Coord2i start, Coord2i prev, Coord2i curr) {
         }
         if (neighbors.empty())
             return;
-        auto next = neighbors[std::rand() % neighbors.size()];
+        auto next = *Random::get(neighbors);
         mazeNext(start, curr, next);
     }
 }
@@ -67,26 +62,10 @@ void clearRoom(Coord2i a, Coord2i b) {
     }
 }
 
-int random(int a, int b) {
-    if (a > b)
-        std::swap(a, b);
-    return a + std::rand() % (b - a + 1);
-}
-
 void generateRooms() {
     for (int i = 0; i < ROOMS_COUNT; ++i) {
-        Size2i roomSize{ random(5, 6), random(2, 3) };
-        Coord2i upLeftCorner{ random(0, COLS - roomSize.x), random(0, ROWS - roomSize.y) };
-        /*int r1, r2, c1, c2;
-        
-        {
-            r1 = ( rand() % ROWS ) * 2 + 1;
-            r2 = ( rand() % ROWS ) * 2 + 1;
-            c1 = ( rand() % COLS ) * 2 + 1;
-            c2 = ( rand() % COLS ) * 2 + 1;
-        }
-        while( std::abs( r1 - r2 ) < 3 or std::abs( r1 - r2 ) > 4 or std::abs( c1 - c2 ) < 11 or std::abs( c1 - c2 ) > 12 );
-        clear_room( r1, c1, r2, c2 );*/
+        Size2i roomSize{ Random::get(5, 6), Random::get(2, 3) };
+        Coord2i upLeftCorner{ Random::get(0, COLS - roomSize.x), Random::get(0, ROWS - roomSize.y) };
         Coord2i downRightCorner = upLeftCorner + roomSize - 1;
         clearRoom(upLeftCorner * 2 + 1, downRightCorner * 2 + 1);
     }

@@ -42,21 +42,20 @@
 
 #include<iostream>
 #include<fstream>
-#include<cstdlib>
-#include<ctime>
 #include<vector>
-#include<random>
 #include<assert.h>
 #include<string_view>
 #include<sstream>
 #include<termlib/termlib.hpp>
 #include<tl/optional.hpp>
+#include<effolkronium/random.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
 
 using namespace std::string_view_literals;
 using fmt::format;
+using Random = effolkronium::random_static;
 
 #include<units/unit.hpp>
 #include<units/hero.hpp>
@@ -80,7 +79,6 @@ TerminalRenderer termRend;
 TerminalReader termRead;
                                                             
 void initialize() {
-    std::srand(std::time(nullptr));
     initField();
 }
 
@@ -108,18 +106,17 @@ void updateAI() {
 void setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
     randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, ItemSelector<Armor>([&] (const ItemRegistry<Armor> & types) {
-        int ind = std::rand() % types.size();
-        Armor item = std::next(types.begin(), ind)->second;
-        if (std::rand() % 500 < g_hero->luck) {
+        Armor item = Random::get(types)->second;
+        float thornsProbability = g_hero->luck / 500.f;
+        if (Random::get<bool>(thornsProbability)) {
             item.mdf = 2;
         }
         return item;
     }));
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
     randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, ItemSelector<Ammo>([&] (const ItemRegistry<Ammo> & types) {
-        int ind = std::rand() % types.size();
-        Ammo ammo = std::next(types.begin(), ind)->second;
-        ammo.count = std::rand() % g_hero->luck + 1;
+        Ammo ammo = Random::get(types)->second;
+        ammo.count = Random::get(1, g_hero->luck);
         return ammo;
     }));
     randomlySelectAndSetOnMap(scrollTypes, Scroll::COUNT);
@@ -128,7 +125,7 @@ void setItems() {
 
 void spawnUnits() {
     for (int i = 0; i < 1; i++) {
-        Coord2i pos{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+        Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
         if (level[pos] == 1 and not unitMap[pos]) {
             auto hero = std::make_unique<Hero>();
             g_hero = hero.get();
@@ -140,10 +137,9 @@ void spawnUnits() {
         }
     }
     for (int i = 0; i < ENEMIESCOUNT; i++) {
-        Coord2i pos{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+        Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
         if (level[pos] == 1 and not unitMap[pos]) {
-            int p = std::rand() % Enemy::TYPES_COUNT;
-            auto enemy = std::make_unique<Enemy>(enemyTypes[p]);
+            auto enemy = std::make_unique<Enemy>(*Random::get(enemyTypes));
             enemy->pos = pos;
             unitMap[pos] = std::move(enemy);
         } else {
@@ -377,7 +373,7 @@ void mainMenu() {
     while (true) {
         std::string title = "Welcome to RLRPG";
         if (not tips.empty()) {
-            const auto & tip = tips[std::rand() % tips.size()];
+            const auto & tip = *Random::get(tips);
             title = format("{} /* Tip of the day: {} */", title, tip);
         }
 
@@ -400,7 +396,7 @@ void mainMenu() {
 
 void setRandomPotionEffects() {
     for (auto & [id, potion] : potionTypes) {
-        potion.effect = Potion::Effect(std::rand() % Potion::EffectCount);
+        potion.effect = Potion::Effect(Random::get(0, Potion::EffectCount - 1));
     }
 }
 

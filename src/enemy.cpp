@@ -4,6 +4,9 @@
 #include<units/hero.hpp>
 
 #include<queue>
+#include<effolkronium/random.hpp>
+
+using Random = effolkronium::random_static;
 
 Enemy enemyTypes[Enemy::TYPES_COUNT];
 
@@ -37,7 +40,7 @@ Enemy::Enemy(int eType) {
             inventory.add(std::make_unique<Ammo>(ammoTypes["steel_bullets"]));
             weapon = dynamic_cast<Weapon *>(&inventory['a']);
             ammo = dynamic_cast<Ammo *>(&inventory['b']);
-            ammo->count = std::rand() % 30 + 4;
+            ammo->count = Random::get(4, 30);
             symbol = 203;
             vision = 16;
             xpCost = 5;
@@ -232,7 +235,7 @@ void Enemy::updatePosition() {
 
     int attempts = 15;
     for (int i = 0; i < attempts; ++i) {
-        target = visibleCells[std::rand() % visibleCells.size()];
+        target = *Random::get(visibleCells);
 
         if (auto next = searchForShortestPath(*target)) {
             moveTo(*next);

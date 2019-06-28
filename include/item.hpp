@@ -8,10 +8,13 @@
 #include<memory>
 #include<functional>
 #include<unordered_map>
+#include<effolkronium/random.hpp>
 
 #include<level.hpp>
 #include<array2d.hpp>
 #include<termlib/vec2.hpp>
+
+using Random = effolkronium::random_static;
 
 class Item {
 public:
@@ -168,10 +171,16 @@ class Scroll: public Item {
 public:
     static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
+    enum Effect {
+    	Map,
+    	Identify,
+    	EffectCount
+    };
+
 	Scroll();
 	~Scroll();
 
-	int effect;
+	Effect effect;
 
     Type getType() const override {
         return Type::Scroll;
@@ -232,9 +241,7 @@ bool randomlySetOnMap(Item::Ptr item);
 
 template<class ItemType>
 ItemType selectOne(const ItemRegistry<ItemType> & types) {
-	int ind = std::rand() % types.size();
-	auto it = std::next(types.begin(), ind);
-    return it->second;
+	return Random::get(types)->second;
 }
 
 template<class ItemType>

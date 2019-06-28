@@ -8,6 +8,7 @@
 
 #include<yaml-cpp/yaml.h>
 #include <fmt/format.h>
+#include <tl/optional.hpp>
 
 void YAMLItemLoader::load() {
     YAML::Node registry = yamlFileCache["data/items.yaml"];
@@ -106,11 +107,24 @@ Weapon YAMLItemLoader::loadWeapon(std::string_view id) {
     return loaded;
 }
 
+tl::optional<Scroll::Effect> toScrollEffect(std::string_view effectString) {
+    if (effectString == "map") {
+        return Scroll::Map;
+    } else if (effectString == "identify") {
+        return Scroll::Identify;
+    } else {
+        return tl::nullopt;
+    }
+}
+
 Scroll YAMLItemLoader::loadScroll(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     Scroll loaded;
     initItemBase(loaded, item);
-    loaded.effect = item["scroll"]["effect"].as<int>();
+    auto optEffect = toScrollEffect(item["scroll"]["effect"].as<std::string>());
+    if (not optEffect)
+        throw std::logic_error(fmt::format("Failed to parse a scroll effect of '{}'", id));
+    loaded.effect = *optEffect;
     return loaded;
 }
 

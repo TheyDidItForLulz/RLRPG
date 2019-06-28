@@ -5,7 +5,10 @@
 #include<utils.hpp>
 #include<direction.hpp>
 
+#include<effolkronium/random.hpp>
 #include<functional>
+
+using Random = effolkronium::random_static;
 
 class Hero: public Unit {
 public:
@@ -18,7 +21,7 @@ public:
 	int level = 1;
     int turnsBlind = 0;
     int turnsInvisible = 0;
-    int luck = avg(std::rand() % MAX_LUCK, std::rand() % MAX_LUCK);
+    int luck = avg(Random::get(0, MAX_LUCK), Random::get(0, MAX_LUCK));
 
 	bool isBurdened = false;
 	bool canMoveThroughWalls = false;

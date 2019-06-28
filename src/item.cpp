@@ -2,6 +2,9 @@
 #include<stdexcept>
 #include<algorithm>
 #include <item.hpp>
+#include<effolkronium/random.hpp>
+
+using Random = effolkronium::random_static;
 
 
 ////////////////////////////////
@@ -189,7 +192,8 @@ bool randomlySetOnMap(Item::Ptr item) {
     const int attemts = 32;
 
     for (int i = 0; i < attemts; ++i) {
-        Coord2i cell{ std::rand() % LEVEL_COLS, std::rand() % LEVEL_ROWS };
+        Coord2i cell{ Random::get(0, LEVEL_COLS - 1),
+					  Random::get(0, LEVEL_ROWS - 1) };
 
         if (level[cell] == 1) {
             drop(std::move(item), cell);

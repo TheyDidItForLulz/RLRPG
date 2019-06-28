@@ -3,7 +3,7 @@ name: a map
 weight: 1
 isStackable: true
 scroll:
-  effect: 1
+  effect: map
 render:
   symbol: '~'
   color:
