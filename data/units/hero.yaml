@@ -10,4 +10,7 @@ hero:
   maxLuck: 20
   maxBurden: 25
   hunger: 900
+render:
+  symbol: '@'
+  color: { fg: green }
 

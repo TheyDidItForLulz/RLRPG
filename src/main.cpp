@@ -178,26 +178,18 @@ struct CellRenderData {
 };
 
 std::unordered_map<std::string, SymbolRenderData> itemRenderData;
+std::unordered_map<std::string, SymbolRenderData> unitRenderData;
 
 SymbolRenderData getRenderData(const Item::Ptr & item) {
     if (itemRenderData.count(item->id))
         return itemRenderData.at(item->id);
-    else
-        return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
+    return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
 }
 
 SymbolRenderData getRenderData(const Unit::Ptr & unit) {
-    if (unit->id == "hero") {
-        return { '@', { Color::Green } };
-    } else if (unit->id == "barbarian") {
-        return { '@', { Color::Yellow } };
-    } else if (unit->id == "zombie") {
-        return { '@', { TextStyle::Bold, Color::Green } };
-    } else if (unit->id == "guardian") {
-        return { '@', { TextStyle::Bold, Color::Black } };
-    } else {
-        throw std::logic_error(fmt::format("Unknown unit id: '{}'", unit->id));
-    }
+    if (unitRenderData.count(unit->id))
+        return unitRenderData.at(unit->id);
+    return { '?', { TextStyle::Bold, TerminalColor{ Color::Magenta, Color::Green } } };
 }
 
 Array2D<tl::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
@@ -521,6 +513,35 @@ void readItemRenderData(YAMLFileCache & yamlFileCache) {
     }
 }
 
+void readUnitRenderData(const std::string & id, const YAML::Node & renderData) {
+    if (not renderData)
+        return;
+
+    toSymbolRenderData(renderData).map([&id] (const SymbolRenderData & data) {
+        unitRenderData.emplace(id, data);
+    });
+}
+
+void readHeroRenderData(YAMLFileCache & yamlFileCache) {
+    YAML::Node heroData = yamlFileCache["data/units/hero.yaml"];
+    readUnitRenderData("hero", heroData["render"]);
+}
+
+void readEnemyRenderData(const std::string & id, YAMLFileCache & yamlFileCache) {
+    std::string filename = fmt::format("data/units/enemies/{}.yaml", id);
+    YAML::Node enemyData = yamlFileCache[filename];
+    readUnitRenderData(id, enemyData["render"]);
+}
+
+void readUnitRenderData(YAMLFileCache & yamlFileCache) {
+    readHeroRenderData(yamlFileCache);
+
+    const auto & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
+    for (const auto & id : enemyRegistry) {
+        readEnemyRenderData(id.as<std::string>(), yamlFileCache);
+    }
+}
+
 int main() {
     termRead.setEchoing(false);
 
@@ -546,6 +567,8 @@ int main() {
 
         std::unique_ptr<AbstractUnitLoader> unitLoader(new YAMLUnitLoader(yamlFileCache));
         unitLoader->load();
+
+        readUnitRenderData(yamlFileCache);
     }
 
     for (const auto &[id, _] : potionTypes)

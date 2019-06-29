@@ -9,4 +9,7 @@ inventory:
 weapon: b
 enemy:
   xpCost: 3
+render:
+  symbol: '@'
+  color: { fg: yellow }
 

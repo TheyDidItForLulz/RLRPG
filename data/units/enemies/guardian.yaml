@@ -10,4 +10,7 @@ weapon: a
 enemy:
   xpCost: 5
   ammo: b
+render:
+  symbol: '@'
+  color: { fg: light black }
 
