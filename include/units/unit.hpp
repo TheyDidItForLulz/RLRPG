@@ -32,6 +32,7 @@ public:
 	Armor* armor = nullptr;
 
 	std::string id;
+	std::string name;
     Coord2i pos = {-1, -1};
 	int health;
     int maxHealth;

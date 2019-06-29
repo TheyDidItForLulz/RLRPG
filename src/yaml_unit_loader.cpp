@@ -62,6 +62,7 @@ void loadUnitInventory(Unit & unit, const YAML::Node & invData) {
 
 void initUnitBase(Unit & unit, const YAML::Node & data) {
     unit.id = data["id"].as<std::string>();
+    unit.name = data["name"].as<std::string>();
     unit.health = data["health"].as<int>();
     unit.maxHealth = data["maxHealth"].as<int>();
     unit.vision = data["visionDistance"].as<int>();

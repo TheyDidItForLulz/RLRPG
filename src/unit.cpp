@@ -53,17 +53,7 @@ Unit & Unit::operator =(const Unit & other) {
 }
 
 std::string Unit::getName() {
-    if (id == "hero") {
-        return "Hero";
-    } else if (id == "barbarian") {
-        return "Barbarian";
-    } else if (id == "zombie") {
-        return "Zombie";
-    } else if (id == "guardian") {
-        return "Guardian";
-    } else {
-        throw std::logic_error("Trying to get a name of an unknown unit");
-    }
+    return name;
 }
 
 bool Unit::linearVisibilityCheck(Vec2d from, Vec2d to) const {
