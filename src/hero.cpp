@@ -15,18 +15,6 @@ using Random = effolkronium::random_static;
 Hero heroTemplate;
 
 Hero::Hero() {
-    /*
-    maxHealth = 15;
-    health = 15;
-    id = "hero";
-    vision = DEFAULT_VISION;
-
-    inventory.add(std::make_unique<Armor>(armorTypes["leather_chestplate"]));
-    armor = dynamic_cast<Armor *>(&inventory['a']);
-    float thornsProbability = luck / 500.f;
-    if (Random::get<bool>(thornsProbability))
-        armor->mdf = 2;
-        */
 }
 
 int Hero::getLevelUpXP() const{
@@ -66,8 +54,8 @@ int Hero::getInventoryItemsWeight() const {
     return totalWeight;
 }
 
-template<class Formatter>
-void printList(std::string_view title, const std::vector<const Item *> & items, Formatter formatter) {
+template<class ... FMTStrategies>
+void printList(std::string_view title, const std::vector<const Item *> & items, FMTStrategies && ... strategies) {
     termRend
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
             .put(title);
@@ -76,7 +64,7 @@ void printList(std::string_view title, const std::vector<const Item *> & items, 
     for (int i = 0; i < items.size(); i++) {
         termRend
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
-                .put(formatter(i, *items[i]));
+                .put(formatItem(i, *items[i], std::forward<FMTStrategies>(strategies)...));
         lineNo ++;
     }
 }
@@ -94,7 +82,10 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
         return a->inventorySymbol < b->inventorySymbol;
     });
 
-    printList(title, items, formatters::FromInventory{ weapon, armor });
+    printList(title, items,
+            formatters::LetterNumberingByInventoryID{},
+            formatters::DontMark{},
+            formatters::WithEquippedStatus{ weapon, armor });
 
     while (true) {
         char choice = termRead.readChar();
@@ -124,7 +115,10 @@ std::pair<Hero::SelectStatus, std::vector<char>> Hero::selectMultipleFromInvento
     std::vector<bool> selected(items.size());
 
     while (true) {
-        printList(title, items, formatters::SelectMultipleFromInventory{selected, weapon, armor});
+        printList(title, items,
+                formatters::LetterNumberingByInventoryID{},
+                formatters::MarkSelected{selected},
+                formatters::WithEquippedStatus{weapon, armor});
 
         char choice = termRead.readChar();
         if (choice == '\033')
@@ -146,7 +140,10 @@ std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view titl
     if (items.empty())
         return { NothingToSelect, 0 };
 
-    printList(title, items, formatters::FromList{});
+    printList(title, items,
+            formatters::LetterNumberingByIndex{},
+            formatters::DontMark{},
+            formatters::WithoutEquippedStatus{});
 
     while (true) {
         char choice = termRead.readChar();
@@ -167,7 +164,10 @@ std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std
     std::vector<bool> selected(items.size());
 
     while (true) {
-        printList(title, items, formatters::SelectMultipleFromList{ selected });
+        printList(title, items,
+                  formatters::LetterNumberingByIndex{},
+                  formatters::MarkSelected{selected},
+                  formatters::WithoutEquippedStatus{});
 
         char choice = termRead.readChar();
         if (choice == '\033')
@@ -535,7 +535,10 @@ void Hero::showInventory() {
         return a->inventorySymbol < b->inventorySymbol;
     });
 
-    printList("Here is your inventory.", list, formatters::FromInventory{ weapon, armor });
+    printList("Here is your inventory.", list,
+            formatters::LetterNumberingByInventoryID{},
+            formatters::DontMark{},
+            formatters::WithEquippedStatus{ weapon, armor });
     termRead.readChar();
 }
 
