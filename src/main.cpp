@@ -195,11 +195,9 @@ SymbolRenderData getRenderData(const Unit::Ptr & unit) {
 Array2D<tl::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
 
 tl::optional<CellRenderData> getRenderData(Coord2i cell) {
-#ifndef DEBUG
-    if (not seenUpdated[cell]) {
-        return {};
-    }
-#endif
+    if (not seenUpdated[cell])
+        return tl::nullopt;
+
     CellRenderData renderData;
     if (unitMap[cell]) {
         renderData.unit = getRenderData(unitMap[cell]);
@@ -245,12 +243,10 @@ void drawMap(){
     cachedMap.forEach([&] (Coord2i pos, tl::optional<CellRenderData> & cellCache) {
         auto cell = getRenderData(pos);
 
-        if (cell)
+        if (cell.has_value())
             cellCache = cell->forCache();
-        else if (cellCache)
-            cell = cellCache;
 
-        auto rendData = cell->get().value_or(' ');
+        auto rendData = cell.disjunction(cellCache)->get().value_or(' ');
 
         termRend
             .setCursorPosition(pos)
