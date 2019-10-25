@@ -6,7 +6,6 @@
 
 #include<units/unit.hpp>
 #include<utils.hpp>
-#include<globals.hpp>
 #include<array2d.hpp>
 
 static const int VISION_PRECISION = 256;

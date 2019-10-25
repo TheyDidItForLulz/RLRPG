@@ -1,6 +1,6 @@
 #include<units/hero.hpp>
 #include<units/enemy.hpp>
-#include<globals.hpp>
+#include<game.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
@@ -30,7 +30,7 @@ bool Hero::tryLevelUp() {
 
 void Hero::levelUp() {
     level++;
-    message += format("Now you are level {}. ", level);
+    g_game.addMessage(format("Now you are level {}.", level));
     maxBurden += maxBurden / 4;
     maxHealth += maxHealth / 4;
     health = maxHealth;
@@ -56,13 +56,13 @@ int Hero::getInventoryItemsWeight() const {
 
 template<class ... FMTStrategies>
 void printList(std::string_view title, const std::vector<const Item *> & items, FMTStrategies && ... strategies) {
-    termRend
+    g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
             .put(title);
 
     int lineNo = 2;
     for (int i = 0; i < items.size(); i++) {
-        termRend
+        g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineNo })
                 .put(formatItem(i, *items[i], std::forward<FMTStrategies>(strategies)...));
         lineNo ++;
@@ -88,7 +88,7 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
             formatters::WithEquippedStatus{ weapon, armor });
 
     while (true) {
-        char choice = termRead.readChar();
+        char choice = g_game.getReader().readChar();
         if (choice == '\033')
             return { Cancelled, 0 };
         for (const Item * item : items)
@@ -120,7 +120,7 @@ std::pair<Hero::SelectStatus, std::vector<char>> Hero::selectMultipleFromInvento
                 formatters::MarkSelected{selected},
                 formatters::WithEquippedStatus{weapon, armor});
 
-        char choice = termRead.readChar();
+        char choice = g_game.getReader().readChar();
         if (choice == '\033')
             return {Cancelled, {}};
         if (choice == '\n') {
@@ -146,7 +146,7 @@ std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view titl
             formatters::WithoutEquippedStatus{});
 
     while (true) {
-        char choice = termRead.readChar();
+        char choice = g_game.getReader().readChar();
         if (choice == '\033')
             return { Cancelled, 0 };
         if (not std::isalpha(choice))
@@ -169,7 +169,7 @@ std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std
                   formatters::MarkSelected{selected},
                   formatters::WithoutEquippedStatus{});
 
-        char choice = termRead.readChar();
+        char choice = g_game.getReader().readChar();
         if (choice == '\033')
             return { Cancelled, {} };
         if (choice == '\n') {
@@ -196,8 +196,8 @@ bool Hero::isMapInInventory() const {
 
 void Hero::pickUp() {
     if (itemsMap[pos].empty()) {
-        message += "There is nothing here to pick up. ";
-        g_stop = true;
+        g_game.addMessage("There is nothing here to pick up.");
+        g_game.skipUpdate();
         return;
     }
 
@@ -211,7 +211,7 @@ void Hero::pickUp() {
 
         auto [status, indices] = selectMultipleFromList("What do you want to pick up? ", list);
         if (status == Cancelled or indices.empty()) {
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         }
         std::vector<int> shifts(indices.size());
@@ -226,6 +226,7 @@ void Hero::pickUp() {
 
     bool fullInventory = false;
     bool firstPickUp = true;
+    std::string message;
     for (auto it : iters) {
         auto & itemToPick = *it;
         std::string pickUpString;
@@ -248,7 +249,7 @@ void Hero::pickUp() {
 
             pickUpString = fmt::format("{}{} ({}), now you have {}",
                                  pickedCount, item.getName(), stacked.at, item.count);
-        }).doIf<AddStatus::AddError>([&itemToPick, &fullInventory](auto & err) {
+        }).doIf<AddStatus::AddError>([&itemToPick, &fullInventory, &message](auto & err) {
             itemToPick = std::move(err.item);
             fullInventory = true;
             message += "Your inventory is full";
@@ -266,10 +267,11 @@ void Hero::pickUp() {
         message += pickUpString;
         firstPickUp = false;
     }
-    message += ". ";
+    message += ".";
+    g_game.addMessage(message);
 
     if (getInventoryItemsWeight() > maxBurden and !isBurdened) {
-        message += "You're burdened. ";
+        g_game.addMessage("You're burdened.");
         isBurdened = true;
     }
 }
@@ -277,7 +279,7 @@ void Hero::pickUp() {
 void Hero::clearRightPane() const {
     for (int i = 0; i < 100; i++) {
         for (int j = 0; j < 50; j++) {
-            termRend
+            g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + j + 10, i })
                 .put(' ');
         }
@@ -290,21 +292,21 @@ void Hero::eat() {
     });
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to eat. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to eat.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:break;
     }
 
     auto & item = inventory[choice];
-    float rottenProbability = 1.f / g_hero->luck;
+    float rottenProbability = 1.f / luck;
     if (Random::get<bool>(rottenProbability)) {
         hunger += dynamic_cast<Food &>(item).nutritionalValue / 3;
         health --;
-        message += "Fuck! This food was rotten! ";
+        g_game.addMessage("Fuck! This food was rotten!");
     } else {
         hunger += dynamic_cast<Food &>(item).nutritionalValue;
     }
@@ -346,13 +348,13 @@ void Hero::processInput(char inp) {
             break;
         case CONTROL_TAKEOFF:
             if (armor == nullptr)
-                g_stop = true;
+                g_game.skipUpdate();
             else
                 takeArmorOff();
             break;
         case CONTROL_UNEQUIP:
             if (weapon == nullptr)
-                g_stop = true;
+                g_game.skipUpdate();
             else
                 unequipWeapon();
             break;
@@ -375,12 +377,12 @@ void Hero::processInput(char inp) {
             readScroll();
             break;
         case '\\': {
-            char hv = termRead.readChar();
+            char hv = g_game.getReader().readChar();
             
             if (hv == 'h') {
-                if (termRead.readChar() == 'e') {
-                    if (termRead.readChar() == 'a') {
-                        if (termRead.readChar() == 'l') {
+                if (g_game.getReader().readChar() == 'e') {
+                    if (g_game.getReader().readChar() == 'a') {
+                        if (g_game.getReader().readChar() == 'l') {
                             hunger = 3000;
                             health = maxHealth * 100;
                         }
@@ -389,29 +391,29 @@ void Hero::processInput(char inp) {
             }
         
             if (hv == 'w') {
-                if (termRead.readChar() == 'a') {
-                    if (termRead.readChar() == 'l') {
-                        if (termRead.readChar() == 'l') {
-                            if (termRead.readChar() == 's') {
+                if (g_game.getReader().readChar() == 'a') {
+                    if (g_game.getReader().readChar() == 'l') {
+                        if (g_game.getReader().readChar() == 'l') {
+                            if (g_game.getReader().readChar() == 's') {
                                 canMoveThroughWalls = true;
                             }
                         }
                     }
                 }
             } else if (hv == 'd') {
-                if (termRead.readChar() == 's') {
-                    if (termRead.readChar() == 'c') {
+                if (g_game.getReader().readChar() == 's') {
+                    if (g_game.getReader().readChar() == 'c') {
                         canMoveThroughWalls = false;
                     }
                 } else {
                     itemsMap.at(1, 1).push_back(std::make_unique<Food>(foodTypes[0]));
                 }
             } else if (hv == 'k') {
-                if (termRead.readChar() == 'i') {
-                    if (termRead.readChar() == 'l') {
-                        if (termRead.readChar() == 'l') {
+                if (g_game.getReader().readChar() == 'i') {
+                    if (g_game.getReader().readChar() == 'l') {
+                        if (g_game.getReader().readChar() == 'l') {
                             health -= (health * 2) / 3;
-                            message += "Ouch! ";
+                            g_game.addMessage("Ouch!");
                         }
                     }
                 }
@@ -425,19 +427,19 @@ void Hero::processInput(char inp) {
 
 void Hero::reloadWeapon() {
     if (weapon == nullptr or not weapon->isRanged) {
-        message += "You have no ranged weapon in hands. ";
-        g_stop = true;
+        g_game.addMessage("You have no ranged weapon in hands.");
+        g_game.skipUpdate();
         return;
     }
 
     clearRightPane();
-    termRend
+    g_game.getRenderer()
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10 })
         .put("Now you can load your weapon");
 
     while (true) {
         clearRightPane();
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 1 })
             .put('[');
 
@@ -456,9 +458,9 @@ void Hero::reloadWeapon() {
             } else {
                 symbol = '_';
             }
-            termRend.put(symbol, style);
+            g_game.getRenderer().put(symbol, style);
         }
-        termRend.put(']');
+        g_game.getRenderer().put(']');
 
         int lineY = 2;
         for (auto entry : inventory) {
@@ -470,7 +472,7 @@ void Hero::reloadWeapon() {
                 entry.second->getName(),
                 entry.second->count);
 
-            termRend
+            g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
                 .put(line);
             
@@ -478,13 +480,13 @@ void Hero::reloadWeapon() {
         }
 
         ++lineY;
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
             .put("Press '-' to unload one.");
         
         char chToLoad;
         while (true) {
-            chToLoad = termRead.readChar();
+            chToLoad = g_game.getReader().readChar();
             if (chToLoad == '\033')
                 return;
             if (chToLoad == '-' or inventory.hasID(chToLoad))
@@ -502,7 +504,7 @@ void Hero::reloadWeapon() {
             auto & item = inventory[chToLoad];
             if (item.getType() == Item::Type::Ammo) {
                 if (weapon->cartridge.isFull()) {
-                    message += "Weapon is loaded ";
+                    g_game.addMessage("Weapon is loaded");
                     return;
                 }
 
@@ -522,9 +524,9 @@ void Hero::reloadWeapon() {
 }
 
 void Hero::showInventory() {
-    g_stop = true;
+    g_game.skipUpdate();
     if (inventory.isEmpty()) {
-        message += "Your inventory is empty.";
+        g_game.addMessage("Your inventory is empty");
         return;
     }
     std::vector<const Item *> list;
@@ -539,23 +541,23 @@ void Hero::showInventory() {
             formatters::LetterNumberingByInventoryID{},
             formatters::DontMark{},
             formatters::WithEquippedStatus{ weapon, armor });
-    termRead.readChar();
+    g_game.getReader().readChar();
 }
 
 void Hero::wearArmor() {
     auto [status, choice] = selectOneFromInventory("What do you want to wear?");
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to wear. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to wear.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:break;
     }
     auto & item = inventory[choice];
-    message += format("Now you wearing {}. ", item.getName());
+    g_game.addMessage(format("Now you wearing {}.", item.getName()));
     armor = dynamic_cast<Armor *>(&item);
 }
 
@@ -563,11 +565,11 @@ void Hero::dropItems() {
     auto [status, choice] = selectOneFromInventory("What do you want to drop?");
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to drop. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to drop.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:break;
     }
@@ -582,19 +584,19 @@ void Hero::dropItems() {
     if (item.count != 1) {
         clearRightPane();
         int maxCount = std::min(item.count, 9);
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
             .put(format("How much items do you want to drop? [1-{}]", maxCount))
             .display();
 
-        dropCount = clamp(1, termRead.readChar() - '0', item.count);
+        dropCount = clamp(1, g_game.getReader().readChar() - '0', item.count);
     }
     drop(item.splitStack(dropCount), pos);
     if (item.count == 0)
         inventory.remove(choice);
 
     if (getInventoryItemsWeight() <= maxBurden and isBurdened) {
-        message += "You are burdened no more. ";
+        g_game.addMessage("You are burdened no more.");
         isBurdened = false;
     }
 }
@@ -605,17 +607,17 @@ void Hero::wieldWeapon() {
     });
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to wield. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to wield.");
+            g_game.skipUpdate();
             return;
         case Success: {
             auto & item = inventory[itemID];
-            message += format("You wield {}. ", item.getName());
+            g_game.addMessage(format("You wield {}.", item.getName()));
             weapon = dynamic_cast<Weapon *>(&item);
             break;
         }
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             break;
         default:break;
     }
@@ -625,11 +627,11 @@ void Hero::throwItem() {
     auto [status, itemID] = selectOneFromInventory("What do you want to throw?");
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to throw. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to throw.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:
             break;
@@ -639,12 +641,12 @@ void Hero::throwItem() {
     if (item.count > 1) {
         clearRightPane();
         int maxCount = std::min(item.count, 9);
-        termRend
+        g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
                 .put(format("How many items do you want to throw? [1-{}]", maxCount));
 
         while (true) {
-            char countChoice = termRead.readChar();
+            char countChoice = g_game.getReader().readChar();
             if (countChoice == '\033')
                 return;
 
@@ -655,13 +657,13 @@ void Hero::throwItem() {
     }
 
     clearRightPane();
-    termRend
+    g_game.getRenderer()
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put("In what direction?");
     
     Direction throwDir;
     while (true) {
-        char dirChoice = termRead.readChar();
+        char dirChoice = g_game.getReader().readChar();
         if (dirChoice == '\033')
             return;
 
@@ -690,11 +692,11 @@ void Hero::drinkPotion() {
     });
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to drink. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to drink.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:break;
     }
@@ -704,11 +706,11 @@ void Hero::drinkPotion() {
     switch (potion.effect) {
         case Potion::Heal:
             heal(3);
-            message += "Now you feeling better. ";
+            g_game.addMessage("Now you feeling better.");
             break;
         case Potion::Invisibility:
-            g_hero->turnsInvisible = 150;
-            message += "Am I invisible? Oh, lol! ";
+            turnsInvisible = 150;
+            g_game.addMessage("Am I invisible? Oh, lol!");
             break;
         case Potion::Teleport:
             while (true) {
@@ -718,15 +720,15 @@ void Hero::drinkPotion() {
                     break;
                 }
             }
-            message += "Teleportation is so straaange thing! ";
+            g_game.addMessage("Teleportation is so straaange thing!");
             break;
         case Potion::None:
-            message += "Well.. You didn't die. Nice. ";
+            g_game.addMessage("Well.. You didn't die. Nice.");
             break;
         case Potion::Blindness:
             vision = 1;
-            g_hero->turnsBlind = 50;
-            message += "My eyes!! ";
+            turnsBlind = 50;
+            g_game.addMessage("My eyes!!");
             break;
         default:
             throw std::logic_error("Unknown potion id");
@@ -746,11 +748,11 @@ void Hero::readScroll() {
     });
     switch (status) {
         case NothingToSelect:
-            message += "You don't have anything to read. ";
-            g_stop = true;
+            g_game.addMessage("You don't have anything to read.");
+            g_game.skipUpdate();
             return;
         case Cancelled:
-            g_stop = true;
+            g_game.skipUpdate();
             return;
         default:
             break;
@@ -759,7 +761,7 @@ void Hero::readScroll() {
     auto & item = inventory[itemID];
     switch (dynamic_cast<Scroll &>(item).effect) {
         case Scroll::Map:
-            message += "You wrote this map. Why you read it, I don't know. ";
+            g_game.addMessage("You wrote this map. Why you read it, I don't know.");
             break;
         case Scroll::Identify: {
             auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
@@ -773,11 +775,11 @@ void Hero::readScroll() {
             });
             switch (status) {
                 case NothingToSelect:
-                    message += "You have nothing to identify. ";
-                    g_stop = true;
+                    g_game.addMessage("You have nothing to identify.");
+                    g_game.skipUpdate();
                     return;
                 case Cancelled:
-                    g_stop = true;
+                    g_game.skipUpdate();
                     return;
                 default:
                     break;
@@ -834,7 +836,7 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
             }
             break;
         }
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(cell)
             .put(sym)
             .display();
@@ -846,28 +848,28 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
 
 void Hero::shoot() {
     if (weapon == nullptr or not weapon->isRanged) {
-        message += "You have no ranged weapon in hands. ";
+        g_game.addMessage("You have no ranged weapon in hands.");
         return;
     }
     if (weapon->cartridge.isEmpty()) {
-        message += "You have no bullets. ";
-        g_stop = true;
+        g_game.addMessage("You have no bullets.");
+        g_game.skipUpdate();
         return;
     }
-    termRend
+    g_game.getRenderer()
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put("In what direction? ");
 
-    char choice = termRead.readChar();
+    char choice = g_game.getReader().readChar();
     auto optdir = getDirectionByControl(choice);
     if (not optdir) {
-        g_stop = true;
+        g_game.skipUpdate();
         return;
     }
     auto direction = *optdir;
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
-    int bulletPower = weapon->cartridge.next().damage + g_hero->weapon->damageBonus;
+    int bulletPower = weapon->cartridge.next().damage + weapon->damageBonus;
 
     for (int i = 1; i < weapon->range + weapon->cartridge.next().range; i++) {
         auto cell = pos + offset * i;
@@ -884,7 +886,7 @@ void Hero::shoot() {
                 unitMap[cell].reset();
             }
         }
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(cell)
             .put(sym)
             .display();
@@ -904,16 +906,16 @@ void Hero::moveTo(Coord2i cell) {
         }
     } else if (::level[cell] == 2) {
         if (weapon != nullptr and weapon->canDig) {
-            termRend
+            g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
                 .put("Do you want to dig this wall? [yn]");
 
-            char inpChar = termRead.readChar();
+            char inpChar = g_game.getReader().readChar();
             if (inpChar == 'y' or inpChar == 'Y') {
                 ::level[cell] = 1;
                 float breakProbability = (Hero::MAX_LUCK - luck) / 100.f;
                 if (Random::get<bool>(breakProbability)) {
-                    message += format("You've broken your {}. ", weapon->getName());
+                    g_game.addMessage(format("You've broken your {}.", weapon->getName()));
                     char weaponID = weapon->inventorySymbol;
                     unequipWeapon();
                     inventory.remove(weaponID);
@@ -921,7 +923,8 @@ void Hero::moveTo(Coord2i cell) {
                 return;
             }
         }
-        message += "The wall is the way. ";
-        g_stop = true;
+        g_game.addMessage("The wall is the way.");
+        g_game.skipUpdate();
     }
 }
+

@@ -1,7 +1,7 @@
 #include<units/enemy.hpp>
-#include<globals.hpp>
 #include<direction.hpp>
 #include<units/hero.hpp>
+#include<game.hpp>
 
 #include<queue>
 #include<effolkronium/random.hpp>
@@ -80,7 +80,7 @@ void Enemy::shoot() {
     if (weapon == nullptr or ammo == nullptr)
         return;
 
-    auto dir = directionFrom(g_hero->pos - pos).value();
+    auto dir = directionFrom(g_game.getHero().pos - pos).value();
     Vec2i offset = toVec2i(dir);
     char sym = toChar(dir);
     for (int i = 1; i < weapon->range + ammo->range; i++) {
@@ -90,10 +90,10 @@ void Enemy::shoot() {
             break;
 
         if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Hero) {
-            g_hero->dealDamage(ammo->damage + weapon->damageBonus);
+            g_game.getHero().dealDamage(ammo->damage + weapon->damageBonus);
             break;
         }
-        termRend
+        g_game.getRenderer()
             .setCursorPosition(cell)
             .put(sym)
             .display();
@@ -125,7 +125,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
         toVec2i(Direction::Right),
         toVec2i(Direction::Left)
     };
-    if (g_mode == 2) {
+    if (g_game.getMode() == 2) {
         dirs.push_back(toVec2i(Direction::UpRight));
         dirs.push_back(toVec2i(Direction::UpLeft));
         dirs.push_back(toVec2i(Direction::DownRight));
@@ -182,8 +182,8 @@ void Enemy::moveTo(Coord2i cell) {
     if (unitMap[cell]->getType() == Unit::Type::Enemy or weapon == nullptr)
         return;
 
-    if (g_hero->armor == nullptr or g_hero->armor->mdf != 2) {
-        g_hero->dealDamage(weapon->damage);
+    if (g_game.getHero().armor == nullptr or g_game.getHero().armor->mdf != 2) {
+        g_game.getHero().dealDamage(weapon->damage);
     } else {
         dealDamage(weapon->damage);
     }
@@ -195,19 +195,20 @@ void Enemy::moveTo(Coord2i cell) {
 }
 
 void Enemy::updatePosition() {
-    lastTurnMoved = g_turns;
+    lastTurnMoved = g_game.getTurnNumber();
+    const auto & hero = g_game.getHero();
 
-    if (not g_hero->isInvisible() and canSee(g_hero->pos)) {
-        bool onDiagLine = std::abs(g_hero->pos.y - pos.y) == std::abs(g_hero->pos.x - pos.x);
-        bool canShootHero = (pos.y == g_hero->pos.y or pos.x == g_hero->pos.x or onDiagLine)
+    if (not hero.isInvisible() and canSee(hero.pos)) {
+        bool onDiagLine = std::abs(hero.pos.y - pos.y) == std::abs(hero.pos.x - pos.x);
+        bool canShootHero = (pos.y == hero.pos.y or pos.x == hero.pos.x or onDiagLine)
                 and weapon and weapon->isRanged and ammo
-                and weapon->range + ammo->range >= std::abs(g_hero->pos.y - pos.y) + std::abs(g_hero->pos.x - pos.x);
+                and weapon->range + ammo->range >= std::abs(hero.pos.y - pos.y) + std::abs(hero.pos.x - pos.x);
         if (canShootHero) {
             shoot();
         } else {
-            target = g_hero->pos;
+            target = hero.pos;
 
-            if (auto next = searchForShortestPath(g_hero->pos)) {
+            if (auto next = searchForShortestPath(hero.pos)) {
                 moveTo(*next);
                 return;
             }

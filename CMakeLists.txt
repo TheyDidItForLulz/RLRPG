@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(RLRPG)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(include)
 include_directories(include/termlib)
@@ -25,8 +26,8 @@ add_executable(RLRPG
         include/controls.hpp
         include/direction.hpp
         include/units/enemy.hpp
+        include/game.hpp
         include/gen_map.hpp
-        include/globals.hpp
         include/units/hero.hpp
         include/inventory.hpp
         include/inventory_iterator.hpp
@@ -35,6 +36,7 @@ add_executable(RLRPG
         include/log.hpp
         include/units/unit.hpp
         include/utils.hpp
+        include/render_data.hpp
         src/termlib/default_window_provider.cpp
         src/enemy.cpp
         src/gen_map.cpp
@@ -44,6 +46,7 @@ add_executable(RLRPG
         src/level.cpp
         src/log.cpp
         src/main.cpp
+        src/game.cpp
         README.md
         tips.txt
         src/unit.cpp
