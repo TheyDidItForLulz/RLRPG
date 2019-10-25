@@ -4,13 +4,18 @@
 #include<units/unit.hpp>
 #include<utils.hpp>
 #include<direction.hpp>
+#include<enable_clone.hpp>
 
 #include<effolkronium/random.hpp>
+
 #include<functional>
 
 using Random = effolkronium::random_static;
 
-class Hero: public Unit {
+class Hero
+    : public Unit
+    , public EnableClone<Hero>
+{
 public:
     static const int MAX_LUCK = 20;
     static const int DEFAULT_VISION = 16;
@@ -40,13 +45,14 @@ public:
     int getLevelUpXP() const;
     bool tryLevelUp(); // returns true if reaches new level
 
-    Type getType() const override {
-        return Type::Hero;
-    }
+    Type getType() const override { return Type::Hero; }
+
+    template<class ... Args>
+    bool seenUpdated(Args && ... args) const { return seenMap.at(std::forward<Args>(args)...); }
 
 private:
 	void attackEnemy(Coord2i cell);
-	void throwAnimated(Item::Ptr item, Direction direction);
+	void throwAnimated(ItemPtr item, Direction direction);
 	void shoot();
 	void eat();
 	void dropItems();
@@ -80,9 +86,9 @@ private:
 	void moveTo(Coord2i cell);
 
     void levelUp();
-};
 
-extern Hero heroTemplate;
+    Array2D<bool, LEVEL_ROWS, LEVEL_COLS> seenMap;
+};
 
 #endif // HERO_HPP
 

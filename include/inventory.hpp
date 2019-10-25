@@ -1,17 +1,20 @@
 #ifndef INVENTORY_HPP
 #define INVENTORY_HPP
 
-#include<item.hpp>
 #include<inventory_iterator.hpp>
 
 #include<optional>
 #include<unordered_map>
 #include<variant>
+#include<memory>
+
+class Item;
+using ItemPtr = std::unique_ptr<Item>;
 
 class AddStatus {
 public:
     struct AddError {
-        Item::Ptr item;
+        ItemPtr item;
     };
     
     struct New {
@@ -58,9 +61,9 @@ public:
     Inventory(const Inventory & other);
     Inventory & operator =(const Inventory & other);
 
-    AddStatus add(Item::Ptr item);
-    AddStatus add(Item::Ptr item, char at);
-    Item::Ptr remove(char id);
+    AddStatus add(ItemPtr item);
+    AddStatus add(ItemPtr item, char at);
+    ItemPtr remove(char id);
 
     InventoryIterator erase(ConstInventoryIterator iter);
 
@@ -83,7 +86,7 @@ public:
     ConstInventoryIterator cend() const;
 
 private:
-    std::unordered_map<char, Item::Ptr> items;
+    std::unordered_map<char, ItemPtr> items;
 };
 
 #endif // INVENTORY_HPP

@@ -3,51 +3,55 @@
 //
 
 #include<yaml_item_loader.hpp>
+
 #include<item.hpp>
 #include<yaml_file_cache.hpp>
+#include<game.hpp>
 
 #include<yaml-cpp/yaml.h>
-#include <fmt/format.h>
-#include <tl/optional.hpp>
+
+#include<fmt/format.h>
+
+#include<tl/optional.hpp>
 
 void YAMLItemLoader::load() {
     YAML::Node registry = yamlFileCache["data/items.yaml"];
 
-    foodTypes.clear();
-    armorTypes.clear();
-    weaponTypes.clear();
-    ammoTypes.clear();
-    scrollTypes.clear();
-    potionTypes.clear();
+    g_game.getFoodTypes().clear();
+    g_game.getArmorTypes().clear();
+    g_game.getWeaponTypes().clear();
+    g_game.getAmmoTypes().clear();
+    g_game.getScrollTypes().clear();
+    g_game.getPotionTypes().clear();
 
     for (const auto & id : registry["food"]) {
         auto idstr = id.as<std::string>();
-        foodTypes[idstr] = loadFood(idstr);
+        g_game.getFoodTypes()[idstr] = loadFood(idstr);
     }
 
     for (const auto & id : registry["armor"]) {
         auto idstr = id.as<std::string>();
-        armorTypes[idstr] = loadArmor(idstr);
+        g_game.getArmorTypes()[idstr] = loadArmor(idstr);
     }
 
     for (const auto & id : registry["weapon"]) {
         auto idstr = id.as<std::string>();
-        weaponTypes[idstr] = loadWeapon(idstr);
+        g_game.getWeaponTypes()[idstr] = loadWeapon(idstr);
     }
 
     for (const auto & id : registry["ammo"]) {
         auto idstr = id.as<std::string>();
-        ammoTypes[idstr] = loadAmmo(idstr);
+        g_game.getAmmoTypes()[idstr] = loadAmmo(idstr);
     }
 
     for (const auto & id : registry["scroll"]) {
         auto idstr = id.as<std::string>();
-        scrollTypes[idstr] = loadScroll(idstr);
+        g_game.getScrollTypes()[idstr] = loadScroll(idstr);
     }
 
     for (const auto & id : registry["potion"]) {
         auto idstr = id.as<std::string>();
-        potionTypes[idstr] = loadPotion(idstr);
+        g_game.getPotionTypes()[idstr] = loadPotion(idstr);
     }
 }
 
@@ -63,45 +67,45 @@ YAML::Node loadItemData(std::string_view id, YAMLFileCache & yamlFileCache) {
     return yamlFileCache[filename];
 }
 
-Food YAMLItemLoader::loadFood(std::string_view id) {
+Ptr<Food> YAMLItemLoader::loadFood(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Food loaded;
-    initItemBase(loaded, item);
-    loaded.nutritionalValue = item["food"]["nutritionalValue"].as<int>();
+    auto loaded = std::make_unique<Food>();
+    initItemBase(*loaded, item);
+    loaded->nutritionalValue = item["food"]["nutritionalValue"].as<int>();
     return loaded;
 }
 
-Armor YAMLItemLoader::loadArmor(std::string_view id) {
+Ptr<Armor> YAMLItemLoader::loadArmor(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Armor loaded;
-    initItemBase(loaded, item);
-    loaded.durability = item["armor"]["durability"].as<int>();
-    loaded.defence = item["armor"]["defence"].as<int>();
+    auto loaded = std::make_unique<Armor>();
+    initItemBase(*loaded, item);
+    loaded->durability = item["armor"]["durability"].as<int>();
+    loaded->defence = item["armor"]["defence"].as<int>();
     return loaded;
 }
 
-Ammo YAMLItemLoader::loadAmmo(std::string_view id) {
+Ptr<Ammo> YAMLItemLoader::loadAmmo(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Ammo loaded;
-    initItemBase(loaded, item);
-    loaded.damage = item["ammo"]["damage"].as<int>();
-    loaded.range = item["ammo"]["range"].as<int>();
+    auto loaded = std::make_unique<Ammo>();
+    initItemBase(*loaded, item);
+    loaded->damage = item["ammo"]["damage"].as<int>();
+    loaded->range = item["ammo"]["range"].as<int>();
     return loaded;
 }
 
-Weapon YAMLItemLoader::loadWeapon(std::string_view id) {
+Ptr<Weapon> YAMLItemLoader::loadWeapon(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Weapon loaded;
-    initItemBase(loaded, item);
-    loaded.damage = item["weapon"]["damage"].as<int>();
+    auto loaded = std::make_unique<Weapon>();
+    initItemBase(*loaded, item);
+    loaded->damage = item["weapon"]["damage"].as<int>();
     if (item["weapon"]["ranged"]) {
-        loaded.isRanged = true;
-        loaded.range = item["weapon"]["ranged"]["range"].as<int>();
-        loaded.damageBonus = item["weapon"]["ranged"]["damageBonus"].as<int>();
+        loaded->isRanged = true;
+        loaded->range = item["weapon"]["ranged"]["range"].as<int>();
+        loaded->damageBonus = item["weapon"]["ranged"]["damageBonus"].as<int>();
         int cartridgeSize = item["weapon"]["ranged"]["cartridgeSize"].as<int>();
-        loaded.cartridge = Weapon::Cartridge(cartridgeSize);
+        loaded->cartridge = Weapon::Cartridge(cartridgeSize);
         if (item["weapon"]["canDig"]) {
-            loaded.canDig = item["weapon"]["canDig"].as<bool>();
+            loaded->canDig = item["weapon"]["canDig"].as<bool>();
         }
     }
     return loaded;
@@ -117,20 +121,21 @@ tl::optional<Scroll::Effect> toScrollEffect(std::string_view effectString) {
     }
 }
 
-Scroll YAMLItemLoader::loadScroll(std::string_view id) {
+Ptr<Scroll> YAMLItemLoader::loadScroll(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Scroll loaded;
-    initItemBase(loaded, item);
+    auto loaded = std::make_unique<Scroll>();
+    initItemBase(*loaded, item);
     auto optEffect = toScrollEffect(item["scroll"]["effect"].as<std::string>());
     if (not optEffect)
         throw std::logic_error(fmt::format("Failed to parse a scroll effect of '{}'", id));
-    loaded.effect = *optEffect;
+    loaded->effect = *optEffect;
     return loaded;
 }
 
-Potion YAMLItemLoader::loadPotion(std::string_view id) {
+Ptr<Potion> YAMLItemLoader::loadPotion(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
-    Potion loaded;
-    initItemBase(loaded, item);
+    auto loaded = std::make_unique<Potion>();
+    initItemBase(*loaded, item);
     return loaded;
 }
+

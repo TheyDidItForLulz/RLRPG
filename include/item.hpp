@@ -1,6 +1,14 @@
 #ifndef ITEM_HPP
 #define ITEM_HPP
 
+#include<level.hpp>
+#include<array2d.hpp>
+#include<enable_clone.hpp>
+
+#include<termlib/vec2.hpp>
+
+#include<effolkronium/random.hpp>
+
 #include<vector>
 #include<string>
 #include<optional>
@@ -8,18 +16,14 @@
 #include<memory>
 #include<functional>
 #include<unordered_map>
-#include<effolkronium/random.hpp>
-
-#include<level.hpp>
-#include<array2d.hpp>
-#include<termlib/vec2.hpp>
 
 using Random = effolkronium::random_static;
 
+class Item;
+using ItemPtr = std::unique_ptr<Item>;
+
 class Item {
 public:
-    using Ptr = std::unique_ptr<Item>;
-
     enum class Type {
         Food,
         Armor,
@@ -45,18 +49,24 @@ public:
     // toSplit:
     //  - [1, count) - splits on 2 piles, returns one with count = toSplit
     //  - count - returns whole pile, this pile becomes invalid
-    Ptr splitStack(int toSplit);
+    ItemPtr splitStack(int toSplit);
     std::string getMdf() const;
     virtual std::string getName() const;
     int getSingleWeight() const;
     int getTotalWeight() const;
     virtual Type getType() const = 0;
-    virtual Item::Ptr clone() const = 0;
+    virtual ItemPtr cloneItem() const = 0;
 
-    static Item::Ptr getByID(const std::string & id);
+    static ItemPtr getByID(const std::string & id);
 };
 
-class Food: public Item {
+class Food;
+using FoodPtr = std::unique_ptr<Food>;
+
+class Food
+    : public Item
+    , public EnableClone<Food>
+{
 public:	
     static const int COUNT = 10;
 
@@ -70,12 +80,18 @@ public:
         return Type::Food;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Food>(*this);
     }
 };
 
-class Armor: public Item {
+class Armor;
+using ArmorPtr = std::unique_ptr<Armor>;
+
+class Armor
+    : public Item
+    , public EnableClone<Armor>
+{
 public:
     static const int COUNT = 4;
 
@@ -89,14 +105,19 @@ public:
         return Type::Armor;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Armor>(*this);
     }
 };
 
-class Ammo: public Item {
+class Ammo;
+using AmmoPtr = std::unique_ptr<Ammo>;
+
+class Ammo
+    : public Item
+    , public EnableClone<Ammo>
+{
 public:
-    using Ptr = std::unique_ptr<Ammo>;
     static const int COUNT = 25;
 
 	int range;
@@ -109,17 +130,21 @@ public:
         return Type::Ammo;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Ammo>(*this);
     }
 };
 
-class Weapon: public Item {
-public:
-    using Ptr = std::unique_ptr<Weapon>;
+class Weapon;
+using WeaponPtr = std::unique_ptr<Weapon>;
 
+class Weapon
+    : public Item
+    , public EnableClone<Weapon>
+{
+public:
     class Cartridge {
-        std::vector<Ammo::Ptr> loaded;
+        std::vector<AmmoPtr> loaded;
         int capacity = 0;
 
     public:
@@ -128,9 +153,9 @@ public:
         Cartridge & operator =(const Cartridge &); 
 
         // returns the bullet if fails to load it
-        Ammo::Ptr load(Ammo::Ptr bullet);
+        AmmoPtr load(AmmoPtr bullet);
 
-        Ammo::Ptr unloadOne();
+        AmmoPtr unloadOne();
 
         const Ammo & next() const;
         Ammo & next();
@@ -164,12 +189,18 @@ public:
         return Type::Weapon;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Weapon>(*this);
     }
 };
 
-class Scroll: public Item {
+class Scroll;
+using ScrollPtr = std::unique_ptr<Scroll>;
+
+class Scroll
+    : public Item
+    , public EnableClone<Scroll>
+{
 public:
     static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
 
@@ -188,12 +219,18 @@ public:
         return Type::Scroll;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Scroll>(*this);
     }
 };
 
-class Potion: public Item {
+class Potion;
+using PotionPtr = std::unique_ptr<Potion>;
+
+class Potion
+    : public Item
+    , public EnableClone<Potion>
+{
 public:
     static const int COUNT = 25; /* IT TOO */
 
@@ -217,47 +254,10 @@ public:
         return Type::Potion;
     }
 
-    Item::Ptr clone() const override {
+    ItemPtr cloneItem() const override {
         return std::make_unique<Potion>(*this);
     }
 };
-
-using ItemPile = std::list<std::unique_ptr<Item>>;
-using ItemPileIter = ItemPile::iterator;
-
-extern Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
-
-template<class ItemType>
-using ItemRegistry = std::unordered_map<std::string, ItemType>;
-
-extern ItemRegistry<Food> foodTypes;
-extern ItemRegistry<Armor> armorTypes;
-extern ItemRegistry<Weapon> weaponTypes;
-extern ItemRegistry<Ammo> ammoTypes;
-extern ItemRegistry<Scroll> scrollTypes;
-extern ItemRegistry<Potion> potionTypes;
-extern ItemRegistry<bool> potionTypeKnown;
-
-ItemPileIter findItemAt(Coord2i cell, std::string_view id);
-bool randomlySetOnMap(Item::Ptr item);
-
-template<class ItemType>
-ItemType selectOne(const ItemRegistry<ItemType> & types) {
-	return Random::get(types)->second;
-}
-
-template<class ItemType>
-using ItemSelector = std::function<ItemType(const ItemRegistry<ItemType> &)>;
-
-template<class ItemType>
-void randomlySelectAndSetOnMap(const ItemRegistry<ItemType> & types, int n, const ItemSelector<ItemType> & selector = selectOne<ItemType>) {
-    for (int i = 0; i < n; ++i) {
-        Item::Ptr item = std::make_unique<ItemType>(selector(types));
-        randomlySetOnMap(std::move(item));
-    }
-}
-
-void drop(Item::Ptr item, Coord2i to);
 
 #endif // ITEM_HPP
 

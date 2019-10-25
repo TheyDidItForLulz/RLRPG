@@ -2,7 +2,7 @@
 #include<vector>
 #include<effolkronium/random.hpp>
 
-#include<level.hpp>
+#include<game.hpp>
 #include<utils.hpp>
 
 using Random = effolkronium::random_static;
@@ -17,6 +17,8 @@ void mazeNext(Coord2i start, Coord2i prev, Coord2i curr) {
     if (start == curr and used[start]) {
         return;
     }
+
+    auto & level = g_game.level();
 
     used[curr] = true;
     Coord2i cell = curr * 2 + 1;
@@ -57,7 +59,7 @@ void clearRoom(Coord2i a, Coord2i b) {
         std::swap(a.y, b.y);
     for (int r = a.y; r <= b.y; ++r) {
         for (int c = a.x; c <= b.x; ++c) {
-            level.at(r, c) = 1;
+            g_game.level().at(r, c) = 1;
         }
     }
 }
@@ -70,6 +72,8 @@ void generateRooms() {
         clearRoom(upLeftCorner * 2 + 1, downRightCorner * 2 + 1);
     }
 }
+
+#include<iostream>
 
 void generateMaze() {
     Coord2i start;

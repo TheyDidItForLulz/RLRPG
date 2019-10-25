@@ -1,8 +1,11 @@
-#include"item.hpp"
+#include<item.hpp>
+
+#include<game.hpp>
+
+#include<effolkronium/random.hpp>
+
 #include<stdexcept>
 #include<algorithm>
-#include <item.hpp>
-#include<effolkronium/random.hpp>
 
 using Random = effolkronium::random_static;
 
@@ -26,11 +29,11 @@ std::string Item::getName() const {
 
 Item::~Item() = default;
 
-Item::Ptr Item::splitStack(int toSplit) {
+ItemPtr Item::splitStack(int toSplit) {
 	if (toSplit <= 0 or toSplit > count) {
 		throw std::logic_error("Trying to split an item pile invalidly");
 	}
-	Item::Ptr otherPile = clone();
+	ItemPtr otherPile = cloneItem();
 	otherPile->count = toSplit;
 	count -= toSplit;
 	return otherPile;
@@ -44,38 +47,38 @@ int Item::getTotalWeight() const {
     return weight * count;
 }
 
-Item::Ptr Item::getByID(const std::string & id) {
+ItemPtr Item::getByID(const std::string & id) {
 	{
-		auto it = foodTypes.find(id);
-		if (it != foodTypes.end())
-			return std::make_unique<Food>(it->second);
+		auto it = g_game.getFoodTypes().find(id);
+		if (it != g_game.getFoodTypes().end())
+			return it->second->clone();
 	}
 	{
-		auto it = armorTypes.find(id);
-		if (it != armorTypes.end())
-			return std::make_unique<Armor>(it->second);
+		auto it = g_game.getArmorTypes().find(id);
+		if (it != g_game.getArmorTypes().end())
+			return it->second->clone();
 	}
 	{
-		auto it = ammoTypes.find(id);
-		if (it != ammoTypes.end())
-			return std::make_unique<Ammo>(it->second);
+		auto it = g_game.getAmmoTypes().find(id);
+		if (it != g_game.getAmmoTypes().end())
+			return it->second->clone();
 	}
 	{
-		auto it = potionTypes.find(id);
-		if (it != potionTypes.end())
-			return std::make_unique<Potion>(it->second);
+		auto it = g_game.getPotionTypes().find(id);
+		if (it != g_game.getPotionTypes().end())
+			return it->second->clone();
 	}
 	{
-		auto it = scrollTypes.find(id);
-		if (it != scrollTypes.end())
-			return std::make_unique<Scroll>(it->second);
+		auto it = g_game.getScrollTypes().find(id);
+		if (it != g_game.getScrollTypes().end())
+			return it->second->clone();
 	}
 	{
-		auto it = weaponTypes.find(id);
-		if (it != weaponTypes.end())
-			return std::make_unique<Weapon>(it->second);
+		auto it = g_game.getWeaponTypes().find(id);
+		if (it != g_game.getWeaponTypes().end())
+			return it->second->clone();
 	}
-	return Item::Ptr{};
+	return ItemPtr{};
 }
 
 ////////////////////////////////
@@ -119,7 +122,7 @@ Weapon::Cartridge & Weapon::Cartridge::operator =(const Cartridge & other) {
 	return *this;
 }
 
-Ammo::Ptr Weapon::Cartridge::load(Ammo::Ptr bullet) {
+AmmoPtr Weapon::Cartridge::load(AmmoPtr bullet) {
 	if (loaded.size() == capacity) {
 		return bullet;
 	}
@@ -127,7 +130,7 @@ Ammo::Ptr Weapon::Cartridge::load(Ammo::Ptr bullet) {
 	return nullptr;
 }
 
-Ammo::Ptr Weapon::Cartridge::unloadOne() {
+AmmoPtr Weapon::Cartridge::unloadOne() {
 	if (loaded.empty()) {
 		return nullptr;
 	}
@@ -190,9 +193,8 @@ Potion::Potion() = default;
 Potion::~Potion() = default;
 
 std::string Potion::getName() const {
-	auto it = potionTypeKnown.find(id);
-	if (it != potionTypeKnown.end() and it->second) {
-		switch (potionTypes[id].effect) {
+	if (g_game.isPotionKnown(id)) {
+		switch (g_game.getPotionTypes()[id]->effect) {
 			case Potion::Heal: return "a potion of healing";
 			case Potion::Invisibility: return "a potion of invisibility";
 			case Potion::Teleport: return "a potion of teleport";
@@ -205,51 +207,3 @@ std::string Potion::getName() const {
 	}
 }
 
-Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
-
-ItemRegistry<Food> foodTypes;
-ItemRegistry<Armor> armorTypes;
-ItemRegistry<Weapon> weaponTypes;
-ItemRegistry<Ammo> ammoTypes;
-ItemRegistry<Scroll> scrollTypes;
-ItemRegistry<Potion> potionTypes;
-ItemRegistry<bool> potionTypeKnown;
-
-ItemPileIter findItemAt(Coord2i cell, std::string_view id) {
-    auto & pile = itemsMap[cell];
-    return std::find_if(begin(pile), end(pile), [id] (const Item::Ptr & item) {
-        return item->id == id;
-    });
-}
-
-bool randomlySetOnMap(Item::Ptr item) {
-    const int attemts = 32;
-
-    for (int i = 0; i < attemts; ++i) {
-        Coord2i cell{ Random::get(0, LEVEL_COLS - 1),
-					  Random::get(0, LEVEL_ROWS - 1) };
-
-        if (level[cell] == 1) {
-            drop(std::move(item), cell);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void drop(Item::Ptr item, Coord2i cell) {
-    if (level[cell] == 2)
-        throw std::logic_error("Trying to drop an item in a wall");
-    if (not item)
-        return;
-    item->pos = cell;
-    if (item->isStackable) {
-        auto it = findItemAt(cell, item->id);
-        if (it != end(itemsMap[cell])) {
-            (*it)->count += item->count;
-            return;
-        }
-    }
-    itemsMap[cell].push_back(std::move(item));
-}

@@ -6,23 +6,25 @@
 #define RLRPG_YAML_UNIT_LOADER_HPP
 
 #include<abstract_unit_loader.hpp>
-#include<units/unit.hpp>
-#include<units/hero.hpp>
-#include<units/enemy.hpp>
+#include<ptr.hpp>
 
 #include<string_view>
 
 class YAMLFileCache;
+class Hero;
+class Enemy;
 
 class YAMLUnitLoader : public AbstractUnitLoader {
     YAMLFileCache & yamlFileCache;
 
-    Hero loadHero();
-    Enemy loadEnemy(const std::string & id);
+    Ptr<Hero> loadHero();
+    Ptr<Enemy> loadEnemy(const std::string & id);
 
 public:
     explicit YAMLUnitLoader(YAMLFileCache & cache): yamlFileCache(cache) {}
 
     void load() override;
 };
+
 #endif //RLRPG_YAML_UNIT_LOADER_HPP
+

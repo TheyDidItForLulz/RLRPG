@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(RLRPG)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(include)
 include_directories(include/termlib)
@@ -21,32 +22,46 @@ add_executable(RLRPG
         include/termlib/terminal_text_style.hpp
         include/termlib/termlib.hpp
         include/termlib/vec2.hpp
+        include/meta/check.hpp
+        include/abstract_item_loader.hpp
+        include/abstract_unit_loader.hpp
         include/array2d.hpp
         include/controls.hpp
         include/direction.hpp
-        include/units/enemy.hpp
+        include/enable_clone.hpp
+        include/game.hpp
         include/gen_map.hpp
-        include/globals.hpp
-        include/units/hero.hpp
         include/inventory.hpp
         include/inventory_iterator.hpp
         include/item.hpp
+        include/item_list_formatters.hpp
         include/level.hpp
         include/log.hpp
+        include/ptr.hpp
+        include/registry.hpp
+        include/render_data.hpp
+        include/units/enemy.hpp
+        include/units/hero.hpp
         include/units/unit.hpp
         include/utils.hpp
+        include/yaml_item_loader.hpp
+        include/yaml_file_cache.hpp
+        include/yaml_unit_loader.hpp
         src/termlib/default_window_provider.cpp
         src/enemy.cpp
+        src/game.cpp
         src/gen_map.cpp
         src/hero.cpp
         src/inventory.cpp
         src/item.cpp
-        src/level.cpp
         src/log.cpp
         src/main.cpp
-        README.md
-        tips.txt
         src/unit.cpp
-        src/utils.cpp include/item_list_formatters.hpp include/abstract_item_loader.hpp include/yaml_item_loader.hpp src/yaml_item_loader.cpp include/yaml_file_cache.hpp src/yaml_file_cache.cpp include/abstract_unit_loader.hpp include/yaml_unit_loader.hpp src/yaml_unit_loader.cpp)
+        src/utils.cpp
+        src/yaml_file_cache.cpp
+        src/yaml_item_loader.cpp
+        src/yaml_unit_loader.cpp
+        README.md
+        tips.txt)
 
 target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES} ${YAML_CPP_LIBRARIES})
