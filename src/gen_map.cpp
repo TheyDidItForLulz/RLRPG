@@ -71,6 +71,8 @@ void generateRooms() {
     }
 }
 
+#include<iostream>
+
 void generateMaze() {
     Coord2i start;
     mazeNext(start, start, start);                                        

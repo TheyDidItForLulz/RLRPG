@@ -157,11 +157,6 @@ void Game::run() {
     if (exiting())
         return;
 
-    if (needGenerateMap())
-        generateMaze();
-    else
-        readMap();
-
     initialize();
 
     draw();
@@ -362,6 +357,11 @@ void Game::loadData() {
 
 void Game::initialize() {
     initField();
+
+    if (needGenerateMap())
+        generateMaze();
+    else
+        readMap();
 
     loadData();
 
