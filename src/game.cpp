@@ -30,7 +30,7 @@ void Game::setHeroTemplate(Ptr<Hero> newHeroTemplate) {
     heroTemplate = std::move(newHeroTemplate);
 }
 
-void Game::printMenu(const std::vector<std::string_view> & items, int active) {
+void Game::printMenu(std::vector<std::string_view> const & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
     std::vector<TextStyle> itemStyles(items.size());
     itemStyles[active - 1] = activeItemStyle;
@@ -41,7 +41,7 @@ void Game::printMenu(const std::vector<std::string_view> & items, int active) {
     }
 }
 
-tl::optional<std::string> Game::processMenu(std::string_view title, const std::vector<std::string_view> & items, bool canExit) {
+tl::optional<std::string> Game::processMenu(std::string_view title, std::vector<std::string_view> const & items, bool canExit) {
     int selected = 1;
     int itemsCount = (int) items.size();
     while (true) {
@@ -139,7 +139,7 @@ void Game::mainMenu() {
     while (true) {
         std::string title = "Welcome to RLRPG";
         if (not tips.empty()) {
-            const auto & tip = *Random::get(tips);
+            auto const & tip = *Random::get(tips);
             title = format("{} /* Tip of the day: {} */", title, tip);
         }
 
@@ -272,7 +272,7 @@ tl::optional<Color> toColor(std::string_view colorString) {
     }
 }
 
-tl::optional<TextStyle> toTextStyle(const YAML::Node & colorData) {
+tl::optional<TextStyle> toTextStyle(YAML::Node const & colorData) {
     TextStyle style;
     std::istringstream iss(colorData["fg"].as<std::string>());
     std::string fgString;
@@ -293,7 +293,7 @@ tl::optional<TextStyle> toTextStyle(const YAML::Node & colorData) {
     });
 }
 
-tl::optional<SymbolRenderData> toSymbolRenderData(const YAML::Node & renderData) {
+tl::optional<SymbolRenderData> toSymbolRenderData(YAML::Node const & renderData) {
     char symbol = renderData["symbol"].as<char>();
     if (not renderData["color"])
         return SymbolRenderData{ symbol };
@@ -303,31 +303,31 @@ tl::optional<SymbolRenderData> toSymbolRenderData(const YAML::Node & renderData)
         });
 }
 
-void Game::readItemRenderData(const std::string & id, YAMLFileCache & yamlFileCache) {
+void Game::readItemRenderData(std::string const & id, YAMLFileCache & yamlFileCache) {
     std::string filename = fmt::format("data/items/{}.yaml", id);
-    const auto & itemData = yamlFileCache[filename];
+    auto const & itemData = yamlFileCache[filename];
     if (not itemData["render"])
         return;
 
-    toSymbolRenderData(itemData["render"]).map([this, &id] (const SymbolRenderData & data) {
+    toSymbolRenderData(itemData["render"]).map([this, &id] (SymbolRenderData const & data) {
         itemRenderData.emplace(id, data);
     });
 }
 
 void Game::readItemRenderData(YAMLFileCache & yamlFileCache) {
-    const auto & itemRegistry = yamlFileCache["data/items.yaml"];
-    for (const auto & typeEntry : itemRegistry) {
-        for (const auto & itemID : typeEntry.second) {
+    auto const & itemRegistry = yamlFileCache["data/items.yaml"];
+    for (auto const & typeEntry : itemRegistry) {
+        for (auto const & itemID : typeEntry.second) {
             readItemRenderData(itemID.as<std::string>(), yamlFileCache);
         }
     }
 }
 
-void Game::readUnitRenderData(const std::string & id, const YAML::Node & renderData) {
+void Game::readUnitRenderData(std::string const & id, YAML::Node const & renderData) {
     if (not renderData)
         return;
 
-    toSymbolRenderData(renderData).map([this, &id] (const SymbolRenderData & data) {
+    toSymbolRenderData(renderData).map([this, &id] (SymbolRenderData const & data) {
         unitRenderData.emplace(id, data);
     });
 }
@@ -337,7 +337,7 @@ void Game::readHeroRenderData(YAMLFileCache & yamlFileCache) {
     readUnitRenderData("hero", heroData["render"]);
 }
 
-void Game::readEnemyRenderData(const std::string & id, YAMLFileCache & yamlFileCache) {
+void Game::readEnemyRenderData(std::string const & id, YAMLFileCache & yamlFileCache) {
     std::string filename = fmt::format("data/units/enemies/{}.yaml", id);
     YAML::Node enemyData = yamlFileCache[filename];
     readUnitRenderData(id, enemyData["render"]);
@@ -346,8 +346,8 @@ void Game::readEnemyRenderData(const std::string & id, YAMLFileCache & yamlFileC
 void Game::readUnitRenderData(YAMLFileCache & yamlFileCache) {
     readHeroRenderData(yamlFileCache);
 
-    const auto & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
-    for (const auto & id : enemyRegistry) {
+    auto const & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
+    for (auto const & id : enemyRegistry) {
         readEnemyRenderData(id.as<std::string>(), yamlFileCache);
     }
 }
@@ -375,7 +375,7 @@ void Game::initialize() {
 
     loadData();
 
-    for (const auto &[id, _] : potionTypes)
+    for (auto const &[id, _] : potionTypes)
         potionTypeKnown[id] = false;
 
     setRandomPotionEffects();
@@ -403,7 +403,7 @@ void Game::updateAI() {
 
 void Game::setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
-    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [this] (const Registry<ArmorPtr> & types) {
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [this] (Registry<ArmorPtr> const & types) {
         ArmorPtr item = Random::get(types)->second->clone();
         float thornsProbability = hero->luck / 500.f;
         if (Random::get<bool>(thornsProbability)) {
@@ -412,7 +412,7 @@ void Game::setItems() {
         return item;
     });
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [this] (const Registry<AmmoPtr> & types) {
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [this] (Registry<AmmoPtr> const & types) {
         AmmoPtr ammo = Random::get(types)->second->clone();
         ammo->count = Random::get(1, hero->luck);
         return ammo;
@@ -466,20 +466,20 @@ void Game::displayMessages() {
         .display();
 }
 
-SymbolRenderData Game::getRenderData(const Item & item) {
+SymbolRenderData Game::getRenderData(Item const & item) {
     if (itemRenderData.count(item.id))
         return itemRenderData.at(item.id);
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
 }
 
-SymbolRenderData Game::getRenderData(const Unit & unit) {
+SymbolRenderData Game::getRenderData(Unit const & unit) {
     if (unitRenderData.count(unit.id))
         return unitRenderData.at(unit.id);
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Magenta, Color::Green } } };
 }
 
 tl::optional<CellRenderData> Game::getRenderData(Coord2i cell) {
-    const bool heroSeenThisCell = hero->seenUpdated(cell);
+    bool const heroSeenThisCell = hero->seenUpdated(cell);
     if (not heroSeenThisCell)
         return tl::nullopt;
 
@@ -606,13 +606,13 @@ void Game::readMap() {
 
 ItemPile::iterator Game::findItemAt(Coord2i cell, std::string_view id) {
     auto & pile = itemsMap[cell];
-    return std::find_if(begin(pile), end(pile), [id] (const ItemPtr & item) {
+    return std::find_if(begin(pile), end(pile), [id] (ItemPtr const & item) {
         return item->id == id;
     });
 }
 
 bool Game::randomlySetOnMap(ItemPtr item) {
-    const int attemts = 32;
+    int const attemts = 32;
 
     for (int i = 0; i < attemts; ++i) {
         Coord2i cell{ Random::get(0, LEVEL_COLS - 1),

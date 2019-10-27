@@ -19,23 +19,23 @@ namespace reg {
     ////////////////////
 
     ////////////////////
-    // Signatures for selectors for T &, T && and const T &
+    // Signatures for selectors for T &, T && and T const &
     ////////////////////
 
     template<class T, class ID = DefaultIDType>
-    using RefSelectorSig = T & (Registry<T, ID> &);
+    using RefSelectorSig =      T &       (Registry<T, ID> &);
 
     template<class T, class ID = DefaultIDType>
-    using ConstRefSelectorSig = const T & (const Registry<T, ID> &);
+    using ConstRefSelectorSig = T const & (Registry<T, ID> const &);
 
     template<class T, class ID = DefaultIDType>
-    using CopySelectorSig = T (const Registry<T, ID> &);
+    using CopySelectorSig =     T         (Registry<T, ID> const &);
 
     template<class T, class ID = DefaultIDType, meta::Check<IsClonable<T>> = meta::Checked>
-    using CloneSelectorSig = T (const Registry<T, ID> &);
+    using CloneSelectorSig =    T         (Registry<T, ID> const &);
 
     template<class T, class ID = DefaultIDType>
-    using MoveSelectorSig = T && (Registry<T, ID> &&);
+    using MoveSelectorSig =     T &&      (Registry<T, ID> &&);
 
     ////////////////////
     // std::function<SomeSelector> wrapper types
@@ -60,7 +60,7 @@ namespace reg {
 
     // CosntRefSelector
     template<class T, class ID = DefaultIDType>
-    const T & pickAnyCRef(const Registry<T, ID> & reg) {
+    T const & pickAnyCRef(Registry<T, ID> const & reg) {
         return effolkronium::random_static::get(reg)->second;
     }
 
@@ -72,7 +72,7 @@ namespace reg {
 
     // CopySelector
     template<class T, class ID = DefaultIDType>
-    T pickAny(const Registry<T, ID> & reg) {
+    T pickAny(Registry<T, ID> const & reg) {
         return effolkronium::random_static::get(reg)->second;
     }
 

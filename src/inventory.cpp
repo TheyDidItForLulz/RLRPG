@@ -5,21 +5,21 @@
 #include<stdexcept>
 #include<algorithm>
 
-Inventory::Inventory(const Inventory & other) {
-    for (const auto & item : other.items) {
+Inventory::Inventory(Inventory const & other) {
+    for (auto const & item : other.items) {
         items.emplace(item.first, item.second->cloneItem());
     }
 }
 
-Inventory & Inventory::operator=(const Inventory & other) {
+Inventory & Inventory::operator=(Inventory const & other) {
     items.clear();
-    for (const auto & item : other.items) {
+    for (auto const & item : other.items) {
         items.emplace(item.first, item.second->cloneItem());
     }
     return *this;
 }
 
-AddStatus Inventory::add(ItemPtr item) {
+AddStatus Inventory::add(Ptr<Item> item) {
     if (not item)
         throw std::logic_error("Trying to add empty item to the inventory");
 
@@ -49,7 +49,7 @@ AddStatus Inventory::add(ItemPtr item) {
     return AddStatus::AddError{ std::move(item) };
 }
 
-AddStatus Inventory::add(ItemPtr item, char at) {
+AddStatus Inventory::add(Ptr<Item> item, char at) {
     if (not item)
         throw std::logic_error("Trying to add empty item to the inventory");
 
@@ -68,7 +68,7 @@ AddStatus Inventory::add(ItemPtr item, char at) {
     return AddStatus::Stacked{ at, item->count };
 }
 
-ItemPtr Inventory::remove(char id) {
+Ptr<Item> Inventory::remove(char id) {
     auto iter = items.find(id);
     if (iter == items.end()) {
         throw std::logic_error("Trying to remove an item that doesn't exist");
@@ -103,7 +103,7 @@ Item & Inventory::operator [](char id) {
     return *iter->second;
 }
 
-const Item & Inventory::operator [](char id) const {
+Item const & Inventory::operator [](char id) const {
     auto iter = find(id);
     if (iter == cend())
         throw std::logic_error("Trying to get an item that doesn't exist");

@@ -12,7 +12,7 @@
 
 namespace formatters {
     struct LetterNumberingByIndex {
-        char operator()(int itemIndex, const Item &) {
+        char operator()(int itemIndex, Item const &) {
             assert(itemIndex >= 0);
             if (itemIndex < 26)
                 return static_cast<char>('a' + itemIndex);
@@ -24,13 +24,13 @@ namespace formatters {
     };
 
     struct LetterNumberingByInventoryID {
-        char operator()(int, const Item & item) {
+        char operator()(int, Item const & item) {
             return item.inventorySymbol;
         }
     };
 
     struct DontMark {
-        char operator()(int, const Item &) {
+        char operator()(int, Item const &) {
             return '-';
         }
     };
@@ -38,13 +38,13 @@ namespace formatters {
     struct MarkSelected {
         std::vector<bool> & selected;
 
-        char operator()(int i, const Item &) {
+        char operator()(int i, Item const &) {
             return selected.at(i) ? '+' : '-';
         }
     };
 
     struct WithoutEquippedStatus {
-        std::string operator()(int, const Item &) {
+        std::string operator()(int, Item const &) {
             return "";
         }
     };
@@ -53,7 +53,7 @@ namespace formatters {
         Weapon * weapon = nullptr;
         Armor * armor = nullptr;
 
-        std::string operator()(int, const Item & item) {
+        std::string operator()(int, Item const & item) {
             if (&item == weapon)
                 return " (being wielded)";
             else if (&item == armor)
@@ -65,7 +65,7 @@ namespace formatters {
 }
 
 template<class NS, class MS, class ES>
-std::string formatItem(int i, const Item & item,
+std::string formatItem(int i, Item const & item,
                        NS numberingStrategy, MS markStrategy, ES equippedStrategy) {
     using fmt::format;
     std::string name = format(" {}", item.getName());

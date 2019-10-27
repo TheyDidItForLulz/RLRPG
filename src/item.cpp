@@ -47,7 +47,7 @@ int Item::getTotalWeight() const {
     return weight * count;
 }
 
-ItemPtr Item::getByID(const std::string & id) {
+ItemPtr Item::getByID(std::string const & id) {
 	{
 		auto it = g_game.getFoodTypes().find(id);
 		if (it != g_game.getFoodTypes().end())
@@ -107,16 +107,16 @@ Weapon::Cartridge::Cartridge(int capacity): capacity(capacity) {
 	assert(capacity >= 0);
 }
 
-Weapon::Cartridge::Cartridge(const Cartridge & other): capacity(other.capacity) {
-	for (const auto & bullet : other) {
+Weapon::Cartridge::Cartridge(Cartridge const & other): capacity(other.capacity) {
+	for (auto const & bullet : other) {
 		loaded.push_back(std::make_unique<Ammo>(*bullet));
 	}
 }
 
-Weapon::Cartridge & Weapon::Cartridge::operator =(const Cartridge & other) {
+Weapon::Cartridge & Weapon::Cartridge::operator =(Cartridge const & other) {
 	capacity = other.capacity;
 	loaded.clear();
-	for (const auto & bullet : other) {
+	for (auto const & bullet : other) {
 		loaded.push_back(std::make_unique<Ammo>(*bullet));
 	}
 	return *this;
@@ -144,12 +144,12 @@ Ammo & Weapon::Cartridge::next() {
 	return *loaded.back();
 }
 
-const Ammo & Weapon::Cartridge::next() const {
+Ammo const & Weapon::Cartridge::next() const {
 	assert(not isEmpty());
 	return *loaded.back();
 }
 
-const Ammo * Weapon::Cartridge::operator [](int ind) const {
+Ammo const * Weapon::Cartridge::operator [](int ind) const {
 	assert(ind >= 0 and ind < capacity);
 	if (ind < loaded.size()) {
 		return loaded[ind].get();

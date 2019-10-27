@@ -1,13 +1,14 @@
 #ifndef INVENTORY_ITERATOR_HPP
 #define INVENTORY_ITERATOR_HPP
 
+#include<ptr.hpp>
+
 #include<iterator>
 #include<unordered_map>
 #include<type_traits>
 #include<memory>
 
 class Item;
-using ItemPtr = std::unique_ptr<Item>;
 
 template<class UnderlyingIter, class ItemType, class ValueType = std::pair<char, ItemType *>>
 class InventoryIteratorImpl {
@@ -43,23 +44,23 @@ public:
     }
 
     template<class OtherIter, class OtherItemType>
-    bool operator ==(const InventoryIteratorImpl<OtherIter, OtherItemType> & other) const {
+    bool operator ==(InventoryIteratorImpl<OtherIter, OtherItemType> const & other) const {
         return iter == other.iter;
     }
 
     template<class OtherIter, class OtherItemType>
-    bool operator !=(const InventoryIteratorImpl<OtherIter, OtherItemType> & other) const {
+    bool operator !=(InventoryIteratorImpl<OtherIter, OtherItemType> const & other) const {
         return iter != other.iter;
     }
 
     template<class OtherIter>
-    operator InventoryIteratorImpl<OtherIter, const ItemType>() const {
-        return InventoryIteratorImpl<OtherIter, const ItemType>(iter);
+    operator InventoryIteratorImpl<OtherIter, ItemType const>() const {
+        return InventoryIteratorImpl<OtherIter, ItemType const>(iter);
     }
 };
 
-using InventoryIterator = InventoryIteratorImpl<std::unordered_map<char, ItemPtr>::iterator, Item>;
-using ConstInventoryIterator = InventoryIteratorImpl<std::unordered_map<char, ItemPtr>::const_iterator, const Item>;
+using InventoryIterator = InventoryIteratorImpl<std::unordered_map<char, Ptr<Item>>::iterator, Item>;
+using ConstInventoryIterator = InventoryIteratorImpl<std::unordered_map<char, Ptr<Item>>::const_iterator, Item const>;
 
 #endif // INVENTORY_ITERATOR_HPP
 

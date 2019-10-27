@@ -44,23 +44,23 @@ using ItemPile = std::list<Ptr<Item>>;
 
 namespace detail {
     template<class T, meta::Check<IsClonable<T>> = meta::Checked>
-    Ptr<T> cloneAny(const Registry<Ptr<T>> & reg) {
+    Ptr<T> cloneAny(Registry<Ptr<T>> const & reg) {
         return effolkronium::random_static::get(reg)->second->clone();
     }
 
     template<class Fn, class ItemType>
-    constexpr bool IsItemSelector = std::is_invocable_r_v<Ptr<ItemType>, Fn, const Registry<Ptr<ItemType>> &>;
+    constexpr bool IsItemSelector = std::is_invocable_r_v<Ptr<ItemType>, Fn, Registry<Ptr<ItemType>> const &>;
 }
 
 class Game {
 public:
     void run();
 
-    const LevelData & level() const { return levelData; }
-    LevelData & level() { return levelData; }
+    LevelData const & level() const { return levelData; }
+    LevelData       & level()       { return levelData; }
 
-    const Hero & getHero() const { return *hero; }
-    Hero & getHero() { return *hero; }
+    Hero const & getHero() const { return *hero; }
+    Hero       & getHero()       { return *hero; }
 
     TerminalRenderer & getRenderer() { return termRend; }
 
@@ -80,35 +80,35 @@ public:
 
     void setHeroTemplate(Ptr<Hero> newHeroTemplate);
 
-    const auto & getItemsMap() const { return itemsMap; }
-    auto & getItemsMap() { return itemsMap; }
+    auto const & getItemsMap() const { return itemsMap; }
+    auto       & getItemsMap()       { return itemsMap; }
 
-    const auto & getUnitsMap() const { return unitsMap; }
-    auto & getUnitsMap() { return unitsMap; }
+    auto const & getUnitsMap() const { return unitsMap; }
+    auto       & getUnitsMap()       { return unitsMap; }
 
-    const Registry<Ptr<Food>> & getFoodTypes() const { return foodTypes; }
-    Registry<Ptr<Food>> & getFoodTypes() { return foodTypes; }
+    Registry<Ptr<Food>> const & getFoodTypes() const { return foodTypes; }
+    Registry<Ptr<Food>>       & getFoodTypes()       { return foodTypes; }
 
-    const Registry<Ptr<Armor>> & getArmorTypes() const { return armorTypes; }
-    Registry<Ptr<Armor>> & getArmorTypes() { return armorTypes; }
+    Registry<Ptr<Armor>> const & getArmorTypes() const { return armorTypes; }
+    Registry<Ptr<Armor>>       & getArmorTypes()       { return armorTypes; }
 
-    const Registry<Ptr<Weapon>> & getWeaponTypes() const { return weaponTypes; }
-    Registry<Ptr<Weapon>> & getWeaponTypes() { return weaponTypes; }
+    Registry<Ptr<Weapon>> const & getWeaponTypes() const { return weaponTypes; }
+    Registry<Ptr<Weapon>>       & getWeaponTypes()       { return weaponTypes; }
 
-    const Registry<Ptr<Ammo>> & getAmmoTypes() const { return ammoTypes; }
-    Registry<Ptr<Ammo>> & getAmmoTypes() { return ammoTypes; }
+    Registry<Ptr<Ammo>> const & getAmmoTypes() const { return ammoTypes; }
+    Registry<Ptr<Ammo>>       & getAmmoTypes()       { return ammoTypes; }
 
-    const Registry<Ptr<Scroll>> & getScrollTypes() const { return scrollTypes; }
-    Registry<Ptr<Scroll>> & getScrollTypes() { return scrollTypes; }
+    Registry<Ptr<Scroll>> const & getScrollTypes() const { return scrollTypes; }
+    Registry<Ptr<Scroll>>       & getScrollTypes()       { return scrollTypes; }
 
-    const Registry<Ptr<Potion>> & getPotionTypes() const { return potionTypes; }
-    Registry<Ptr<Potion>> & getPotionTypes() { return potionTypes; }
+    Registry<Ptr<Potion>> const & getPotionTypes() const { return potionTypes; }
+    Registry<Ptr<Potion>>       & getPotionTypes()       { return potionTypes; }
 
-    const Registry<Ptr<Enemy>> & getEnemyTypes() const { return enemyTypes; }
-    Registry<Ptr<Enemy>> & getEnemyTypes() { return enemyTypes; }
+    Registry<Ptr<Enemy>> const & getEnemyTypes() const { return enemyTypes; }
+    Registry<Ptr<Enemy>>       & getEnemyTypes()       { return enemyTypes; }
 
-    bool isPotionKnown(const std::string & id) const { return potionTypeKnown.at(id); }
-    void markPotionAsKnown(const std::string & id) { potionTypeKnown.at(id) = true; }
+    bool isPotionKnown(std::string const & id) const { return potionTypeKnown.at(id); }
+    void markPotionAsKnown(std::string const & id) { potionTypeKnown.at(id) = true; }
 
     void addMessage(std::string_view msg);
 
@@ -127,9 +127,9 @@ public:
     void drop(Ptr<Item> item, Coord2i to);
 
 private:
-    void printMenu(const std::vector<std::string_view> & items, int activeItem);
+    void printMenu(std::vector<std::string_view> const & items, int activeItem);
     tl::optional<std::string> processMenu(std::string_view title,
-            const std::vector<std::string_view> & items, bool canExit = false);
+            std::vector<std::string_view> const & items, bool canExit = false);
     void mSettingsMode();
     void mSettingsMap();
     void mSettings();
@@ -137,14 +137,14 @@ private:
 
     std::vector<std::string> readTips() const;
 
-    void readItemRenderData(const std::string & id, YAMLFileCache & cache);
+    void readItemRenderData(std::string const & id, YAMLFileCache & cache);
     void readItemRenderData(YAMLFileCache & cache);
-    void readUnitRenderData(const std::string & id, const YAML::Node & renderData);
-    void readEnemyRenderData(const std::string & id, YAMLFileCache & cache);
+    void readUnitRenderData(std::string const & id, YAML::Node const & renderData);
+    void readEnemyRenderData(std::string const & id, YAMLFileCache & cache);
     void readHeroRenderData(YAMLFileCache & cache);
     void readUnitRenderData(YAMLFileCache & cache);
-    SymbolRenderData getRenderData(const Item & item);
-    SymbolRenderData getRenderData(const Unit & unit);
+    SymbolRenderData getRenderData(Item const & item);
+    SymbolRenderData getRenderData(Unit const & unit);
     tl::optional<CellRenderData> getRenderData(Coord2i cell);
     void clearCachedMap();
     void drawMap();
@@ -161,7 +161,7 @@ private:
     bool randomlySetOnMap(Ptr<Item> item);
 
     template<class ItemType, class Fn = decltype(&detail::cloneAny<ItemType>), meta::Check<detail::IsItemSelector<Fn, ItemType>> = meta::Checked>
-    void randomlySelectAndSetOnMap(const Registry<Ptr<ItemType>> & types, int n, const Fn & selector = &detail::cloneAny<ItemType>) {
+    void randomlySelectAndSetOnMap(Registry<Ptr<ItemType>> const & types, int n, Fn const & selector = &detail::cloneAny<ItemType>) {
         for (int i = 0; i < n; ++i) {
             auto selected = selector(types);
             randomlySetOnMap(std::move(selected));

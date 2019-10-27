@@ -10,9 +10,9 @@
 #include<cassert>
 #include<iterator>
 
-static const int VISION_PRECISION = 256;
+static int const VISION_PRECISION = 256;
 
-Unit::Unit(const Unit & other)
+Unit::Unit(Unit const & other)
     : health(other.health)
     , maxHealth(other.maxHealth)
     , pos(other.pos)
@@ -28,7 +28,7 @@ Unit::Unit(const Unit & other)
     }
 }
 
-Unit & Unit::operator =(const Unit & other) {
+Unit & Unit::operator =(Unit const & other) {
     if (this == &other) {
         return *this;
     }

@@ -18,7 +18,7 @@ class YAMLUnitLoader : public AbstractUnitLoader {
     YAMLFileCache & yamlFileCache;
 
     Ptr<Hero> loadHero();
-    Ptr<Enemy> loadEnemy(const std::string & id);
+    Ptr<Enemy> loadEnemy(std::string const & id);
 
 public:
     explicit YAMLUnitLoader(YAMLFileCache & cache): yamlFileCache(cache) {}

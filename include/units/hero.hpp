@@ -17,8 +17,8 @@ class Hero
     , public EnableClone<Hero>
 {
 public:
-    static const int MAX_LUCK = 20;
-    static const int DEFAULT_VISION = 16;
+    static int const MAX_LUCK = 20;
+    static int const DEFAULT_VISION = 16;
 
 	int hunger = 900;
 	int xp = 0;
@@ -52,7 +52,7 @@ public:
 
 private:
 	void attackEnemy(Coord2i cell);
-	void throwAnimated(ItemPtr item, Direction direction);
+	void throwAnimated(Ptr<Item> item, Direction direction);
 	void shoot();
 	void eat();
 	void dropItems();
@@ -73,15 +73,15 @@ private:
 
 	std::pair<SelectStatus, char> selectOneFromInventory(
 	        std::string_view title,
-	        std::function<bool(const Item &)> filter = [] (const Item &) { return true; }) const;
+	        std::function<bool(Item const &)> filter = [] (Item const &) { return true; }) const;
 
-	std::pair<SelectStatus, int> selectOneFromList(std::string_view title, const std::vector<const Item *> & items) const;
+	std::pair<SelectStatus, int> selectOneFromList(std::string_view title, std::vector<Item const *> const & items) const;
 
     std::pair<SelectStatus, std::vector<char>> selectMultipleFromInventory(
             std::string_view title,
-            std::function<bool(const Item &)> filter = [] (const Item &) { return true; }) const;
+            std::function<bool(Item const &)> filter = [] (Item const &) { return true; }) const;
 
-    std::pair<SelectStatus, std::vector<int>> selectMultipleFromList(std::string_view title, const std::vector<const Item *> & items) const;
+    std::pair<SelectStatus, std::vector<int>> selectMultipleFromList(std::string_view title, std::vector<Item const *> const & items) const;
 
 	void moveTo(Coord2i cell);
 

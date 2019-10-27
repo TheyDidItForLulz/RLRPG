@@ -15,9 +15,9 @@ using Random = effolkronium::random_static;
 
 Enemy::Enemy(std::string_view id) {
     this->id = id;
-    const auto & foodTypes = g_game.getFoodTypes();
-    const auto & weaponTypes = g_game.getWeaponTypes();
-    const auto & ammoTypes = g_game.getAmmoTypes();
+    auto const & foodTypes = g_game.getFoodTypes();
+    auto const & weaponTypes = g_game.getWeaponTypes();
+    auto const & ammoTypes = g_game.getAmmoTypes();
 
     if (id == "barbarian") {
         health = 7;
@@ -49,7 +49,7 @@ Enemy::Enemy(std::string_view id) {
     }
 }
 
-Enemy::Enemy(const Enemy & other)
+Enemy::Enemy(Enemy const & other)
     : Unit(other)
     , target(other.target)
     , lastTurnMoved(other.lastTurnMoved)
@@ -61,7 +61,7 @@ Enemy::Enemy(const Enemy & other)
     }
 }
 
-Enemy & Enemy::operator =(const Enemy & other) {
+Enemy & Enemy::operator =(Enemy const & other) {
     if (this == &other) {
         return *this;
     }
@@ -95,7 +95,7 @@ void Enemy::shoot() {
         if (g_game.level()[cell] == 2)
             break;
 
-        const auto & unitsMap = g_game.getUnitsMap();
+        auto const & unitsMap = g_game.getUnitsMap();
         if (unitsMap[cell] and unitsMap[cell]->getType() == Unit::Type::Hero) {
             g_game.getHero().dealDamage(ammo->damage + weapon->damageBonus);
             break;
@@ -151,7 +151,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
 
         for (auto dir : dirs) {
             auto tv = v + dir;
-            const auto & unitsMap = g_game.getUnitsMap();
+            auto const & unitsMap = g_game.getUnitsMap();
             if (unitsMap.isIndex(tv)
                     and (not unitsMap[tv] or unitsMap[tv]->getType() == Unit::Type::Hero)
                     and g_game.level()[tv] != 2 and used[tv] == 0) {
@@ -182,7 +182,7 @@ void Enemy::moveTo(Coord2i cell) {
     if (g_game.level()[cell] == 2)
         throw std::logic_error("Trying to move an enemy into a wall");
 
-    const auto & unitsMap = g_game.getUnitsMap();
+    auto const & unitsMap = g_game.getUnitsMap();
     if (not unitsMap[cell]) {
         setTo(cell);
         return;
@@ -206,7 +206,7 @@ void Enemy::moveTo(Coord2i cell) {
 
 void Enemy::updatePosition() {
     lastTurnMoved = g_game.getTurnNumber();
-    const auto & hero = g_game.getHero();
+    auto const & hero = g_game.getHero();
 
     if (not hero.isInvisible() and canSee(hero.pos)) {
         bool onDiagLine = std::abs(hero.pos.y - pos.y) == std::abs(hero.pos.x - pos.x);
@@ -232,7 +232,7 @@ void Enemy::updatePosition() {
 
     std::vector<Coord2i> visibleCells;
 
-    g_game.getUnitsMap().forEach([&] (Coord2i cell, const Ptr<Unit> & unit) {
+    g_game.getUnitsMap().forEach([&] (Coord2i cell, Ptr<Unit> const & unit) {
         if (cell != pos and g_game.level()[cell] != 2 and not unit and canSee(cell)) {
             visibleCells.push_back(cell);
         }

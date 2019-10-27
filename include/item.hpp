@@ -57,7 +57,7 @@ public:
     virtual Type getType() const = 0;
     virtual ItemPtr cloneItem() const = 0;
 
-    static ItemPtr getByID(const std::string & id);
+    static ItemPtr getByID(std::string const & id);
 };
 
 class Food;
@@ -68,7 +68,7 @@ class Food
     , public EnableClone<Food>
 {
 public:	
-    static const int COUNT = 10;
+    static int const COUNT = 10;
 
 	int nutritionalValue;
 	bool isRotten;
@@ -93,7 +93,7 @@ class Armor
     , public EnableClone<Armor>
 {
 public:
-    static const int COUNT = 4;
+    static int const COUNT = 4;
 
 	int defence;
 	int durability;
@@ -118,7 +118,7 @@ class Ammo
     , public EnableClone<Ammo>
 {
 public:
-    static const int COUNT = 25;
+    static int const COUNT = 25;
 
 	int range;
 	int damage;
@@ -149,21 +149,21 @@ public:
 
     public:
 		explicit Cartridge(int capacity = 0);
-        Cartridge(const Cartridge &);
-        Cartridge & operator =(const Cartridge &); 
+        Cartridge(Cartridge const &);
+        Cartridge & operator =(Cartridge const &); 
 
         // returns the bullet if fails to load it
         AmmoPtr load(AmmoPtr bullet);
 
         AmmoPtr unloadOne();
 
-        const Ammo & next() const;
-        Ammo & next();
+        Ammo const & next() const;
+        Ammo       & next();
 
-        const Ammo * operator [](int ind) const;
+        Ammo const * operator [](int ind) const;
 
         auto begin() const -> decltype(loaded.begin());
-        auto end() const -> decltype(loaded.end());
+        auto end()   const -> decltype(loaded.end());
 
         int getCapacity() const;
         int getCurrSize() const;
@@ -171,7 +171,7 @@ public:
         bool isFull() const;
     };
 
-    static const int COUNT = 25; /* JUST FOR !DEBUG!!*/
+    static int const COUNT = 25; /* JUST FOR !DEBUG!!*/
 
     Cartridge cartridge;
 	int damage;
@@ -181,8 +181,8 @@ public:
     bool canDig = false;
 
 	Weapon();
-	Weapon(const Weapon&) = default;
-	Weapon& operator=(const Weapon&) = default;
+	Weapon(Weapon const &) = default;
+	Weapon& operator=(Weapon const &) = default;
 	~Weapon();
 
     Type getType() const override {
@@ -202,7 +202,7 @@ class Scroll
     , public EnableClone<Scroll>
 {
 public:
-    static const int COUNT = 15; /* JUST FOR !DEBUG!!*/
+    static int const COUNT = 15; /* JUST FOR !DEBUG!!*/
 
     enum Effect {
     	Map,
@@ -232,7 +232,7 @@ class Potion
     , public EnableClone<Potion>
 {
 public:
-    static const int COUNT = 25; /* IT TOO */
+    static int const COUNT = 25; /* IT TOO */
 
     enum Effect {
     	None,

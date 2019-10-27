@@ -21,9 +21,9 @@ public:
 
 	Enemy() {}
 	Enemy(std::string_view id);
-    Enemy(const Enemy &);
+    Enemy(Enemy const &);
 
-    Enemy & operator =(const Enemy &);
+    Enemy & operator =(Enemy const &);
 
 	~Enemy() {}
 

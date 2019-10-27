@@ -2,6 +2,7 @@
 #define INVENTORY_HPP
 
 #include<inventory_iterator.hpp>
+#include<ptr.hpp>
 
 #include<optional>
 #include<unordered_map>
@@ -9,12 +10,11 @@
 #include<memory>
 
 class Item;
-using ItemPtr = std::unique_ptr<Item>;
 
 class AddStatus {
 public:
     struct AddError {
-        ItemPtr item;
+        Ptr<Item> item;
     };
     
     struct New {
@@ -34,7 +34,7 @@ public:
     }
 
     template<class St, class Fn>
-    const AddStatus & doIf(Fn func) const {
+    AddStatus const & doIf(Fn func) const {
         St * state = std::get_if<St>(&value);
         if (state) {
             func(*state);
@@ -58,12 +58,12 @@ private:
 class Inventory {
 public:
     Inventory() = default;
-    Inventory(const Inventory & other);
-    Inventory & operator =(const Inventory & other);
+    Inventory(Inventory const & other);
+    Inventory & operator =(Inventory const & other);
 
-    AddStatus add(ItemPtr item);
-    AddStatus add(ItemPtr item, char at);
-    ItemPtr remove(char id);
+    AddStatus add(Ptr<Item> item);
+    AddStatus add(Ptr<Item> item, char at);
+    Ptr<Item> remove(char id);
 
     InventoryIterator erase(ConstInventoryIterator iter);
 
@@ -71,22 +71,22 @@ public:
     bool isFull() const;
     bool isEmpty() const;
     bool hasID(char id) const;
-    Item & operator [](char id);
-    const Item & operator [](char id) const;
+    Item       & operator [](char id);
+    Item const & operator [](char id) const;
 
-    InventoryIterator find(char id);
+    InventoryIterator      find(char id);
     ConstInventoryIterator find(char id) const;
 
-    InventoryIterator begin();
-    ConstInventoryIterator begin() const;
+    InventoryIterator      begin();
+    ConstInventoryIterator begin()  const;
     ConstInventoryIterator cbegin() const;
 
-    InventoryIterator end();
-    ConstInventoryIterator end() const;
+    InventoryIterator      end();
+    ConstInventoryIterator end()  const;
     ConstInventoryIterator cend() const;
 
 private:
-    std::unordered_map<char, ItemPtr> items;
+    std::unordered_map<char, Ptr<Item>> items;
 };
 
 #endif // INVENTORY_HPP

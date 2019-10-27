@@ -24,38 +24,38 @@ void YAMLItemLoader::load() {
     g_game.getScrollTypes().clear();
     g_game.getPotionTypes().clear();
 
-    for (const auto & id : registry["food"]) {
+    for (auto const & id : registry["food"]) {
         auto idstr = id.as<std::string>();
         g_game.getFoodTypes()[idstr] = loadFood(idstr);
     }
 
-    for (const auto & id : registry["armor"]) {
+    for (auto const & id : registry["armor"]) {
         auto idstr = id.as<std::string>();
         g_game.getArmorTypes()[idstr] = loadArmor(idstr);
     }
 
-    for (const auto & id : registry["weapon"]) {
+    for (auto const & id : registry["weapon"]) {
         auto idstr = id.as<std::string>();
         g_game.getWeaponTypes()[idstr] = loadWeapon(idstr);
     }
 
-    for (const auto & id : registry["ammo"]) {
+    for (auto const & id : registry["ammo"]) {
         auto idstr = id.as<std::string>();
         g_game.getAmmoTypes()[idstr] = loadAmmo(idstr);
     }
 
-    for (const auto & id : registry["scroll"]) {
+    for (auto const & id : registry["scroll"]) {
         auto idstr = id.as<std::string>();
         g_game.getScrollTypes()[idstr] = loadScroll(idstr);
     }
 
-    for (const auto & id : registry["potion"]) {
+    for (auto const & id : registry["potion"]) {
         auto idstr = id.as<std::string>();
         g_game.getPotionTypes()[idstr] = loadPotion(idstr);
     }
 }
 
-void initItemBase(Item & item, const YAML::Node & data) {
+void initItemBase(Item & item, YAML::Node const & data) {
     item.weight = data["weight"].as<int>();
     item.id = data["id"].as<std::string>();
     item.isStackable = data["isStackable"].as<bool>();

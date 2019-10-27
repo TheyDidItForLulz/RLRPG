@@ -13,11 +13,11 @@ class YAMLFileCache {
     std::unordered_map<std::string, YAML::Node> cache;
 
 public:
-    YAML::Node & operator[](const std::string & filename);
+    YAML::Node & operator[](std::string const & filename);
 
-    bool contains(const std::string & filename) const;
+    bool contains(std::string const & filename) const;
 
-    void load(const std::string & filename);
+    void load(std::string const & filename);
 };
 
 #endif //RLRPG_YAMLFILECACHE_HPP

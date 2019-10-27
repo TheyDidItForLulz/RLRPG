@@ -34,7 +34,7 @@ inline auto clamp(T min, U val, V max) {
 void sleep(double sec);
 
 template<class T>
-T distSquared(const Vec2<T> & point1, const Vec2<T> & point2) {
+T distSquared(Vec2<T> const & point1, Vec2<T> const & point2) {
     return sqr(point1 - point2);
 }
 

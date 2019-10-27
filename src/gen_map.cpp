@@ -7,9 +7,9 @@
 
 using Random = effolkronium::random_static;
 
-const int ROOMS_COUNT = 3;
-const int COLS = (LEVEL_COLS - 1) / 2;
-const int ROWS = (LEVEL_ROWS - 1) / 2;
+int const ROOMS_COUNT = 3;
+int const COLS = (LEVEL_COLS - 1) / 2;
+int const ROWS = (LEVEL_ROWS - 1) / 2;
 
 Array2D<bool, ROWS, COLS> used;
 

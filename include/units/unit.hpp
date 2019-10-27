@@ -24,10 +24,10 @@ public:
     };
 
 	Unit() {}
-    Unit(const Unit &);
+    Unit(Unit const &);
 	~Unit() {}
 
-    Unit & operator=(const Unit &);
+    Unit & operator=(Unit const &);
 
     Inventory inventory;
 	Weapon* weapon = nullptr;

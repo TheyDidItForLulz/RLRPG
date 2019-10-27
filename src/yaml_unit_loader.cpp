@@ -16,14 +16,14 @@
 void YAMLUnitLoader::load() {
     g_game.setHeroTemplate(loadHero());
 
-    const auto & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
-    for (const auto & id : enemyRegistry) {
+    auto const & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
+    for (auto const & id : enemyRegistry) {
         auto idString = id.as<std::string>();
         g_game.getEnemyTypes()[idString] = loadEnemy(idString);
     }
 }
 
-tl::optional<std::pair<int, int>> parseRange(const std::string & toParse) {
+tl::optional<std::pair<int, int>> parseRange(std::string const & toParse) {
     auto delimIndex = toParse.find("..");
     if (delimIndex == std::string::npos) {
         try {
@@ -42,7 +42,7 @@ tl::optional<std::pair<int, int>> parseRange(const std::string & toParse) {
     }
 }
 
-ItemPtr createItem(const YAML::Node & itemData){
+ItemPtr createItem(YAML::Node const & itemData){
     auto item = Item::getByID(itemData["id"].as<std::string>());
     if (not item)
         return nullptr;
@@ -58,15 +58,15 @@ ItemPtr createItem(const YAML::Node & itemData){
     return item;
 }
 
-void loadUnitInventory(Unit & unit, const YAML::Node & invData) {
-    for (const auto & entry : invData) {
+void loadUnitInventory(Unit & unit, YAML::Node const & invData) {
+    for (auto const & entry : invData) {
         char at = entry.first.as<char>();
         auto item = createItem(entry.second);
         unit.inventory.add(std::move(item), at);
     }
 }
 
-void initUnitBase(Unit & unit, const YAML::Node & data) {
+void initUnitBase(Unit & unit, YAML::Node const & data) {
     unit.id = data["id"].as<std::string>();
     unit.name = data["name"].as<std::string>();
     unit.health = data["health"].as<int>();
@@ -93,7 +93,7 @@ Ptr<Hero> YAMLUnitLoader::loadHero() {
     return hero;
 }
 
-Ptr<Enemy> YAMLUnitLoader::loadEnemy(const std::string & id) {
+Ptr<Enemy> YAMLUnitLoader::loadEnemy(std::string const & id) {
     auto filename = fmt::format("data/units/enemies/{}.yaml", id);
     auto enemyData = yamlFileCache[filename];
     auto enemy = std::make_unique<Enemy>();

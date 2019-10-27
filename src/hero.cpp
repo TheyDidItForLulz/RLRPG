@@ -18,7 +18,7 @@ using Random = effolkronium::random_static;
 Hero::Hero() {
 }
 
-int Hero::getLevelUpXP() const{
+int Hero::getLevelUpXP() const {
     return level * level + 4;
 }
 
@@ -49,14 +49,14 @@ void Hero::checkVisibleCells() {
 
 int Hero::getInventoryItemsWeight() const {
     int totalWeight = 0;
-    for (const auto & entry : inventory) {
+    for (auto const & entry : inventory) {
         totalWeight += entry.second->getTotalWeight();
     }
     return totalWeight;
 }
 
 template<class ... FMTStrategies>
-void printList(std::string_view title, const std::vector<const Item *> & items, FMTStrategies && ... strategies) {
+void printList(std::string_view title, std::vector<Item const *> const & items, FMTStrategies && ... strategies) {
     g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
             .put(title);
@@ -70,16 +70,16 @@ void printList(std::string_view title, const std::vector<const Item *> & items, 
     }
 }
 
-std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_view title, std::function<bool(const Item &)> filter) const {
-    std::vector<const Item *> items;
-    for (const auto & entry : inventory)
+std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_view title, std::function<bool(Item const &)> filter) const {
+    std::vector<Item const *> items;
+    for (auto const & entry : inventory)
         if (filter(*entry.second))
             items.push_back(entry.second);
 
     if (items.empty())
         return { NothingToSelect, 0 };
 
-    std::sort(items.begin(), items.end(), [] (const Item * a, const Item * b) {
+    std::sort(items.begin(), items.end(), [] (Item const * a, Item const * b) {
         return a->inventorySymbol < b->inventorySymbol;
     });
 
@@ -92,7 +92,7 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
         char choice = g_game.getReader().readChar();
         if (choice == '\033')
             return { Cancelled, 0 };
-        for (const Item * item : items)
+        for (Item const * item : items)
             if (item->inventorySymbol == choice)
                 return { Success, choice };
     }
@@ -100,16 +100,16 @@ std::pair<Hero::SelectStatus, char> Hero::selectOneFromInventory(std::string_vie
 
 std::pair<Hero::SelectStatus, std::vector<char>> Hero::selectMultipleFromInventory(
         std::string_view title,
-        std::function<bool(const Item &)> filter) const {
-    std::vector<const Item *> items;
-    for (const auto & entry : inventory)
+        std::function<bool(Item const &)> filter) const {
+    std::vector<Item const *> items;
+    for (auto const & entry : inventory)
         if (filter(*entry.second))
             items.push_back(entry.second);
 
     if (items.empty())
         return { NothingToSelect, {} };
 
-    std::sort(items.begin(), items.end(), [] (const Item * a, const Item * b) {
+    std::sort(items.begin(), items.end(), [] (Item const * a, Item const * b) {
         return a->inventorySymbol < b->inventorySymbol;
     });
 
@@ -137,7 +137,7 @@ std::pair<Hero::SelectStatus, std::vector<char>> Hero::selectMultipleFromInvento
     }
 }
 
-std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view title, const std::vector<const Item *> & items) const {
+std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view title, std::vector<Item const *> const & items) const {
     if (items.empty())
         return { NothingToSelect, 0 };
 
@@ -158,7 +158,7 @@ std::pair<Hero::SelectStatus, int> Hero::selectOneFromList(std::string_view titl
     }
 }
 
-std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std::string_view title, const std::vector<const Item *> & items) const {
+std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std::string_view title, std::vector<Item const *> const & items) const {
     if (items.empty())
         return { NothingToSelect, {} };
 
@@ -189,7 +189,7 @@ std::pair<Hero::SelectStatus, std::vector<int>> Hero::selectMultipleFromList(std
 }
 
 bool Hero::isMapInInventory() const {
-    for (const auto & entry : inventory)
+    for (auto const & entry : inventory)
         if (entry.second->id == "map")
             return true;
     return false;
@@ -207,8 +207,8 @@ void Hero::pickUp() {
     if (itemsMap[pos].size() == 1) {
         iters.push_back(itemsMap[pos].begin());
     } else {
-        std::vector<const Item *> list;
-        for (const auto & item : itemsMap[pos])
+        std::vector<Item const *> list;
+        for (auto const & item : itemsMap[pos])
             list.push_back(item.get());
 
         auto [status, indices] = selectMultipleFromList("What do you want to pick up? ", list);
@@ -289,7 +289,7 @@ void Hero::clearRightPane() const {
 }
 
 void Hero::eat() {
-    auto [status, choice] = selectOneFromInventory("What do you want to eat?", [] (const Item & item) {
+    auto [status, choice] = selectOneFromInventory("What do you want to eat?", [] (Item const & item) {
         return item.getType() == Item::Type::Food;
     });
     switch (status) {
@@ -531,11 +531,11 @@ void Hero::showInventory() {
         g_game.addMessage("Your inventory is empty");
         return;
     }
-    std::vector<const Item *> list;
-    for (const auto & entry : inventory)
+    std::vector<Item const *> list;
+    for (auto const & entry : inventory)
         list.push_back(entry.second);
 
-    std::sort(list.begin(), list.end(), [] (const Item * a, const Item * b) {
+    std::sort(list.begin(), list.end(), [] (Item const * a, Item const * b) {
         return a->inventorySymbol < b->inventorySymbol;
     });
 
@@ -604,7 +604,7 @@ void Hero::dropItems() {
 }
 
 void Hero::wieldWeapon() {
-    auto [status, itemID] = selectOneFromInventory("What do you want to wield?", [] (const Item & item) {
+    auto [status, itemID] = selectOneFromInventory("What do you want to wield?", [] (Item const & item) {
         return item.getType() == Item::Type::Weapon;
     });
     switch (status) {
@@ -689,7 +689,7 @@ void Hero::throwItem() {
 }
 
 void Hero::drinkPotion() {
-    auto [status, itemID] = selectOneFromInventory("What do you want to drink?", [] (const Item & item) {
+    auto [status, itemID] = selectOneFromInventory("What do you want to drink?", [] (Item const & item) {
         return item.getType() == Item::Type::Potion;
     });
     switch (status) {
@@ -745,7 +745,7 @@ void Hero::drinkPotion() {
 }
 
 void Hero::readScroll() {
-    auto [status, itemID] = selectOneFromInventory("What do you want to read?", [] (const Item & item) {
+    auto [status, itemID] = selectOneFromInventory("What do you want to read?", [] (Item const & item) {
         return item.getType() == Item::Type::Scroll;
     });
     switch (status) {
@@ -766,7 +766,7 @@ void Hero::readScroll() {
             g_game.addMessage("You wrote this map. Why you read it, I don't know.");
             break;
         case Scroll::Identify: {
-            auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
+            auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (Item const & item) {
                 if (item.getType() == Item::Type::Potion) {
                     if (not g_game.isPotionKnown(item.id))
                         return true;
@@ -819,7 +819,7 @@ void Hero::attackEnemy(Coord2i cell) {
     }
 }
 
-void Hero::throwAnimated(ItemPtr item, Direction direction) {
+void Hero::throwAnimated(Ptr<Item> item, Direction direction) {
     int throwDist = 0;
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
@@ -901,11 +901,11 @@ void Hero::shoot() {
 }
 
 void Hero::moveTo(Coord2i cell) {
-    const auto & level = g_game.level();
+    auto const & level = g_game.level();
     if (not level.isIndex(cell))
         return;
     if (level[cell] != 2 or canMoveThroughWalls) {
-        const auto & unitsMap = g_game.getUnitsMap();
+        auto const & unitsMap = g_game.getUnitsMap();
         if (unitsMap[cell] and unitsMap[cell]->getType() == Unit::Type::Enemy) {
             attackEnemy(cell);
         } else if (not unitsMap[cell]) {

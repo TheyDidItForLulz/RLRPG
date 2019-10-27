@@ -8,7 +8,7 @@
 template<class T>
 struct EnableClone {
     std::unique_ptr<T> clone() const {
-        return std::make_unique<T>(static_cast<const T &>(*this));
+        return std::make_unique<T>(static_cast<T const &>(*this));
     }
 };
 
