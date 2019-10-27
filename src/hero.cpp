@@ -15,8 +15,6 @@ using namespace fmt::literals;
 using fmt::format;
 using Random = effolkronium::random_static;
 
-Hero heroTemplate;
-
 Hero::Hero() {
 }
 
@@ -719,7 +717,7 @@ void Hero::drinkPotion() {
         case Potion::Teleport:
             while (true) {
                 Coord2i pos = { Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-                if (g_game.level()[pos] != 2 and not unitMap[pos]) {
+                if (g_game.level()[pos] != 2 and not g_game.getUnitsMap()[pos]) {
                     setTo(pos);
                     break;
                 }
@@ -809,14 +807,15 @@ void Hero::readScroll() {
 }
 
 void Hero::attackEnemy(Coord2i cell) {
-    auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
+    auto & unitsMap = g_game.getUnitsMap();
+    auto & enemy = dynamic_cast<Enemy &>(*unitsMap[cell]);
     if (weapon) {
         enemy.dealDamage(weapon->damage);
     }
     if (enemy.health <= 0) {
         enemy.dropInventory();
         xp += enemy.xpCost;
-        unitMap[cell].reset();
+        unitsMap[cell].reset();
     }
 }
 
@@ -830,13 +829,14 @@ void Hero::throwAnimated(ItemPtr item, Direction direction) {
         if (g_game.level()[cell] == 2)
             break;
 
-        if (unitMap[cell]) {
-            unitMap[cell]->dealDamage(item->getTotalWeight() / 2);
-            if (unitMap[cell]->health <= 0) {
-                auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
+        auto & unitsMap = g_game.getUnitsMap();
+        if (unitsMap[cell]) {
+            unitsMap[cell]->dealDamage(item->getTotalWeight() / 2);
+            if (unitsMap[cell]->health <= 0) {
+                auto & enemy = dynamic_cast<Enemy &>(*unitsMap[cell]);
                 enemy.dropInventory();
                 xp += enemy.xpCost;
-                unitMap[cell].reset();
+                unitsMap[cell].reset();
             }
             break;
         }
@@ -881,13 +881,14 @@ void Hero::shoot() {
         if (g_game.level()[cell] == 2)
             break;
 
-        if (unitMap[cell]) {
-            unitMap[cell]->dealDamage(bulletPower - i / 3);
-            if (unitMap[cell]->health <= 0) {
-                auto & enemy = dynamic_cast<Enemy &>(*unitMap[cell]);
+        auto & unitsMap = g_game.getUnitsMap();
+        if (unitsMap[cell]) {
+            unitsMap[cell]->dealDamage(bulletPower - i / 3);
+            if (unitsMap[cell]->health <= 0) {
+                auto & enemy = dynamic_cast<Enemy &>(*unitsMap[cell]);
                 enemy.dropInventory();
                 xp += enemy.xpCost;
-                unitMap[cell].reset();
+                unitsMap[cell].reset();
             }
         }
         g_game.getRenderer()
@@ -904,9 +905,10 @@ void Hero::moveTo(Coord2i cell) {
     if (not level.isIndex(cell))
         return;
     if (level[cell] != 2 or canMoveThroughWalls) {
-        if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Enemy) {
+        const auto & unitsMap = g_game.getUnitsMap();
+        if (unitsMap[cell] and unitsMap[cell]->getType() == Unit::Type::Enemy) {
             attackEnemy(cell);
-        } else if (not unitMap[cell]) {
+        } else if (not unitsMap[cell]) {
             setTo(cell);
         }
     } else if (level[cell] == 2) {

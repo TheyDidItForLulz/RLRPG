@@ -24,6 +24,8 @@
 
 class Unit;
 class Hero;
+class Enemy;
+
 class Item;
 class Food;
 class Armor;
@@ -31,25 +33,18 @@ class Weapon;
 class Ammo;
 class Scroll;
 class Potion;
+
 class YAMLFileCache;
 
 namespace YAML {
     class Node;
 }
 
-using ItemPtr = Ptr<Item>;
-using FoodPtr = Ptr<Food>;
-using ArmorPtr = Ptr<Armor>;
-using WeaponPtr = Ptr<Weapon>;
-using AmmoPtr = Ptr<Ammo>;
-using ScrollPtr = Ptr<Scroll>;
-using PotionPtr = Ptr<Potion>;
-using ItemPile = std::list<ItemPtr>;
+using ItemPile = std::list<Ptr<Item>>;
 
 namespace detail {
-    template<class ItemType,
-        meta::Check<std::is_base_of_v<Item, ItemType> and IsClonable<ItemType>> = meta::Checked>
-    Ptr<ItemType> cloneAnyItem(const Registry<Ptr<ItemType>> & reg) {
+    template<class T, meta::Check<IsClonable<T>> = meta::Checked>
+    Ptr<T> cloneAny(const Registry<Ptr<T>> & reg) {
         return effolkronium::random_static::get(reg)->second->clone();
     }
 
@@ -83,21 +78,34 @@ public:
 
     int getMode() const { return mode; }
 
+    void setHeroTemplate(Ptr<Hero> newHeroTemplate);
+
     const auto & getItemsMap() const { return itemsMap; }
     auto & getItemsMap() { return itemsMap; }
 
-    const Registry<FoodPtr> & getFoodTypes() const { return foodTypes; }
-    Registry<FoodPtr> & getFoodTypes() { return foodTypes; }
-    const Registry<ArmorPtr> & getArmorTypes() const { return armorTypes; }
-    Registry<ArmorPtr> & getArmorTypes() { return armorTypes; }
-    const Registry<WeaponPtr> & getWeaponTypes() const { return weaponTypes; }
-    Registry<WeaponPtr> & getWeaponTypes() { return weaponTypes; }
-    const Registry<AmmoPtr> & getAmmoTypes() const { return ammoTypes; }
-    Registry<AmmoPtr> & getAmmoTypes() { return ammoTypes; }
-    const Registry<ScrollPtr> & getScrollTypes() const { return scrollTypes; }
-    Registry<ScrollPtr> & getScrollTypes() { return scrollTypes; }
-    const Registry<PotionPtr> & getPotionTypes() const { return potionTypes; }
-    Registry<PotionPtr> & getPotionTypes() { return potionTypes; }
+    const auto & getUnitsMap() const { return unitsMap; }
+    auto & getUnitsMap() { return unitsMap; }
+
+    const Registry<Ptr<Food>> & getFoodTypes() const { return foodTypes; }
+    Registry<Ptr<Food>> & getFoodTypes() { return foodTypes; }
+
+    const Registry<Ptr<Armor>> & getArmorTypes() const { return armorTypes; }
+    Registry<Ptr<Armor>> & getArmorTypes() { return armorTypes; }
+
+    const Registry<Ptr<Weapon>> & getWeaponTypes() const { return weaponTypes; }
+    Registry<Ptr<Weapon>> & getWeaponTypes() { return weaponTypes; }
+
+    const Registry<Ptr<Ammo>> & getAmmoTypes() const { return ammoTypes; }
+    Registry<Ptr<Ammo>> & getAmmoTypes() { return ammoTypes; }
+
+    const Registry<Ptr<Scroll>> & getScrollTypes() const { return scrollTypes; }
+    Registry<Ptr<Scroll>> & getScrollTypes() { return scrollTypes; }
+
+    const Registry<Ptr<Potion>> & getPotionTypes() const { return potionTypes; }
+    Registry<Ptr<Potion>> & getPotionTypes() { return potionTypes; }
+
+    const Registry<Ptr<Enemy>> & getEnemyTypes() const { return enemyTypes; }
+    Registry<Ptr<Enemy>> & getEnemyTypes() { return enemyTypes; }
 
     bool isPotionKnown(const std::string & id) const { return potionTypeKnown.at(id); }
     void markPotionAsKnown(const std::string & id) { potionTypeKnown.at(id) = true; }
@@ -116,7 +124,7 @@ public:
 
     void displayMessages();
 
-    void drop(ItemPtr item, Coord2i to);
+    void drop(Ptr<Item> item, Coord2i to);
 
 private:
     void printMenu(const std::vector<std::string_view> & items, int activeItem);
@@ -150,10 +158,10 @@ private:
     void readMap();
 
     ItemPile::iterator findItemAt(Coord2i cell, std::string_view id);
-    bool randomlySetOnMap(ItemPtr item);
+    bool randomlySetOnMap(Ptr<Item> item);
 
-    template<class ItemType, class Fn = decltype(&detail::cloneAnyItem<ItemType>), meta::Check<detail::IsItemSelector<Fn, ItemType>> = meta::Checked>
-    void randomlySelectAndSetOnMap(const Registry<Ptr<ItemType>> & types, int n, const Fn & selector = &detail::cloneAnyItem<ItemType>) {
+    template<class ItemType, class Fn = decltype(&detail::cloneAny<ItemType>), meta::Check<detail::IsItemSelector<Fn, ItemType>> = meta::Checked>
+    void randomlySelectAndSetOnMap(const Registry<Ptr<ItemType>> & types, int n, const Fn & selector = &detail::cloneAny<ItemType>) {
         for (int i = 0; i < n; ++i) {
             auto selected = selector(types);
             randomlySetOnMap(std::move(selected));
@@ -163,26 +171,31 @@ private:
     TerminalRenderer termRend;
     TerminalReader termRead;
 
-    std::unordered_map<std::string, SymbolRenderData> itemRenderData;
-    std::unordered_map<std::string, SymbolRenderData> unitRenderData;
+    Registry<SymbolRenderData> itemRenderData;
+    Registry<SymbolRenderData> unitRenderData;
     Array2D<tl::optional<CellRenderData>, LEVEL_ROWS, LEVEL_COLS> cachedMap;
 
     Array2D<int, LEVEL_ROWS, LEVEL_COLS> levelData;
     Array2D<ItemPile, LEVEL_ROWS, LEVEL_COLS> itemsMap;
+    Array2D<Ptr<Unit>, LEVEL_ROWS, LEVEL_COLS> unitsMap;
 
-    Registry<FoodPtr> foodTypes;
-    Registry<ArmorPtr> armorTypes;
-    Registry<WeaponPtr> weaponTypes;
-    Registry<AmmoPtr> ammoTypes;
-    Registry<ScrollPtr> scrollTypes;
-    Registry<PotionPtr> potionTypes;
+    Registry<Ptr<Food>> foodTypes;
+    Registry<Ptr<Armor>> armorTypes;
+    Registry<Ptr<Weapon>> weaponTypes;
+    Registry<Ptr<Ammo>> ammoTypes;
+    Registry<Ptr<Scroll>> scrollTypes;
+    Registry<Ptr<Potion>> potionTypes;
     Registry<bool> potionTypeKnown;
+
+    Registry<Ptr<Enemy>> enemyTypes;
 
     std::string message;
     std::string bar;
     std::string weaponBar;
 
     Hero * hero;
+
+    Ptr<Hero> heroTemplate;
 
     int mode = 1;
     int turns = 0;

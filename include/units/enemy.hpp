@@ -2,13 +2,17 @@
 #define ENEMY_HPP
 
 #include<units/unit.hpp>
+#include<enable_clone.hpp>
 
 #include<string_view>
 #include<unordered_map>
 
 class Ammo;
 
-class Enemy: public Unit {
+class Enemy
+    : public Unit
+    , public EnableClone<Enemy>
+{
 public:
 	Ammo* ammo = nullptr;
     std::optional<Coord2i> target;
@@ -35,8 +39,6 @@ private:
     std::optional<Coord2i> searchForShortestPath(Coord2i to) const; // returns next cell in the path if path exists
     void moveTo(Coord2i cell);
 };
-
-extern std::unordered_map<std::string, Enemy> enemyTypes;
 
 #endif // ENEMY_HPP
 

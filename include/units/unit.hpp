@@ -16,9 +16,6 @@
 class Armor;
 class Weapon;
 
-class Unit;
-using UnitPtr = std::unique_ptr<Unit>;
-
 class Unit {
 public:
     enum class Type {
@@ -58,7 +55,5 @@ protected:
     virtual void takeArmorOff();
     virtual void unequipWeapon();
 };
-
-extern Array2D<UnitPtr, LEVEL_ROWS, LEVEL_COLS> unitMap;
 
 #endif // UNIT_HPP

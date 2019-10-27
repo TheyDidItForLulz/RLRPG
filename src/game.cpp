@@ -4,9 +4,12 @@
 #include<gen_map.hpp>
 #include<level.hpp>
 #include<units/unit.hpp>
+#include<units/hero.hpp>
+#include<units/enemy.hpp>
 #include<yaml_item_loader.hpp>
 #include<yaml_file_cache.hpp>
 #include<yaml_unit_loader.hpp>
+#include<controls.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
@@ -22,6 +25,10 @@ using fmt::format;
 using Random = effolkronium::random_static;
 
 Game g_game;
+
+void Game::setHeroTemplate(Ptr<Hero> newHeroTemplate) {
+    heroTemplate = std::move(newHeroTemplate);
+}
 
 void Game::printMenu(const std::vector<std::string_view> & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
@@ -209,7 +216,7 @@ void Game::run() {
             if (hero->turnsInvisible > 0)
                 hero->turnsInvisible--;
 
-            if (hero->turnsBlind > 1) {
+            if (hero->turnsBlind > 0) {
                 if (hero->turnsBlind == 1) {
                     hero->vision = Hero::DEFAULT_VISION;
                 }
@@ -380,7 +387,7 @@ void Game::initialize() {
 }
 
 void Game::updateAI() {
-    unitMap.forEach([&] (UnitPtr & unit) {
+    unitsMap.forEach([&] (Ptr<Unit> & unit) {
         if (not unit or unit->getType() != Unit::Type::Enemy)
             return;
 
@@ -417,11 +424,11 @@ void Game::setItems() {
 void Game::spawnUnits() {
     for (int i = 0; i < 1; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-        if (levelData[pos] == 1 and not unitMap[pos]) {
-            auto hero = std::make_unique<Hero>(heroTemplate);
+        if (levelData[pos] == 1 and not unitsMap[pos]) {
+            auto hero = heroTemplate->clone();
             this->hero = hero.get();
             this->hero->pos = pos;
-            unitMap[pos] = std::move(hero);
+            unitsMap[pos] = std::move(hero);
             break;
         } else {
             i--;
@@ -429,10 +436,10 @@ void Game::spawnUnits() {
     }
     for (int i = 0; i < ENEMIESCOUNT; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-        if (levelData[pos] == 1 and not unitMap[pos]) {
-            auto enemy = std::make_unique<Enemy>(Random::get(enemyTypes)->second);
+        if (levelData[pos] == 1 and not unitsMap[pos]) {
+            auto enemy = detail::cloneAny(enemyTypes);
             enemy->pos = pos;
-            unitMap[pos] = std::move(enemy);
+            unitsMap[pos] = std::move(enemy);
         } else {
             i--;
         }
@@ -477,8 +484,8 @@ tl::optional<CellRenderData> Game::getRenderData(Coord2i cell) {
         return tl::nullopt;
 
     CellRenderData renderData;
-    if (unitMap[cell]) {
-        renderData.unit = getRenderData(*unitMap[cell]);
+    if (unitsMap[cell]) {
+        renderData.unit = getRenderData(*unitsMap[cell]);
     }
     if (itemsMap[cell].size() == 1) {
         renderData.item = getRenderData(*itemsMap[cell].front());

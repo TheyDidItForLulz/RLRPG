@@ -4,6 +4,7 @@
 #include<units/unit.hpp>
 #include<utils.hpp>
 #include<direction.hpp>
+#include<enable_clone.hpp>
 
 #include<effolkronium/random.hpp>
 
@@ -11,7 +12,10 @@
 
 using Random = effolkronium::random_static;
 
-class Hero: public Unit {
+class Hero
+    : public Unit
+    , public EnableClone<Hero>
+{
 public:
     static const int MAX_LUCK = 20;
     static const int DEFAULT_VISION = 16;
@@ -85,8 +89,6 @@ private:
 
     Array2D<bool, LEVEL_ROWS, LEVEL_COLS> seenMap;
 };
-
-extern Hero heroTemplate;
 
 #endif // HERO_HPP
 

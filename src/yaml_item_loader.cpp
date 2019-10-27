@@ -67,7 +67,7 @@ YAML::Node loadItemData(std::string_view id, YAMLFileCache & yamlFileCache) {
     return yamlFileCache[filename];
 }
 
-FoodPtr YAMLItemLoader::loadFood(std::string_view id) {
+Ptr<Food> YAMLItemLoader::loadFood(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Food>();
     initItemBase(*loaded, item);
@@ -75,7 +75,7 @@ FoodPtr YAMLItemLoader::loadFood(std::string_view id) {
     return loaded;
 }
 
-ArmorPtr YAMLItemLoader::loadArmor(std::string_view id) {
+Ptr<Armor> YAMLItemLoader::loadArmor(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Armor>();
     initItemBase(*loaded, item);
@@ -84,7 +84,7 @@ ArmorPtr YAMLItemLoader::loadArmor(std::string_view id) {
     return loaded;
 }
 
-AmmoPtr YAMLItemLoader::loadAmmo(std::string_view id) {
+Ptr<Ammo> YAMLItemLoader::loadAmmo(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Ammo>();
     initItemBase(*loaded, item);
@@ -93,7 +93,7 @@ AmmoPtr YAMLItemLoader::loadAmmo(std::string_view id) {
     return loaded;
 }
 
-WeaponPtr YAMLItemLoader::loadWeapon(std::string_view id) {
+Ptr<Weapon> YAMLItemLoader::loadWeapon(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Weapon>();
     initItemBase(*loaded, item);
@@ -121,7 +121,7 @@ tl::optional<Scroll::Effect> toScrollEffect(std::string_view effectString) {
     }
 }
 
-ScrollPtr YAMLItemLoader::loadScroll(std::string_view id) {
+Ptr<Scroll> YAMLItemLoader::loadScroll(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Scroll>();
     initItemBase(*loaded, item);
@@ -132,7 +132,7 @@ ScrollPtr YAMLItemLoader::loadScroll(std::string_view id) {
     return loaded;
 }
 
-PotionPtr YAMLItemLoader::loadPotion(std::string_view id) {
+Ptr<Potion> YAMLItemLoader::loadPotion(std::string_view id) {
     YAML::Node item = loadItemData(id, yamlFileCache);
     auto loaded = std::make_unique<Potion>();
     initItemBase(*loaded, item);

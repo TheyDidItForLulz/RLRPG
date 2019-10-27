@@ -6,17 +6,20 @@
 
 #include<yaml_file_cache.hpp>
 #include<item.hpp>
+#include<units/hero.hpp>
+#include<units/enemy.hpp>
+#include<game.hpp>
 
 #include<fmt/format.h>
 #include<tl/optional.hpp>
 
 void YAMLUnitLoader::load() {
-    heroTemplate = loadHero();
+    g_game.setHeroTemplate(loadHero());
 
     const auto & enemyRegistry = yamlFileCache["data/units/enemies.yaml"];
     for (const auto & id : enemyRegistry) {
         auto idString = id.as<std::string>();
-        enemyTypes[idString] = loadEnemy(idString);
+        g_game.getEnemyTypes()[idString] = loadEnemy(idString);
     }
 }
 
@@ -81,24 +84,25 @@ void initUnitBase(Unit & unit, const YAML::Node & data) {
     }
 }
 
-Hero YAMLUnitLoader::loadHero() {
+Ptr<Hero> YAMLUnitLoader::loadHero() {
     auto heroData = yamlFileCache["data/units/hero.yaml"];
-    Hero hero;
-    initUnitBase(hero, heroData);
-    hero.maxBurden = heroData["hero"]["maxBurden"].as<int>();
-    hero.hunger = heroData["hero"]["hunger"].as<int>();
+    auto hero = std::make_unique<Hero>();
+    initUnitBase(*hero, heroData);
+    hero->maxBurden = heroData["hero"]["maxBurden"].as<int>();
+    hero->hunger = heroData["hero"]["hunger"].as<int>();
     return hero;
 }
 
-Enemy YAMLUnitLoader::loadEnemy(const std::string & id) {
+Ptr<Enemy> YAMLUnitLoader::loadEnemy(const std::string & id) {
     auto filename = fmt::format("data/units/enemies/{}.yaml", id);
     auto enemyData = yamlFileCache[filename];
-    Enemy enemy;
-    initUnitBase(enemy, enemyData);
-    enemy.xpCost = enemyData["enemy"]["xpCost"].as<int>();
+    auto enemy = std::make_unique<Enemy>();
+    initUnitBase(*enemy, enemyData);
+    enemy->xpCost = enemyData["enemy"]["xpCost"].as<int>();
     if (enemyData["enemy"]["ammo"]) {
         char at = enemyData["enemy"]["ammo"].as<char>();
-        enemy.ammo = dynamic_cast<Ammo *>(&enemy.inventory[at]);
+        enemy->ammo = dynamic_cast<Ammo *>(&enemy->inventory[at]);
     }
     return enemy;
 }
+

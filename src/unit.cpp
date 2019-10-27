@@ -12,8 +12,6 @@
 
 static const int VISION_PRECISION = 256;
 
-Array2D<UnitPtr, LEVEL_ROWS, LEVEL_COLS> unitMap;
-
 Unit::Unit(const Unit & other)
     : health(other.health)
     , maxHealth(other.maxHealth)
@@ -91,10 +89,11 @@ bool Unit::canSee(Coord2i cell) const {
 }
 
 void Unit::setTo(Coord2i cell) {
-    if (g_game.level()[cell] == 2 or unitMap[cell] or pos == cell)
+    auto & unitsMap = g_game.getUnitsMap();
+    if (g_game.level()[cell] == 2 or unitsMap[cell] or pos == cell)
         return;
 
-    unitMap[cell] = std::move(unitMap[pos]);
+    unitsMap[cell] = std::move(unitsMap[pos]);
     pos = cell;
 }
 
