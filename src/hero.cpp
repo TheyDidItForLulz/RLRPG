@@ -1,12 +1,15 @@
 #include<units/hero.hpp>
+
 #include<units/enemy.hpp>
 #include<game.hpp>
+#include<item_list_formatters.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
-#include<item_list_formatters.hpp>
-#include<numeric>
+
 #include<effolkronium/random.hpp>
+
+#include<numeric>
 
 using namespace fmt::literals;
 using fmt::format;
@@ -41,7 +44,7 @@ bool Hero::isInvisible() const {
 }
 
 void Hero::checkVisibleCells() {
-    seenUpdated.forEach([this] (Coord2i pos, bool & see) {
+    seenMap.forEach([this] (Coord2i pos, bool & see) {
         see = canSee(pos);
     });
 }
@@ -195,13 +198,14 @@ bool Hero::isMapInInventory() const {
 }
 
 void Hero::pickUp() {
+    auto & itemsMap = g_game.getItemsMap();
     if (itemsMap[pos].empty()) {
         g_game.addMessage("There is nothing here to pick up.");
         g_game.skipUpdate();
         return;
     }
 
-    std::vector<ItemPileIter> iters;
+    std::vector<ItemPile::iterator> iters;
     if (itemsMap[pos].size() == 1) {
         iters.push_back(itemsMap[pos].begin());
     } else {
@@ -233,14 +237,14 @@ void Hero::pickUp() {
 
         inventory.add(std::move(itemToPick)).doIf<AddStatus::New>(
                 [this, it, &pickUpString](AddStatus::New added) {
-            itemsMap[pos].erase(it);
+            g_game.getItemsMap()[pos].erase(it);
             auto & item = inventory[added.at];
             if (item.isStackable and item.count > 1)
                 pickUpString = format("{}x {} ({})", item.count, item.getName(), added.at);
             else
                 pickUpString = format("{} ({})", item.getName(), added.at);
         }).doIf<AddStatus::Stacked>([this, it, &pickUpString](AddStatus::Stacked stacked) {
-            itemsMap[pos].erase(it);
+            g_game.getItemsMap()[pos].erase(it);
             auto & item = inventory[stacked.at];
 
             std::string pickedCount;
@@ -406,7 +410,7 @@ void Hero::processInput(char inp) {
                         canMoveThroughWalls = false;
                     }
                 } else {
-                    itemsMap.at(1, 1).push_back(std::make_unique<Food>(foodTypes[0]));
+                    //g_game.getItemsMap().at(1, 1).push_back(g_game.getFoodTypes()[0]->clone());
                 }
             } else if (hv == 'k') {
                 if (g_game.getReader().readChar() == 'i') {
@@ -497,7 +501,7 @@ void Hero::reloadWeapon() {
             auto bullet = weapon->cartridge.unloadOne();
             if (bullet) {
                 inventory.add(std::move(bullet)).doIf<AddStatus::AddError>([&] (auto & err) {
-                    drop(std::move(err.item), pos);
+                    g_game.drop(std::move(err.item), pos);
                 });
             }
         } else {
@@ -508,7 +512,7 @@ void Hero::reloadWeapon() {
                     return;
                 }
 
-                Ammo::Ptr bullet;
+                AmmoPtr bullet;
                 if (item.count == 1) {
                     auto itemptr = inventory.remove(item.inventorySymbol).release();
                     bullet.reset(dynamic_cast<Ammo *>(itemptr));
@@ -591,7 +595,7 @@ void Hero::dropItems() {
 
         dropCount = clamp(1, g_game.getReader().readChar() - '0', item.count);
     }
-    drop(item.splitStack(dropCount), pos);
+    g_game.drop(item.splitStack(dropCount), pos);
     if (item.count == 0)
         inventory.remove(choice);
 
@@ -715,7 +719,7 @@ void Hero::drinkPotion() {
         case Potion::Teleport:
             while (true) {
                 Coord2i pos = { Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-                if (::level[pos] != 2 and not unitMap[pos]) {
+                if (g_game.level()[pos] != 2 and not unitMap[pos]) {
                     setTo(pos);
                     break;
                 }
@@ -733,7 +737,7 @@ void Hero::drinkPotion() {
         default:
             throw std::logic_error("Unknown potion id");
     }
-    potionTypeKnown[potion.id] = true;
+    g_game.markPotionAsKnown(potion.id);
 
     if (item.count == 1) {
         inventory.remove(itemID);
@@ -766,7 +770,7 @@ void Hero::readScroll() {
         case Scroll::Identify: {
             auto [status, chToApply] = selectOneFromInventory("What do you want to identify?", [] (const Item & item) {
                 if (item.getType() == Item::Type::Potion) {
-                    if (not potionTypeKnown[item.id])
+                    if (not g_game.isPotionKnown(item.id))
                         return true;
                 } else if (not item.showMdf){
                     return true;
@@ -787,7 +791,7 @@ void Hero::readScroll() {
 
             auto & item2 = inventory[chToApply];
             if (item2.getType() == Item::Type::Potion) {
-                potionTypeKnown[item2.id] = true;
+                g_game.markPotionAsKnown(item2.id);
             } else {
                 item2.showMdf = true;
             }
@@ -816,14 +820,14 @@ void Hero::attackEnemy(Coord2i cell) {
     }
 }
 
-void Hero::throwAnimated(Item::Ptr item, Direction direction) {
+void Hero::throwAnimated(ItemPtr item, Direction direction) {
     int throwDist = 0;
     auto offset = toVec2i(direction);
     char sym = toChar(direction);
     for (int i = 0; i < 12 - item->getTotalWeight() / 3; i++) {                        // 12 is "strength"
         auto cell = pos + offset * (i + 1);
 
-        if (::level[cell] == 2)
+        if (g_game.level()[cell] == 2)
             break;
 
         if (unitMap[cell]) {
@@ -843,7 +847,7 @@ void Hero::throwAnimated(Item::Ptr item, Direction direction) {
         throwDist++;
         sleep(DELAY);
     }
-    drop(std::move(item), pos + offset * throwDist);
+    g_game.drop(std::move(item), pos + offset * throwDist);
 }
 
 void Hero::shoot() {
@@ -874,7 +878,7 @@ void Hero::shoot() {
     for (int i = 1; i < weapon->range + weapon->cartridge.next().range; i++) {
         auto cell = pos + offset * i;
 
-        if (::level[cell] == 2)
+        if (g_game.level()[cell] == 2)
             break;
 
         if (unitMap[cell]) {
@@ -896,15 +900,16 @@ void Hero::shoot() {
 }
 
 void Hero::moveTo(Coord2i cell) {
-    if (not ::level.isIndex(cell))
+    const auto & level = g_game.level();
+    if (not level.isIndex(cell))
         return;
-    if (::level[cell] != 2 or canMoveThroughWalls) {
+    if (level[cell] != 2 or canMoveThroughWalls) {
         if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Enemy) {
             attackEnemy(cell);
         } else if (not unitMap[cell]) {
             setTo(cell);
         }
-    } else if (::level[cell] == 2) {
+    } else if (level[cell] == 2) {
         if (weapon != nullptr and weapon->canDig) {
             g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
@@ -912,7 +917,7 @@ void Hero::moveTo(Coord2i cell) {
 
             char inpChar = g_game.getReader().readChar();
             if (inpChar == 'y' or inpChar == 'Y') {
-                ::level[cell] = 1;
+                g_game.level()[cell] = 1;
                 float breakProbability = (Hero::MAX_LUCK - luck) / 100.f;
                 if (Random::get<bool>(breakProbability)) {
                     g_game.addMessage(format("You've broken your {}.", weapon->getName()));

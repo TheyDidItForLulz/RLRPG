@@ -1,5 +1,6 @@
 #include<game.hpp>
 
+#include<item.hpp>
 #include<gen_map.hpp>
 #include<level.hpp>
 #include<units/unit.hpp>
@@ -19,6 +20,8 @@
 using namespace std::string_view_literals;
 using fmt::format;
 using Random = effolkronium::random_static;
+
+Game g_game;
 
 void Game::printMenu(const std::vector<std::string_view> & items, int active) {
     TextStyle activeItemStyle{ TextStyle::Bold, Color::Red };
@@ -377,7 +380,7 @@ void Game::initialize() {
 }
 
 void Game::updateAI() {
-    unitMap.forEach([&] (Unit::Ptr & unit) {
+    unitMap.forEach([&] (UnitPtr & unit) {
         if (not unit or unit->getType() != Unit::Type::Enemy)
             return;
 
@@ -393,20 +396,20 @@ void Game::updateAI() {
 
 void Game::setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
-    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, ItemSelector<Armor>([&] (const ItemRegistry<Armor> & types) {
-        Armor item = Random::get(types)->second;
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [this] (const Registry<ArmorPtr> & types) {
+        ArmorPtr item = Random::get(types)->second->clone();
         float thornsProbability = hero->luck / 500.f;
         if (Random::get<bool>(thornsProbability)) {
-            item.mdf = 2;
+            item->mdf = 2;
         }
         return item;
-    }));
+    });
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, ItemSelector<Ammo>([&] (const ItemRegistry<Ammo> & types) {
-        Ammo ammo = Random::get(types)->second;
-        ammo.count = Random::get(1, hero->luck);
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [this] (const Registry<AmmoPtr> & types) {
+        AmmoPtr ammo = Random::get(types)->second->clone();
+        ammo->count = Random::get(1, hero->luck);
         return ammo;
-    }));
+    });
     randomlySelectAndSetOnMap(scrollTypes, Scroll::COUNT);
     randomlySelectAndSetOnMap(potionTypes, Potion::COUNT);
 }
@@ -414,7 +417,7 @@ void Game::setItems() {
 void Game::spawnUnits() {
     for (int i = 0; i < 1; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-        if (level[pos] == 1 and not unitMap[pos]) {
+        if (levelData[pos] == 1 and not unitMap[pos]) {
             auto hero = std::make_unique<Hero>(heroTemplate);
             this->hero = hero.get();
             this->hero->pos = pos;
@@ -426,7 +429,7 @@ void Game::spawnUnits() {
     }
     for (int i = 0; i < ENEMIESCOUNT; i++) {
         Coord2i pos{ Random::get(0, LEVEL_COLS - 1), Random::get(0, LEVEL_ROWS - 1) };
-        if (level[pos] == 1 and not unitMap[pos]) {
+        if (levelData[pos] == 1 and not unitMap[pos]) {
             auto enemy = std::make_unique<Enemy>(Random::get(enemyTypes)->second);
             enemy->pos = pos;
             unitMap[pos] = std::move(enemy);
@@ -456,48 +459,49 @@ void Game::displayMessages() {
         .display();
 }
 
-SymbolRenderData Game::getRenderData(const Item::Ptr & item) {
-    if (itemRenderData.count(item->id))
-        return itemRenderData.at(item->id);
+SymbolRenderData Game::getRenderData(const Item & item) {
+    if (itemRenderData.count(item.id))
+        return itemRenderData.at(item.id);
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Green, Color::Magenta } } };
 }
 
-SymbolRenderData Game::getRenderData(const Unit::Ptr & unit) {
-    if (unitRenderData.count(unit->id))
-        return unitRenderData.at(unit->id);
+SymbolRenderData Game::getRenderData(const Unit & unit) {
+    if (unitRenderData.count(unit.id))
+        return unitRenderData.at(unit.id);
     return { '?', { TextStyle::Bold, TerminalColor{ Color::Magenta, Color::Green } } };
 }
 
 tl::optional<CellRenderData> Game::getRenderData(Coord2i cell) {
-    if (not seenUpdated[cell])
+    const bool heroSeenThisCell = hero->seenUpdated(cell);
+    if (not heroSeenThisCell)
         return tl::nullopt;
 
     CellRenderData renderData;
     if (unitMap[cell]) {
-        renderData.unit = getRenderData(unitMap[cell]);
+        renderData.unit = getRenderData(*unitMap[cell]);
     }
     if (itemsMap[cell].size() == 1) {
-        renderData.item = getRenderData(itemsMap[cell].front());
+        renderData.item = getRenderData(*itemsMap[cell].front());
     } else if (itemsMap[cell].size() > 1) {
         renderData.item = SymbolRenderData{ '^', { TextStyle::Bold, TerminalColor{ Color::Black, Color::White } } };
     }
-    switch (level[cell]) {
+    switch (levelData[cell]) {
         case 1:
-            if (seenUpdated[cell]) {
+            if (heroSeenThisCell) {
                 renderData.level = '.';
             } else {
                 renderData.level = ' ';
             }
             break;
         case 2:
-            if (seenUpdated[cell]) {
+            if (heroSeenThisCell) {
                 renderData.level = SymbolRenderData{ '#', { TextStyle::Bold } };
             } else {
                 renderData.level = '#';
             }
             break;
         default:
-            throw std::logic_error(format("Unknown block id: {}", level[cell]));
+            throw std::logic_error(format("Unknown block id: {}", levelData[cell]));
     }
     return renderData;
 }
@@ -530,7 +534,7 @@ void Game::drawMap() {
 
 void Game::setRandomPotionEffects() {
     for (auto & [id, potion] : potionTypes) {
-        potion.effect = Potion::Effect(Random::get(0, Potion::EffectCount - 1));
+        potion->effect = Potion::Effect(Random::get(0, Potion::EffectCount - 1));
     }
 }
 
@@ -578,5 +582,57 @@ void Game::draw() {
         .setCursorPosition(Coord2i{ 0, LEVEL_ROWS + 2 })
         .put(fmt::sprintf("%- 190s", message))
         .setCursorPosition(hero->pos);
+}
+
+void Game::initField() {
+    levelData.forEach([] (int & cell) {
+        cell = 1;
+    });
+}
+
+void Game::readMap() {
+    std::ifstream file{ "map.me" };
+    levelData.forEach([&] (int & cell) {
+        file >> cell;
+    });
+}
+
+ItemPile::iterator Game::findItemAt(Coord2i cell, std::string_view id) {
+    auto & pile = itemsMap[cell];
+    return std::find_if(begin(pile), end(pile), [id] (const ItemPtr & item) {
+        return item->id == id;
+    });
+}
+
+bool Game::randomlySetOnMap(ItemPtr item) {
+    const int attemts = 32;
+
+    for (int i = 0; i < attemts; ++i) {
+        Coord2i cell{ Random::get(0, LEVEL_COLS - 1),
+					  Random::get(0, LEVEL_ROWS - 1) };
+
+        if (g_game.level()[cell] == 1) {
+            drop(std::move(item), cell);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Game::drop(ItemPtr item, Coord2i cell) {
+    if (g_game.level()[cell] == 2)
+        throw std::logic_error("Trying to drop an item in a wall");
+    if (not item)
+        return;
+    item->pos = cell;
+    if (item->isStackable) {
+        auto it = findItemAt(cell, item->id);
+        if (it != end(itemsMap[cell])) {
+            (*it)->count += item->count;
+            return;
+        }
+    }
+    itemsMap[cell].push_back(std::move(item));
 }
 

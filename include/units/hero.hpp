@@ -6,6 +6,7 @@
 #include<direction.hpp>
 
 #include<effolkronium/random.hpp>
+
 #include<functional>
 
 using Random = effolkronium::random_static;
@@ -40,13 +41,14 @@ public:
     int getLevelUpXP() const;
     bool tryLevelUp(); // returns true if reaches new level
 
-    Type getType() const override {
-        return Type::Hero;
-    }
+    Type getType() const override { return Type::Hero; }
+
+    template<class ... Args>
+    bool seenUpdated(Args && ... args) const { return seenMap.at(std::forward<Args>(args)...); }
 
 private:
 	void attackEnemy(Coord2i cell);
-	void throwAnimated(Item::Ptr item, Direction direction);
+	void throwAnimated(ItemPtr item, Direction direction);
 	void shoot();
 	void eat();
 	void dropItems();
@@ -80,6 +82,8 @@ private:
 	void moveTo(Coord2i cell);
 
     void levelUp();
+
+    Array2D<bool, LEVEL_ROWS, LEVEL_COLS> seenMap;
 };
 
 extern Hero heroTemplate;

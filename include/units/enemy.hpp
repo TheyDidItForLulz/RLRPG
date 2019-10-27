@@ -2,8 +2,11 @@
 #define ENEMY_HPP
 
 #include<units/unit.hpp>
+
 #include<string_view>
 #include<unordered_map>
+
+class Ammo;
 
 class Enemy: public Unit {
 public:

@@ -2,10 +2,13 @@
 // Created by yuri12358 on 6/28/19.
 //
 
-#include<yaml_file_cache.hpp>
 #include<yaml_unit_loader.hpp>
-#include <fmt/format.h>
-#include <tl/optional.hpp>
+
+#include<yaml_file_cache.hpp>
+#include<item.hpp>
+
+#include<fmt/format.h>
+#include<tl/optional.hpp>
 
 void YAMLUnitLoader::load() {
     heroTemplate = loadHero();
@@ -36,7 +39,7 @@ tl::optional<std::pair<int, int>> parseRange(const std::string & toParse) {
     }
 }
 
-Item::Ptr createItem(const YAML::Node & itemData){
+ItemPtr createItem(const YAML::Node & itemData){
     auto item = Item::getByID(itemData["id"].as<std::string>());
     if (not item)
         return nullptr;

@@ -6,7 +6,8 @@
 #include<type_traits>
 #include<memory>
 
-#include<item.hpp>
+class Item;
+using ItemPtr = std::unique_ptr<Item>;
 
 template<class UnderlyingIter, class ItemType, class ValueType = std::pair<char, ItemType *>>
 class InventoryIteratorImpl {
@@ -57,8 +58,8 @@ public:
     }
 };
 
-using InventoryIterator = InventoryIteratorImpl<std::unordered_map<char, Item::Ptr>::iterator, Item>;
-using ConstInventoryIterator = InventoryIteratorImpl<std::unordered_map<char, Item::Ptr>::const_iterator, const Item>;
+using InventoryIterator = InventoryIteratorImpl<std::unordered_map<char, ItemPtr>::iterator, Item>;
+using ConstInventoryIterator = InventoryIteratorImpl<std::unordered_map<char, ItemPtr>::const_iterator, const Item>;
 
 #endif // INVENTORY_ITERATOR_HPP
 

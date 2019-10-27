@@ -1,16 +1,18 @@
-#include<ctime>
+#include<units/unit.hpp>
+
+#include<item.hpp>
+#include<utils.hpp>
+#include<array2d.hpp>
+#include<game.hpp>
+
 #include<thread>
 #include<queue>
 #include<cassert>
 #include<iterator>
 
-#include<units/unit.hpp>
-#include<utils.hpp>
-#include<array2d.hpp>
-
 static const int VISION_PRECISION = 256;
 
-Array2D<Unit::Ptr, LEVEL_ROWS, LEVEL_COLS> unitMap;
+Array2D<UnitPtr, LEVEL_ROWS, LEVEL_COLS> unitMap;
 
 Unit::Unit(const Unit & other)
     : health(other.health)
@@ -68,7 +70,7 @@ bool Unit::linearVisibilityCheck(Vec2d from, Vec2d to) const {
         Vec2i c = from + Vec2d{ double(i), i * k };
         if (steep)
             std::swap(c.x, c.y);
-        if (level[c] == 2)
+        if (g_game.level()[c] == 2)
             return false;
     }
     return true;
@@ -89,7 +91,7 @@ bool Unit::canSee(Coord2i cell) const {
 }
 
 void Unit::setTo(Coord2i cell) {
-    if (level[cell] == 2 or unitMap[cell] or pos == cell)
+    if (g_game.level()[cell] == 2 or unitMap[cell] or pos == cell)
         return;
 
     unitMap[cell] = std::move(unitMap[pos]);
@@ -108,7 +110,7 @@ void Unit::dropInventory() {
     takeArmorOff();
     while (not inventory.isEmpty()) {
         auto id = inventory.begin()->second->inventorySymbol;
-        drop(inventory.remove(id), pos);
+        g_game.drop(inventory.remove(id), pos);
     }
     assert(inventory.isEmpty());
 }

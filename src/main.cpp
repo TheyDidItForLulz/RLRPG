@@ -42,8 +42,6 @@
 
 #include<game.hpp>
 
-Game g_game;
-
 int main() {
     g_game.run();
 }

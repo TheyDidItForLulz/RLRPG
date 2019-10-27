@@ -1,11 +1,15 @@
 #include<units/enemy.hpp>
+
+#include<item.hpp>
 #include<direction.hpp>
 #include<units/hero.hpp>
 #include<game.hpp>
 
-#include<queue>
 #include<effolkronium/random.hpp>
-#include <fmt/format.h>
+
+#include<fmt/format.h>
+
+#include<queue>
 
 using Random = effolkronium::random_static;
 
@@ -13,26 +17,30 @@ std::unordered_map<std::string, Enemy> enemyTypes;
 
 Enemy::Enemy(std::string_view id) {
     this->id = id;
+    const auto & foodTypes = g_game.getFoodTypes();
+    const auto & weaponTypes = g_game.getWeaponTypes();
+    const auto & ammoTypes = g_game.getAmmoTypes();
+
     if (id == "barbarian") {
         health = 7;
         maxHealth = 7;
-        inventory.add(std::make_unique<Food>(foodTypes["egg"]));
-        inventory.add(std::make_unique<Weapon>(weaponTypes["copper_shortsword"]));
+        inventory.add(foodTypes.at("egg")->clone());
+        inventory.add(weaponTypes.at("copper_shortsword")->clone());
         weapon = dynamic_cast<Weapon *>(&inventory['b']);
         vision = 16;
         xpCost = 3;
     } else if (id == "zombie") {
         health = 10;
         maxHealth = 10;
-        inventory.add(std::make_unique<Weapon>(weaponTypes["stick"]));
+        inventory.add(weaponTypes.at("stick")->clone());
         weapon = dynamic_cast<Weapon *>(&inventory['a']);
         vision = 10;
         xpCost = 2;
     } else if (id == "guardian") {
         health = 5;
         maxHealth = 5;
-        inventory.add(std::make_unique<Weapon>(weaponTypes["pistol"]));
-        inventory.add(std::make_unique<Ammo>(ammoTypes["steel_bullets"]));
+        inventory.add(weaponTypes.at("pistol")->clone());
+        inventory.add(ammoTypes.at("steel_bullets")->clone());
         weapon = dynamic_cast<Weapon *>(&inventory['a']);
         ammo = dynamic_cast<Ammo *>(&inventory['b']);
         ammo->count = Random::get(4, 30);
@@ -86,7 +94,7 @@ void Enemy::shoot() {
     for (int i = 1; i < weapon->range + ammo->range; i++) {
         Coord2i cell = pos + offset * i;
 
-        if (level[cell] == 2)
+        if (g_game.level()[cell] == 2)
             break;
 
         if (unitMap[cell] and unitMap[cell]->getType() == Unit::Type::Hero) {
@@ -146,7 +154,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
             auto tv = v + dir;
             if (unitMap.isIndex(tv)
                     and (not unitMap[tv] or unitMap[tv]->getType() == Unit::Type::Hero)
-                    and level[tv] != 2 and used[tv] == 0) {
+                    and g_game.level()[tv] != 2 and used[tv] == 0) {
                 q.push(tv);
                 used[tv] = 1 + used[v];
             }
@@ -171,7 +179,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
 }
 
 void Enemy::moveTo(Coord2i cell) {
-    if (level[cell] == 2)
+    if (g_game.level()[cell] == 2)
         throw std::logic_error("Trying to move an enemy into a wall");
 
     if (not unitMap[cell]) {
@@ -222,8 +230,8 @@ void Enemy::updatePosition() {
 
     std::vector<Coord2i> visibleCells;
 
-    unitMap.forEach([&] (Coord2i cell, const Unit::Ptr & unit) {
-        if (cell != pos and level[cell] != 2 and not unit and canSee(cell)) {
+    unitMap.forEach([&] (Coord2i cell, const UnitPtr & unit) {
+        if (cell != pos and g_game.level()[cell] != 2 and not unit and canSee(cell)) {
             visibleCells.push_back(cell);
         }
     });
