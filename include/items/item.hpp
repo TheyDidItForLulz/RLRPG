@@ -40,8 +40,6 @@ public:
     int getTotalWeight() const;
     virtual Type getType() const = 0;
     virtual Ptr<Item> cloneItem() const = 0;
-
-    static Ptr<Item> getByID(std::string const & id);
 };
 
 #endif // RLRPG_ITEMS_ITEM_HPP

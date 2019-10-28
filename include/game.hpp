@@ -107,23 +107,12 @@ public:
     Registry<Ptr<Enemy>> const & getEnemyTypes() const { return enemyTypes; }
     Registry<Ptr<Enemy>>       & getEnemyTypes()       { return enemyTypes; }
 
+    Ptr<Item> createItem(std::string const & id);
+
     bool isPotionKnown(std::string const & id) const { return potionTypeKnown.at(id); }
     void markPotionAsKnown(std::string const & id) { potionTypeKnown.at(id) = true; }
 
     void addMessage(std::string_view msg);
-
-    void initialize();
-
-    void updateAI();
-    
-    void setItems();
-
-    void spawnUnits();
-
-    void clearBuffers();
-
-    void displayMessages();
-
     void drop(Ptr<Item> item, Coord2i to);
 
 private:
@@ -148,12 +137,19 @@ private:
     tl::optional<CellRenderData> getRenderData(Coord2i cell);
     void clearCachedMap();
     void drawMap();
+    void clearBuffers();
+    void displayMessages();
     void draw();
+
+    void updateAI();
 
     void loadData();
 
+    void setItems();
+    void spawnUnits();
     void setRandomPotionEffects();
 
+    void initialize();
     void initField();
     void readMap();
 

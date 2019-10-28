@@ -46,7 +46,7 @@ tl::optional<std::pair<int, int>> parseRange(std::string const & toParse) {
 }
 
 Ptr<Item> createItem(YAML::Node const & itemData){
-    auto item = Item::getByID(itemData["id"].as<std::string>());
+    auto item = g_game.createItem(itemData["id"].as<std::string>());
     if (not item)
         return nullptr;
 

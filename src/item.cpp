@@ -1,10 +1,4 @@
 #include<items/item.hpp>
-#include<items/food.hpp>
-#include<items/armor.hpp>
-#include<items/ammo.hpp>
-#include<items/weapon.hpp>
-#include<items/scroll.hpp>
-#include<items/potion.hpp>
 
 #include<game.hpp>
 
@@ -39,39 +33,5 @@ int Item::getSingleWeight() const {
 
 int Item::getTotalWeight() const {
     return weight * count;
-}
-
-Ptr<Item> Item::getByID(std::string const & id) {
-	{
-		auto it = g_game.getFoodTypes().find(id);
-		if (it != g_game.getFoodTypes().end())
-			return it->second->clone();
-	}
-	{
-		auto it = g_game.getArmorTypes().find(id);
-		if (it != g_game.getArmorTypes().end())
-			return it->second->clone();
-	}
-	{
-		auto it = g_game.getAmmoTypes().find(id);
-		if (it != g_game.getAmmoTypes().end())
-			return it->second->clone();
-	}
-	{
-		auto it = g_game.getPotionTypes().find(id);
-		if (it != g_game.getPotionTypes().end())
-			return it->second->clone();
-	}
-	{
-		auto it = g_game.getScrollTypes().find(id);
-		if (it != g_game.getScrollTypes().end())
-			return it->second->clone();
-	}
-	{
-		auto it = g_game.getWeaponTypes().find(id);
-		if (it != g_game.getWeaponTypes().end())
-			return it->second->clone();
-	}
-	return {};
 }
 

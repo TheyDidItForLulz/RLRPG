@@ -648,3 +648,37 @@ void Game::drop(Ptr<Item> item, Coord2i cell) {
     itemsMap[cell].push_back(std::move(item));
 }
 
+Ptr<Item> Game::createItem(std::string const & id) {
+	{
+		auto it = foodTypes.find(id);
+		if (it != foodTypes.end())
+			return it->second->clone();
+	}
+	{
+		auto it = armorTypes.find(id);
+		if (it != armorTypes.end())
+			return it->second->clone();
+	}
+	{
+		auto it = ammoTypes.find(id);
+		if (it != ammoTypes.end())
+			return it->second->clone();
+	}
+	{
+		auto it = potionTypes.find(id);
+		if (it != potionTypes.end())
+			return it->second->clone();
+	}
+	{
+		auto it = scrollTypes.find(id);
+		if (it != scrollTypes.end())
+			return it->second->clone();
+	}
+	{
+		auto it = weaponTypes.find(id);
+		if (it != weaponTypes.end())
+			return it->second->clone();
+	}
+	return {};
+}
+
