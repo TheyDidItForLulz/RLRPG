@@ -5,7 +5,10 @@
 #include<yaml_unit_loader.hpp>
 
 #include<yaml_file_cache.hpp>
-#include<item.hpp>
+#include<items/item.hpp>
+#include<items/armor.hpp>
+#include<items/weapon.hpp>
+#include<items/ammo.hpp>
 #include<units/hero.hpp>
 #include<units/enemy.hpp>
 #include<game.hpp>
@@ -42,7 +45,7 @@ tl::optional<std::pair<int, int>> parseRange(std::string const & toParse) {
     }
 }
 
-ItemPtr createItem(YAML::Node const & itemData){
+Ptr<Item> createItem(YAML::Node const & itemData){
     auto item = Item::getByID(itemData["id"].as<std::string>());
     if (not item)
         return nullptr;

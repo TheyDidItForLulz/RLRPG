@@ -1,6 +1,6 @@
 #include<inventory.hpp>
 
-#include<item.hpp>
+#include<items/item.hpp>
 
 #include<stdexcept>
 #include<algorithm>

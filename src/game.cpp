@@ -1,6 +1,11 @@
 #include<game.hpp>
 
-#include<item.hpp>
+#include<items/food.hpp>
+#include<items/armor.hpp>
+#include<items/ammo.hpp>
+#include<items/weapon.hpp>
+#include<items/potion.hpp>
+#include<items/scroll.hpp>
 #include<gen_map.hpp>
 #include<level.hpp>
 #include<units/unit.hpp>
@@ -403,8 +408,8 @@ void Game::updateAI() {
 
 void Game::setItems() {
     randomlySelectAndSetOnMap(foodTypes, Food::COUNT);
-    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [this] (Registry<ArmorPtr> const & types) {
-        ArmorPtr item = Random::get(types)->second->clone();
+    randomlySelectAndSetOnMap(armorTypes, Armor::COUNT, [this] (Registry<Ptr<Armor>> const & types) {
+        auto item = Random::get(types)->second->clone();
         float thornsProbability = hero->luck / 500.f;
         if (Random::get<bool>(thornsProbability)) {
             item->mdf = 2;
@@ -412,8 +417,8 @@ void Game::setItems() {
         return item;
     });
     randomlySelectAndSetOnMap(weaponTypes, Weapon::COUNT);
-    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [this] (Registry<AmmoPtr> const & types) {
-        AmmoPtr ammo = Random::get(types)->second->clone();
+    randomlySelectAndSetOnMap(ammoTypes, Ammo::COUNT, [this] (Registry<Ptr<Ammo>> const & types) {
+        auto ammo = Random::get(types)->second->clone();
         ammo->count = Random::get(1, hero->luck);
         return ammo;
     });
@@ -606,12 +611,12 @@ void Game::readMap() {
 
 ItemPile::iterator Game::findItemAt(Coord2i cell, std::string_view id) {
     auto & pile = itemsMap[cell];
-    return std::find_if(begin(pile), end(pile), [id] (ItemPtr const & item) {
+    return std::find_if(begin(pile), end(pile), [id] (Ptr<Item> const & item) {
         return item->id == id;
     });
 }
 
-bool Game::randomlySetOnMap(ItemPtr item) {
+bool Game::randomlySetOnMap(Ptr<Item> item) {
     int const attemts = 32;
 
     for (int i = 0; i < attemts; ++i) {
@@ -627,7 +632,7 @@ bool Game::randomlySetOnMap(ItemPtr item) {
     return false;
 }
 
-void Game::drop(ItemPtr item, Coord2i cell) {
+void Game::drop(Ptr<Item> item, Coord2i cell) {
     if (g_game.level()[cell] == 2)
         throw std::logic_error("Trying to drop an item in a wall");
     if (not item)

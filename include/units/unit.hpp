@@ -1,9 +1,7 @@
 #ifndef UNIT_HPP
 #define UNIT_HPP
 
-#include<array2d.hpp>
 #include<inventory.hpp>
-#include<level.hpp>
 
 #include<termlib/vec2.hpp>
 

@@ -4,7 +4,12 @@
 
 #include<yaml_item_loader.hpp>
 
-#include<item.hpp>
+#include<items/food.hpp>
+#include<items/armor.hpp>
+#include<items/weapon.hpp>
+#include<items/ammo.hpp>
+#include<items/scroll.hpp>
+#include<items/potion.hpp>
 #include<yaml_file_cache.hpp>
 #include<game.hpp>
 

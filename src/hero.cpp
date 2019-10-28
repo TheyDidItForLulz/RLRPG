@@ -3,6 +3,12 @@
 #include<units/enemy.hpp>
 #include<game.hpp>
 #include<item_list_formatters.hpp>
+#include<items/food.hpp>
+#include<items/armor.hpp>
+#include<items/weapon.hpp>
+#include<items/ammo.hpp>
+#include<items/potion.hpp>
+#include<items/scroll.hpp>
 
 #include<fmt/core.h>
 #include<fmt/printf.h>
@@ -510,7 +516,7 @@ void Hero::reloadWeapon() {
                     return;
                 }
 
-                AmmoPtr bullet;
+                Ptr<Ammo> bullet;
                 if (item.count == 1) {
                     auto itemptr = inventory.remove(item.inventorySymbol).release();
                     bullet.reset(dynamic_cast<Ammo *>(itemptr));

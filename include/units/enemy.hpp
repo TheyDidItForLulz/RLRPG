@@ -4,8 +4,8 @@
 #include<units/unit.hpp>
 #include<enable_clone.hpp>
 
+#include<optional>
 #include<string_view>
-#include<unordered_map>
 
 class Ammo;
 

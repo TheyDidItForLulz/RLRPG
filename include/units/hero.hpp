@@ -5,6 +5,8 @@
 #include<utils.hpp>
 #include<direction.hpp>
 #include<enable_clone.hpp>
+#include<array2d.hpp>
+#include<level.hpp>
 
 #include<effolkronium/random.hpp>
 

@@ -23,6 +23,13 @@ add_executable(RLRPG
         include/termlib/termlib.hpp
         include/termlib/vec2.hpp
         include/meta/check.hpp
+        include/items/ammo.hpp
+        include/items/armor.hpp
+        include/items/item.hpp
+        include/items/food.hpp
+        include/items/potion.hpp
+        include/items/scroll.hpp
+        include/items/weapon.hpp
         include/abstract_item_loader.hpp
         include/abstract_unit_loader.hpp
         include/array2d.hpp
@@ -33,7 +40,6 @@ add_executable(RLRPG
         include/gen_map.hpp
         include/inventory.hpp
         include/inventory_iterator.hpp
-        include/item.hpp
         include/item_list_formatters.hpp
         include/level.hpp
         include/log.hpp
@@ -56,8 +62,10 @@ add_executable(RLRPG
         src/item.cpp
         src/log.cpp
         src/main.cpp
+        src/potion.cpp
         src/unit.cpp
         src/utils.cpp
+        src/weapon.cpp
         src/yaml_file_cache.cpp
         src/yaml_item_loader.cpp
         src/yaml_unit_loader.cpp

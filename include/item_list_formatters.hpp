@@ -5,7 +5,9 @@
 #ifndef RLRPG_ITEM_LIST_FORMATTERS_HPP
 #define RLRPG_ITEM_LIST_FORMATTERS_HPP
 
-#include<item.hpp>
+#include<items/item.hpp>
+#include<items/weapon.hpp>
+#include<items/armor.hpp>
 
 #include<cassert>
 #include<fmt/core.h>

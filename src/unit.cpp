@@ -1,6 +1,9 @@
 #include<units/unit.hpp>
 
-#include<item.hpp>
+#include<items/item.hpp>
+#include<items/armor.hpp>
+#include<items/weapon.hpp>
+#include<items/ammo.hpp>
 #include<utils.hpp>
 #include<array2d.hpp>
 #include<game.hpp>

@@ -1,6 +1,9 @@
 #include<units/enemy.hpp>
 
-#include<item.hpp>
+#include<items/food.hpp>
+#include<items/weapon.hpp>
+#include<items/ammo.hpp>
+#include<items/armor.hpp>
 #include<direction.hpp>
 #include<units/hero.hpp>
 #include<game.hpp>
@@ -22,25 +25,37 @@ Enemy::Enemy(std::string_view id) {
     if (id == "barbarian") {
         health = 7;
         maxHealth = 7;
+
         inventory.add(foodTypes.at("egg")->clone());
-        inventory.add(weaponTypes.at("copper_shortsword")->clone());
-        weapon = dynamic_cast<Weapon *>(&inventory['b']);
+
+        auto weaponToTake = weaponTypes.at("copper_shortsword")->clone();
+        weapon = weaponToTake.get();
+        inventory.add(std::move(weaponToTake));
+
         vision = 16;
         xpCost = 3;
     } else if (id == "zombie") {
         health = 10;
         maxHealth = 10;
-        inventory.add(weaponTypes.at("stick")->clone());
-        weapon = dynamic_cast<Weapon *>(&inventory['a']);
+
+        auto weaponToTake = weaponTypes.at("stick")->clone();
+        weapon = weaponToTake.get();
+        inventory.add(std::move(weaponToTake));
+
         vision = 10;
         xpCost = 2;
     } else if (id == "guardian") {
         health = 5;
         maxHealth = 5;
-        inventory.add(weaponTypes.at("pistol")->clone());
-        inventory.add(ammoTypes.at("steel_bullets")->clone());
-        weapon = dynamic_cast<Weapon *>(&inventory['a']);
-        ammo = dynamic_cast<Ammo *>(&inventory['b']);
+
+        auto weaponToTake = weaponTypes.at("pistol")->clone();
+        weapon = weaponToTake.get();
+        inventory.add(std::move(weaponToTake));
+
+        auto ammoToTake = ammoTypes.at("steel_bullets")->clone();
+        ammo = ammoToTake.get();
+        inventory.add(std::move(ammoToTake));
+
         ammo->count = Random::get(4, 30);
         vision = 16;
         xpCost = 5;
