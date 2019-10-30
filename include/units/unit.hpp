@@ -21,10 +21,8 @@ public:
         Enemy
     };
 
-	Unit() {}
+    Unit() = default;
     Unit(Unit const &);
-	~Unit() {}
-
     Unit & operator=(Unit const &);
 
     Inventory inventory;

@@ -21,9 +21,6 @@ using namespace fmt::literals;
 using fmt::format;
 using Random = effolkronium::random_static;
 
-Hero::Hero() {
-}
-
 int Hero::getLevelUpXP() const {
     return level * level + 4;
 }

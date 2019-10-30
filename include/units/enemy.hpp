@@ -19,13 +19,9 @@ public:
 	int lastTurnMoved = 0;
 	int xpCost;
 
-	Enemy() {}
-	Enemy(std::string_view id);
+    Enemy() = default;
     Enemy(Enemy const &);
-
     Enemy & operator =(Enemy const &);
-
-	~Enemy() {}
 
 	void shoot();
     void updatePosition();

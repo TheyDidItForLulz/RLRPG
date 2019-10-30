@@ -33,8 +33,6 @@ public:
 	bool isBurdened = false;
 	bool canMoveThroughWalls = false;
 
-    Hero();
-
 	void checkVisibleCells();
 	void clearRightPane() const;
 	void processInput(char inp);
