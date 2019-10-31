@@ -7,7 +7,8 @@ set(CMAKE_BUILD_TYPE Debug)
 include_directories(include)
 include_directories(include/termlib)
 
-find_package(fmt REQUIRED)
+include(external/external.cmake)
+
 find_package(Curses REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
