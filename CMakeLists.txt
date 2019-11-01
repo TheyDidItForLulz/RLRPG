@@ -6,6 +6,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(include)
 include_directories(include/termlib)
+include_directories(external/include)
 
 include(external/external.cmake)
 
