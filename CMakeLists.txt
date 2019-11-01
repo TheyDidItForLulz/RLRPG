@@ -10,7 +10,6 @@ include_directories(include/termlib)
 include(external/external.cmake)
 
 find_package(Curses REQUIRED)
-find_package(yaml-cpp REQUIRED)
 
 add_executable(RLRPG
         include/termlib/abstract_terminal_window.hpp
@@ -73,4 +72,4 @@ add_executable(RLRPG
         README.md
         tips.txt)
 
-target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES} ${YAML_CPP_LIBRARIES})
+target_link_libraries(RLRPG fmt::fmt ${CURSES_LIBRARIES} ${RLRPG_YAML_TARGET})
