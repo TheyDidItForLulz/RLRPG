@@ -81,9 +81,9 @@ void Enemy::shoot() {
     }
 }
 
-std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
+tl::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
     if (to == pos)
-        return std::nullopt;
+        return {};
 
     int maxDepth = 2 + std::abs(to.x - pos.x) + std::abs(to.y - pos.y);
 
@@ -112,7 +112,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
             break;
 
         if (used[v] > maxDepth)
-            return std::nullopt;
+            return {};
 
         q.pop();
 
@@ -129,7 +129,7 @@ std::optional<Coord2i> Enemy::searchForShortestPath(Coord2i to) const {
     }
 
     if (not used[to])
-        return std::nullopt;
+        return {};
 
     Coord2i v = to;
     while (used[v] > 2) {
@@ -191,7 +191,7 @@ void Enemy::updatePosition() {
             }
         }
     }
-    std::optional<Coord2i> next;
+    tl::optional<Coord2i> next;
     if (target.has_value() and (next = searchForShortestPath(*target))) {
         moveTo(*next);
         return;

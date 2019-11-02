@@ -1,11 +1,13 @@
 #ifndef ABSTRACT_TERMINAL_WINDOW_HPP
 #define ABSTRACT_TERMINAL_WINDOW_HPP
 
-#include<string_view>
-#include<optional>
 #include"terminal_text_style.hpp"
 #include"vec2.hpp"
+
+#include<tl/optional.hpp>
+
 #include<memory>
+#include<string_view>
 
 class AbstractTerminalWindow {
 public:
@@ -28,7 +30,7 @@ public:
 
     virtual void display() = 0;
 
-    virtual std::optional<char> getChar(int timeoutMillis = -1) = 0;
+    virtual tl::optional<char> getChar(int timeoutMillis = -1) = 0;
 
     virtual void setTextStyle(TextStyle style) = 0;
 

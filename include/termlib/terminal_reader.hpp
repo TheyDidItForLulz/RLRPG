@@ -3,6 +3,9 @@
 
 #include"abstract_terminal_window.hpp"
 #include"default_window_provider.hpp"
+
+#include<tl/optional.hpp>
+
 #include<string>
 
 class TerminalReader {
@@ -20,7 +23,7 @@ public:
         return win.getChar().value();
     }
 
-    std::optional<char> waitCharFor(int millis) {
+    tl::optional<char> waitCharFor(int millis) {
         return win.getChar(millis);
     }
 

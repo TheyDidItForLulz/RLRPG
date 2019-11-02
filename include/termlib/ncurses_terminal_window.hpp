@@ -37,7 +37,7 @@ public:
         wrefresh(pWin);
     }
 
-    std::optional<char> getChar(int timeoutMillis = -1) override {
+    tl::optional<char> getChar(int timeoutMillis = -1) override {
         timeout(timeoutMillis);
 
         auto got = wgetch(pWin);

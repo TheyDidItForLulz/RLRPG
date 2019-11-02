@@ -2,7 +2,8 @@
 #define TERMINAL_TEXT_STYLE_HPP
 
 #include"terminal_color.hpp"
-#include<optional>
+
+#include<tl/optional.hpp>
 
 struct TextStyle {
     enum TextAttribute {
@@ -17,7 +18,7 @@ struct TextStyle {
         : optcolor(color)
         , attributes() {}
 
-    TextStyle(int attrMask = 0, std::optional<TerminalColor> color = {})
+    TextStyle(int attrMask = 0, tl::optional<TerminalColor> color = {})
         : attributes(attrMask)
         , optcolor(color) {}
 
@@ -43,7 +44,7 @@ struct TextStyle {
     }
 
 private:
-    std::optional<TerminalColor> optcolor;
+    tl::optional<TerminalColor> optcolor;
 };
 
 #endif // TERMINAL_TEXT_STYLE_HPP

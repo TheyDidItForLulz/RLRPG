@@ -4,7 +4,7 @@
 #include<termlib/vec2.hpp>
 #include<controls.hpp>
 
-#include<optional>
+#include<tl/optional.hpp>
 
 enum class Direction {
     Left,
@@ -45,7 +45,7 @@ inline Vec2i toVec2i(Direction dir) {
     return Vec2i{};
 }
 
-inline std::optional<Direction> directionFrom(Vec2i vec) {
+inline tl::optional<Direction> directionFrom(Vec2i vec) {
     if (vec.x < 0)
         if (vec.y < 0)
             return Direction::UpLeft;
@@ -69,7 +69,7 @@ inline std::optional<Direction> directionFrom(Vec2i vec) {
             return {};
 }
 
-inline std::optional<Direction> getDirectionByControl(char control) {
+inline tl::optional<Direction> getDirectionByControl(char control) {
     switch (control) {
         case CONTROL_UP: return Direction::Up;
         case CONTROL_UPRIGHT: return Direction::UpRight;
@@ -79,7 +79,7 @@ inline std::optional<Direction> getDirectionByControl(char control) {
         case CONTROL_DOWNLEFT: return Direction::DownLeft;
         case CONTROL_LEFT: return Direction::Left;
         case CONTROL_UPLEFT: return Direction::UpLeft;
-        default: return std::nullopt;
+        default: return {};
     }
 };
 

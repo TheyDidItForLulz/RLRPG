@@ -4,7 +4,8 @@
 #include<units/unit.hpp>
 #include<enable_clone.hpp>
 
-#include<optional>
+#include<tl/optional.hpp>
+
 #include<string_view>
 
 class Ammo;
@@ -15,7 +16,7 @@ class Enemy
 {
 public:
 	Ammo* ammo = nullptr;
-    std::optional<Coord2i> target;
+    tl::optional<Coord2i> target;
 	int lastTurnMoved = 0;
 	int xpCost;
 
@@ -32,7 +33,7 @@ public:
     }
 
 private:
-    std::optional<Coord2i> searchForShortestPath(Coord2i to) const; // returns next cell in the path if path exists
+    tl::optional<Coord2i> searchForShortestPath(Coord2i to) const; // returns next cell in the path if path exists
     void moveTo(Coord2i cell);
 };
 
