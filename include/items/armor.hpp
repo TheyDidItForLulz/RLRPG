@@ -12,8 +12,8 @@ class Armor
 public:
     static int const COUNT = 4;
 
-	int defence;
-	int durability;
+    int defence;
+    int durability;
 
     Type getType() const override {
         return Type::Armor;

@@ -15,16 +15,16 @@ class Enemy
     , public EnableClone<Enemy>
 {
 public:
-	Ammo* ammo = nullptr;
+    Ammo* ammo = nullptr;
     tl::optional<Coord2i> target;
-	int lastTurnMoved = 0;
-	int xpCost;
+    int lastTurnMoved = 0;
+    int xpCost;
 
     Enemy() = default;
     Enemy(Enemy const &);
     Enemy & operator =(Enemy const &);
 
-	void shoot();
+    void shoot();
     void updatePosition();
     void dropInventory() override;
 

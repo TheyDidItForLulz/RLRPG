@@ -8,7 +8,7 @@
 struct SymbolRenderData {
     TextStyle style;
     char symbol;
-    
+
     SymbolRenderData(char symbol, TextStyle style = {})
         : symbol(symbol)
         , style(style) {}

@@ -13,12 +13,12 @@ public:
     static int const COUNT = 15; /* JUST FOR !DEBUG!!*/
 
     enum Effect {
-    	Map,
-    	Identify,
-    	EffectCount
+        Map,
+        Identify,
+        EffectCount
     };
 
-	Effect effect;
+    Effect effect;
 
     Type getType() const override {
         return Type::Scroll;

@@ -9,11 +9,11 @@ class Food
     : public Item
     , public EnableClone<Food>
 {
-public:	
+public:
     static int const COUNT = 10;
 
-	int nutritionalValue;
-	bool isRotten = false;
+    int nutritionalValue;
+    bool isRotten = false;
 
     Type getType() const override {
         return Type::Food;

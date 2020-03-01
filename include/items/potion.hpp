@@ -13,15 +13,15 @@ public:
     static int const COUNT = 25; /* IT TOO */
 
     enum Effect {
-    	None,
-    	Heal,
-    	Invisibility,
-    	Teleport,
-    	Blindness,
-    	EffectCount
+        None,
+        Heal,
+        Invisibility,
+        Teleport,
+        Blindness,
+        EffectCount
     };
 
-	Effect effect;
+    Effect effect;
 
     std::string getName() const override;
 

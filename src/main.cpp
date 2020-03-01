@@ -10,7 +10,7 @@
 */
 //////////////////////////////////////////////////// Effects //////////////////////////////////////////////////////////////
 /*
-                                                1 - Map recording in Hard-mode                
+                                                1 - Map recording in Hard-mode
                                                 2 - Identify
 */
 //////////////////////////////////////////// Types of weapon construction /////////////////////////////////////////////////
@@ -18,9 +18,9 @@
                                         1 - One direction(Musket), scheme:
 
                                                 @--->
-                                        
+
                                         2 - Triple direction(Shotgun), scheme:
-                                
+
                                               /
                                              /
                                             @--->

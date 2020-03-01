@@ -31,7 +31,7 @@ AddStatus Inventory::add(Ptr<Item> item) {
             }
         }
     }
-    
+
     for (char i = 'a'; i <= 'z'; ++i) {
         if (items.count(i) == 0) {
             item->inventorySymbol = i;

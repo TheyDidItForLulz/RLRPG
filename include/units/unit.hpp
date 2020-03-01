@@ -26,18 +26,18 @@ public:
     Unit & operator=(Unit const &);
 
     Inventory inventory;
-	Weapon* weapon = nullptr;
-	Armor* armor = nullptr;
+    Weapon* weapon = nullptr;
+    Armor* armor = nullptr;
 
-	std::string id;
-	std::string name;
+    std::string id;
+    std::string name;
     Coord2i pos = {-1, -1};
-	int health;
+    int health;
     int maxHealth;
-	int vision;
+    int vision;
 
     std::string getName();
-	bool canSee(Coord2i cell) const;
+    bool canSee(Coord2i cell) const;
     void setTo(Coord2i cell);
     void heal(int hp);
     void dealDamage(int damage);
@@ -46,7 +46,7 @@ public:
     virtual void dropInventory();
 
 protected:
-	bool linearVisibilityCheck(Vec2d from, Vec2d to) const;
+    bool linearVisibilityCheck(Vec2d from, Vec2d to) const;
 
     virtual void takeArmorOff();
     virtual void unequipWeapon();

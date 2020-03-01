@@ -89,7 +89,7 @@ private:
 
     void initColorPairs() {
         int colors = 8;
-        
+
         for (int fg = 0; fg < colors; ++fg) {
             for (int bg = 0; bg < colors; ++bg) {
                 NcursesColorPair pair{ fg, bg };
@@ -103,7 +103,7 @@ private:
 
         if (mask & TextStyle::Bold)
             ncursMask |= A_BOLD;
-        
+
         if (mask & TextStyle::Underlined)
             ncursMask |= A_UNDERLINE;
 

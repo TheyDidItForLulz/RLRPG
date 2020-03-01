@@ -22,11 +22,11 @@ void mazeNext(Coord2i start, Coord2i prev, Coord2i curr) {
 
     used[curr] = true;
     Coord2i cell = curr * 2 + 1;
-    for (int i = cell.y - 1; i <= cell.y + 1; ++i) { 
+    for (int i = cell.y - 1; i <= cell.y + 1; ++i) {
         for (int j = cell.x - 1; j <= cell.x + 1; ++j) {
             level.at(i, j) = 2;
-        }                                                    
-    }                                                        
+        }
+    }
     level[cell] = 1;
     level[cell + (prev - curr)] = 1;
 
@@ -77,7 +77,7 @@ void generateRooms() {
 
 void generateMaze() {
     Coord2i start;
-    mazeNext(start, start, start);                                        
+    mazeNext(start, start, start);
     generateRooms();
 }
 

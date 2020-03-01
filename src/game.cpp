@@ -182,7 +182,7 @@ void Game::run() {
             return;
 
         clearBuffers();
-    
+
         bool died = false;
 
         if (hero->hunger < 1) {
@@ -210,7 +210,7 @@ void Game::run() {
 
         if (not skippingUpdate()) {
             updateAI();
-            
+
             increaseTurnNumber();
 
             if (turns % 25 == 0 and turns != 0 and mode == 1) {
@@ -218,7 +218,7 @@ void Game::run() {
             }
 
             hero->hunger--;
-            
+
             if (hero->turnsInvisible > 0)
                 hero->turnsInvisible--;
 
@@ -228,13 +228,13 @@ void Game::run() {
                 }
                 hero->turnsBlind --;
             }
-        
+
             if (hero->isBurdened)
                 hero->hunger--;
 
             draw();
-            
-            if (inp == '\033') {    
+
+            if (inp == '\033') {
                 termRend
                     .setCursorPosition(Coord2i{ 0, LEVEL_ROWS })
                     .put("Are you sure you want to exit?\n")
@@ -244,8 +244,8 @@ void Game::run() {
                     return;
                 }
                 skipUpdate();
-            }    
-    
+            }
+
             hero->tryLevelUp();
 
             termRend.setCursorPosition(hero->pos);
@@ -622,7 +622,7 @@ bool Game::randomlySetOnMap(Ptr<Item> item) {
 
     for (int i = 0; i < attemts; ++i) {
         Coord2i cell{ Random::get(0, LEVEL_COLS - 1),
-					  Random::get(0, LEVEL_ROWS - 1) };
+                      Random::get(0, LEVEL_ROWS - 1) };
 
         if (g_game.level()[cell] == 1) {
             drop(std::move(item), cell);
@@ -650,36 +650,36 @@ void Game::drop(Ptr<Item> item, Coord2i cell) {
 }
 
 Ptr<Item> Game::createItem(std::string const & id) {
-	{
-		auto it = foodTypes.find(id);
-		if (it != foodTypes.end())
-			return it->second->clone();
-	}
-	{
-		auto it = armorTypes.find(id);
-		if (it != armorTypes.end())
-			return it->second->clone();
-	}
-	{
-		auto it = ammoTypes.find(id);
-		if (it != ammoTypes.end())
-			return it->second->clone();
-	}
-	{
-		auto it = potionTypes.find(id);
-		if (it != potionTypes.end())
-			return it->second->clone();
-	}
-	{
-		auto it = scrollTypes.find(id);
-		if (it != scrollTypes.end())
-			return it->second->clone();
-	}
-	{
-		auto it = weaponTypes.find(id);
-		if (it != weaponTypes.end())
-			return it->second->clone();
-	}
-	return {};
+    {
+        auto it = foodTypes.find(id);
+        if (it != foodTypes.end())
+            return it->second->clone();
+    }
+    {
+        auto it = armorTypes.find(id);
+        if (it != armorTypes.end())
+            return it->second->clone();
+    }
+    {
+        auto it = ammoTypes.find(id);
+        if (it != ammoTypes.end())
+            return it->second->clone();
+    }
+    {
+        auto it = potionTypes.find(id);
+        if (it != potionTypes.end())
+            return it->second->clone();
+    }
+    {
+        auto it = scrollTypes.find(id);
+        if (it != scrollTypes.end())
+            return it->second->clone();
+    }
+    {
+        auto it = weaponTypes.find(id);
+        if (it != weaponTypes.end())
+            return it->second->clone();
+    }
+    return {};
 }
 

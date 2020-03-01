@@ -19,7 +19,7 @@ enum class Direction {
 
 inline char toChar(Direction dir) {
     switch (dir) {
-        case Direction::Up: 
+        case Direction::Up:
         case Direction::Down: return '|';
         case Direction::UpRight:
         case Direction::DownLeft: return '/';

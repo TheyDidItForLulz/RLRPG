@@ -12,8 +12,8 @@ class Ammo
 public:
     static int const COUNT = 25;
 
-	int range;
-	int damage;
+    int range;
+    int damage;
 
     Type getType() const override {
         return Type::Ammo;

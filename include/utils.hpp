@@ -39,4 +39,4 @@ T distSquared(Vec2<T> const & point1, Vec2<T> const & point2) {
 }
 
 #endif // UTILS_HPP
- 
+

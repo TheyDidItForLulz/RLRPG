@@ -344,7 +344,7 @@ void Hero::processInput(char inp) {
             break;
         case CONTROL_SHOWINVENTORY:
             showInventory();
-            break;                
+            break;
         case CONTROL_WEAR:
             wearArmor();
             break;
@@ -383,7 +383,7 @@ void Hero::processInput(char inp) {
             break;
         case '\\': {
             char hv = g_game.getReader().readChar();
-            
+
             if (hv == 'h') {
                 if (g_game.getReader().readChar() == 'e') {
                     if (g_game.getReader().readChar() == 'a') {
@@ -394,7 +394,7 @@ void Hero::processInput(char inp) {
                     }
                 }
             }
-        
+
             if (hv == 'w') {
                 if (g_game.getReader().readChar() == 'a') {
                     if (g_game.getReader().readChar() == 'l') {
@@ -471,7 +471,7 @@ void Hero::reloadWeapon() {
         for (auto entry : inventory) {
             if (entry.second->getType() != Item::Type::Ammo)
                 continue;
-            
+
             std::string line = format("{} - {} (x{})",
                 entry.first,
                 entry.second->getName(),
@@ -480,7 +480,7 @@ void Hero::reloadWeapon() {
             g_game.getRenderer()
                 .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
                 .put(line);
-            
+
             ++lineY;
         }
 
@@ -488,7 +488,7 @@ void Hero::reloadWeapon() {
         g_game.getRenderer()
             .setCursorPosition(Coord2i{ LEVEL_COLS + 10, lineY })
             .put("Press '-' to unload one.");
-        
+
         char chToLoad;
         while (true) {
             chToLoad = g_game.getReader().readChar();
@@ -665,7 +665,7 @@ void Hero::throwItem() {
     g_game.getRenderer()
         .setCursorPosition(Coord2i{ LEVEL_COLS + 10, 0 })
         .put("In what direction?");
-    
+
     Direction throwDir;
     while (true) {
         char dirChoice = g_game.getReader().readChar();

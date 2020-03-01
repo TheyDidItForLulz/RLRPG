@@ -18,17 +18,17 @@ public:
         Potion
     };
 
-	virtual ~Item() = default;
+    virtual ~Item() = default;
 
     Coord2i pos;
-	std::string id;
-	std::string name;
-	char inventorySymbol;
-	int weight;
-	int mdf = 1;
-	int count = 1;
-	bool showMdf = false;
-	bool isStackable;
+    std::string id;
+    std::string name;
+    char inventorySymbol;
+    int weight;
+    int mdf = 1;
+    int count = 1;
+    bool showMdf = false;
+    bool isStackable;
 
     // toSplit:
     //  - [1, count) - splits on 2 piles, returns one with count = toSplit

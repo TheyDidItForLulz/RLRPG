@@ -18,9 +18,9 @@ public:
         int capacity = 0;
 
     public:
-		explicit Cartridge(int capacity = 0);
+        explicit Cartridge(int capacity = 0);
         Cartridge(Cartridge const &);
-        Cartridge & operator =(Cartridge const &); 
+        Cartridge & operator =(Cartridge const &);
 
         // returns the bullet if fails to load it
         Ptr<Ammo> load(Ptr<Ammo> bullet);
@@ -44,10 +44,10 @@ public:
     static int const COUNT = 25; /* JUST FOR !DEBUG!!*/
 
     Cartridge cartridge;
-	int damage;
-	int range; 									// Ranged bullets have additional effect on this paramether
-	int damageBonus;								// And on this too
-	bool isRanged = false;
+    int damage;
+    int range;                                     // Ranged bullets have additional effect on this paramether
+    int damageBonus;                                // And on this too
+    bool isRanged = false;
     bool canDig = false;
 
     Type getType() const override {

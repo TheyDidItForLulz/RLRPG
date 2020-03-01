@@ -16,7 +16,7 @@ public:
     struct AddError {
         Ptr<Item> item;
     };
-    
+
     struct New {
         char at;
     };
