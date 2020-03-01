@@ -73,7 +73,7 @@ public:
         wclear(pWin);
 
         NcursesColorPair pair{ TerminalColor{ Color::Black, background } };
-        wbkgd(pWin, COLOR_PAIR(pair.getID()));
+        wbkgd(pWin, ' ' | COLOR_PAIR(pair.getID()));
     }
 
 private:

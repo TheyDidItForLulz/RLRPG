@@ -53,7 +53,8 @@ tl::optional<std::string> Game::processMenu(std::string_view title, std::vector<
         termRend
             .clear()
             .setCursorPosition(Coord2i{})
-            .put(title);
+            .put(title)
+            .display();
 
         printMenu(items, selected);
 
