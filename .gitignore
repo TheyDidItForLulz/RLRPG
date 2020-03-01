@@ -1,9 +1,18 @@
+# Generated files by cmake
+CMakeFiles
+CMakeCache.txt
+compile_commands.json
+Makefile
+cmake_install.cmake
+
+# Some local files and directories
 cmake-build-debug
 log.txt
 .vscode
 obj
 bin
 .idea
+.clangd
 
 # Prerequisites
 *.d
@@ -37,3 +46,4 @@ bin
 *.exe
 *.out
 *.app
+RLRPG
