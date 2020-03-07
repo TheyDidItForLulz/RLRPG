@@ -1,0 +1,4 @@
+make termlib a submodule
+split Game
+refactor publics
+less constants, more configurations
