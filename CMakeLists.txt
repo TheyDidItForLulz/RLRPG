@@ -42,6 +42,7 @@ add_executable(RLRPG
         include/game.hpp
         include/gen_map.hpp
         include/inventory.hpp
+        include/inventory.inl
         include/inventory_iterator.hpp
         include/item_list_formatters.hpp
         include/level.hpp

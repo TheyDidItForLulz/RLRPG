@@ -255,7 +255,6 @@ void Hero::pickUp() {
             pickUpString = fmt::format("{}{} ({}), now you have {}",
                                  pickedCount, item.getName(), stacked.at, item.count);
         }).doIf<AddStatus::AddError>([&itemToPick, &fullInventory, &message](auto & err) {
-            itemToPick = std::move(err.item);
             fullInventory = true;
             message += "Your inventory is full";
         });
@@ -502,7 +501,7 @@ void Hero::reloadWeapon() {
             auto bullet = weapon->cartridge.unloadOne();
             if (bullet) {
                 inventory.add(std::move(bullet)).doIf<AddStatus::AddError>([&] (auto & err) {
-                    g_game.drop(std::move(err.item), pos);
+                    g_game.drop(std::move(bullet), pos);
                 });
             }
         } else {

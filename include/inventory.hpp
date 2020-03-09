@@ -13,9 +13,7 @@ class Item;
 
 class AddStatus {
 public:
-    struct AddError {
-        Ptr<Item> item;
-    };
+    struct AddError {};
 
     struct New {
         char at;
@@ -61,8 +59,14 @@ public:
     Inventory(Inventory const & other);
     Inventory & operator =(Inventory const & other);
 
-    AddStatus add(Ptr<Item> item);
-    AddStatus add(Ptr<Item> item, char at);
+    // template because unique_ptr actually moves if needs to cast Ptr<Derived> to Ptr<Base>
+    template<class ItemType>
+    AddStatus add(Ptr<ItemType> && item);
+
+    // template because unique_ptr actually moves if needs to cast Ptr<Derived> to Ptr<Base>
+    template<class ItemType>
+    AddStatus add(Ptr<ItemType> && item, char at);
+
     Ptr<Item> remove(char id);
 
     InventoryIterator erase(ConstInventoryIterator iter);
@@ -88,6 +92,8 @@ public:
 private:
     std::unordered_map<char, Ptr<Item>> items;
 };
+
+#include<inventory.inl>
 
 #endif // INVENTORY_HPP
 
